@@ -1,0 +1,189 @@
+package dbmodel
+
+import (
+	"fmt"
+
+	"github.com/rbrabson/ftcstanding/database"
+)
+
+const (
+	AllianceRed  = "red"  // Red alliance
+	AllianceBlue = "blue" // Blue alliance
+)
+
+// InitMatchStatements prepares all SQL statements for match operations.
+func InitMatchStatements() error {
+	queries := map[string]string{
+		"getMatch":               "SELECT match_id, event_id, match_number, actual_start_time, description, tournament_level FROM matches WHERE match_id = ?",
+		"saveMatch":              "INSERT INTO matches (match_id, event_id, match_number, actual_start_time, description, tournament_level) VALUES (?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE event_id = VALUES(event_id), match_number = VALUES(match_number), actual_start_time = VALUES(actual_start_time), description = VALUES(description), tournament_level = VALUES(tournament_level)",
+		"getMatchAllianceScore":  "SELECT match_id, alliance, auto_points, teleop_points, foul_points_committed, pre_foul_total, total_points, major_fouls, minor_fouls FROM match_alliance_scores WHERE match_id = ? AND alliance = ?",
+		"saveMatchAllianceScore": "INSERT INTO match_alliance_scores (match_id, alliance, auto_points, teleop_points, foul_points_committed, pre_foul_total, total_points, major_fouls, minor_fouls) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE auto_points = VALUES(auto_points), teleop_points = VALUES(teleop_points), foul_points_committed = VALUES(foul_points_committed), pre_foul_total = VALUES(pre_foul_total), total_points = VALUES(total_points), major_fouls = VALUES(major_fouls), minor_fouls = VALUES(minor_fouls)",
+		"getMatchTeams":          "SELECT match_id, team_id, alliance, dq, on_field FROM match_teams WHERE match_id = ?",
+		"saveMatchTeam":          "INSERT INTO match_teams (match_id, team_id, alliance, dq, on_field) VALUES (?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE alliance = VALUES(alliance), dq = VALUES(dq), on_field = VALUES(on_field)",
+	}
+
+	for name, query := range queries {
+		if err := database.PrepareStatement(name, query); err != nil {
+			return fmt.Errorf("failed to prepare statement %s: %w", name, err)
+		}
+	}
+	return nil
+}
+
+// Match represents a match in an event.
+type Match struct {
+	MatchID         string `json:"matchID"`
+	EventID         string `json:"event_id"`
+	MatchNumber     int    `json:"matchNumber"`
+	ActualStartTime string `json:"actualStartTime"`
+	Description     string `json:"description"`
+	TournamentLevel string `json:"tournamentLevel"`
+}
+
+// MatchAllianceScore represents the score of an alliance in a match. MatchID and Alliance form a composite primary key.
+type MatchAllianceScore struct {
+	MatchID             string `json:"match_id"`
+	Alliance            string `json:"alliance"`
+	AutoPoints          int    `json:"auto_points"`
+	TeleopPoints        int    `json:"teleop_points"`
+	FoulPointsCommitted int    `json:"foul_points_committed"`
+	PreFoulTotal        int    `json:"pre_foul_total"`
+	TotalPoints         int    `json:"total_points"`
+	MajorFouls          int    `json:"major_fouls"`
+	MinorFouls          int    `json:"minor_fouls"`
+}
+
+// MatchTeam represents an alliance team member participating in a match. MatchID and TeamID form a composite primary key.
+type MatchTeam struct {
+	MatchID  string `json:"match_id"`
+	TeamID   int    `json:"team_id"`
+	Alliance string `json:"alliance"`
+	Dq       bool   `json:"dq"`
+	OnField  bool   `json:"on_field"`
+}
+
+// GetMatchID generates a MatchID from the given EventID and MatchNumber.
+func GetMatchID(eventID string, matchNumber int) string {
+	return fmt.Sprintf("%s : %d", eventID, matchNumber)
+}
+
+func GetMatch(matchID string) *Match {
+	var match Match
+	stmt := database.GetStatement("getMatch")
+	if stmt == nil {
+		return nil
+	}
+	err := stmt.QueryRow(matchID).Scan(
+		&match.MatchID,
+		&match.EventID,
+		&match.MatchNumber,
+		&match.ActualStartTime,
+		&match.Description,
+		&match.TournamentLevel,
+	)
+	if err != nil {
+		return nil
+	}
+	return &match
+}
+
+func SaveMatch(match *Match) error {
+	stmt := database.GetStatement("saveMatch")
+	if stmt == nil {
+		return fmt.Errorf("prepared statement not found")
+	}
+	_, err := stmt.Exec(
+		match.MatchID,
+		match.EventID,
+		match.MatchNumber,
+		match.ActualStartTime,
+		match.Description,
+		match.TournamentLevel,
+	)
+	return err
+}
+
+func GetMatchAllianceScore(matchID, alliance string) *MatchAllianceScore {
+	var score MatchAllianceScore
+	stmt := database.GetStatement("getMatchAllianceScore")
+	if stmt == nil {
+		return nil
+	}
+	err := stmt.QueryRow(matchID, alliance).Scan(
+		&score.MatchID,
+		&score.Alliance,
+		&score.AutoPoints,
+		&score.TeleopPoints,
+		&score.FoulPointsCommitted,
+		&score.PreFoulTotal,
+		&score.TotalPoints,
+		&score.MajorFouls,
+		&score.MinorFouls,
+	)
+	if err != nil {
+		return nil
+	}
+	return &score
+}
+
+func SaveMatchAllianceScore(score *MatchAllianceScore) error {
+	stmt := database.GetStatement("saveMatchAllianceScore")
+	if stmt == nil {
+		return fmt.Errorf("prepared statement not found")
+	}
+	_, err := stmt.Exec(
+		score.MatchID,
+		score.Alliance,
+		score.AutoPoints,
+		score.TeleopPoints,
+		score.FoulPointsCommitted,
+		score.PreFoulTotal,
+		score.TotalPoints,
+		score.MajorFouls,
+		score.MinorFouls,
+	)
+	return err
+}
+
+func GetMatchTeams(matchID string) []MatchTeam {
+	stmt := database.GetStatement("getMatchTeams")
+	if stmt == nil {
+		return nil
+	}
+	rows, err := stmt.Query(matchID)
+	if err != nil {
+		return nil
+	}
+	defer rows.Close()
+
+	var teams []MatchTeam
+	for rows.Next() {
+		var team MatchTeam
+		if err := rows.Scan(
+			&team.MatchID,
+			&team.TeamID,
+			&team.Alliance,
+			&team.Dq,
+			&team.OnField,
+		); err != nil {
+			return nil
+		}
+		teams = append(teams, team)
+	}
+	return teams
+}
+
+func SaveMatchTeam(team *MatchTeam) error {
+	stmt := database.GetStatement("saveMatchTeam")
+	if stmt == nil {
+		return fmt.Errorf("prepared statement not found")
+	}
+	_, err := stmt.Exec(
+		team.MatchID,
+		team.TeamID,
+		team.Alliance,
+		team.Dq,
+		team.OnField,
+	)
+	return err
+}
