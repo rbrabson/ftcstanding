@@ -16,6 +16,7 @@ func InitEventStatements() error {
 		"saveEventRanking":     "INSERT INTO event_rankings (event_id, team_id, rank, sort_order1, sort_order2, sort_order3, sort_order4, sort_order5, sort_order6, wins, losses, ties, dq, matches_played, matches_counted) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE rank = VALUES(rank), sort_order1 = VALUES(sort_order1), sort_order2 = VALUES(sort_order2), sort_order3 = VALUES(sort_order3), sort_order4 = VALUES(sort_order4), sort_order5 = VALUES(sort_order5), sort_order6 = VALUES(sort_order6), wins = VALUES(wins), losses = VALUES(losses), ties = VALUES(ties), dq = VALUES(dq), matches_played = VALUES(matches_played), matches_counted = VALUES(matches_counted)",
 		"getEventAdvancements": "SELECT event_id, team_id FROM event_advancements WHERE event_id = ?",
 		"saveEventAdvancement": "INSERT INTO event_advancements (event_id, team_id) VALUES (?, ?) ON DUPLICATE KEY UPDATE event_id = event_id",
+		"getRegionCodes":       "SELECT DISTINCT region_code FROM events WHERE region_code IS NOT NULL AND region_code != '' ORDER BY region_code",
 	}
 
 	for name, query := range queries {
@@ -257,4 +258,28 @@ func SaveEventAdvancement(ea *EventAdvancement) error {
 	}
 	_, err := stmt.Exec(ea.EventID, ea.TeamID)
 	return err
+}
+
+// GetRegionCodes retrieves all unique region codes from events, sorted alphabetically.
+func GetRegionCodes() []string {
+	stmt := GetStatement("getRegionCodes")
+	if stmt == nil {
+		return nil
+	}
+	rows, err := stmt.Query()
+	if err != nil {
+		return nil
+	}
+	defer rows.Close()
+
+	var regionCodes []string
+	for rows.Next() {
+		var regionCode string
+		err := rows.Scan(&regionCode)
+		if err != nil {
+			continue
+		}
+		regionCodes = append(regionCodes, regionCode)
+	}
+	return regionCodes
 }
