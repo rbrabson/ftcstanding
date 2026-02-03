@@ -15,9 +15,6 @@ var (
 )
 
 // InitDB initializes the database connection.
-// dataSourceName is the DSN for the database connection, and should be in the format:
-//
-//	"user:password@/dbname"
 func InitDB(dataSourceName string) error {
 	var err error
 	DB, err = sql.Open("mysql", dataSourceName)
