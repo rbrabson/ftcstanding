@@ -2,8 +2,6 @@ package dbmodel
 
 import (
 	"fmt"
-
-	"github.com/rbrabson/ftcstanding/database"
 )
 
 const (
@@ -24,7 +22,7 @@ func InitMatchStatements() error {
 	}
 
 	for name, query := range queries {
-		if err := database.PrepareStatement(name, query); err != nil {
+		if err := PrepareStatement(name, query); err != nil {
 			return fmt.Errorf("failed to prepare statement %s: %w", name, err)
 		}
 	}
@@ -71,7 +69,7 @@ func GetMatchID(eventID string, matchNumber int) string {
 // GetMatch retrieves a match from the database by its ID.
 func GetMatch(matchID string) *Match {
 	var match Match
-	stmt := database.GetStatement("getMatch")
+	stmt := GetStatement("getMatch")
 	if stmt == nil {
 		return nil
 	}
@@ -89,9 +87,9 @@ func GetMatch(matchID string) *Match {
 	return &match
 }
 
-// GetAllMatches retrieves all matches from the database.
+// GetAllMatches retrieves all matches from the
 func GetAllMatches() []Match {
-	stmt := database.GetStatement("getAllMatches")
+	stmt := GetStatement("getAllMatches")
 	if stmt == nil {
 		return nil
 	}
@@ -120,9 +118,9 @@ func GetAllMatches() []Match {
 	return matches
 }
 
-// SaveMatch saves or updates a match in the database.
+// SaveMatch saves or updates a match in the
 func SaveMatch(match *Match) error {
-	stmt := database.GetStatement("saveMatch")
+	stmt := GetStatement("saveMatch")
 	if stmt == nil {
 		return fmt.Errorf("prepared statement not found")
 	}
@@ -140,7 +138,7 @@ func SaveMatch(match *Match) error {
 // GetMatchAllianceScore retrieves the score for a specific alliance in a match.
 func GetMatchAllianceScore(matchID, alliance string) *MatchAllianceScore {
 	var score MatchAllianceScore
-	stmt := database.GetStatement("getMatchAllianceScore")
+	stmt := GetStatement("getMatchAllianceScore")
 	if stmt == nil {
 		return nil
 	}
@@ -163,7 +161,7 @@ func GetMatchAllianceScore(matchID, alliance string) *MatchAllianceScore {
 
 // SaveMatchAllianceScore saves or updates the score for a specific alliance in a match.
 func SaveMatchAllianceScore(score *MatchAllianceScore) error {
-	stmt := database.GetStatement("saveMatchAllianceScore")
+	stmt := GetStatement("saveMatchAllianceScore")
 	if stmt == nil {
 		return fmt.Errorf("prepared statement not found")
 	}
@@ -183,7 +181,7 @@ func SaveMatchAllianceScore(score *MatchAllianceScore) error {
 
 // GetMatchTeams retrieves all teams participating in a specific match.
 func GetMatchTeams(matchID string) []MatchTeam {
-	stmt := database.GetStatement("getMatchTeams")
+	stmt := GetStatement("getMatchTeams")
 	if stmt == nil {
 		return nil
 	}
@@ -210,9 +208,9 @@ func GetMatchTeams(matchID string) []MatchTeam {
 	return teams
 }
 
-// SaveMatchTeam saves or updates a match team in the database.
+// SaveMatchTeam saves or updates a match team in the
 func SaveMatchTeam(team *MatchTeam) error {
-	stmt := database.GetStatement("saveMatchTeam")
+	stmt := GetStatement("saveMatchTeam")
 	if stmt == nil {
 		return fmt.Errorf("prepared statement not found")
 	}

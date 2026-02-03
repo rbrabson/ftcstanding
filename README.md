@@ -9,11 +9,10 @@ ftcstanding/
 ├── cmd/
 │   └── ftc/
 │       └── main.go           # Application entry point
-├── database/
-│   └── db.go                 # Database connection and prepared statement management
 ├── dbmodel/
 │   ├── award.go              # Award data model and database operations
 │   ├── dbmodel.go            # Base database model functionality
+│   ├── db.go                 # Database connection and prepared statement management
 │   ├── event.go              # Event data model and database operations
 │   ├── match.go              # Match data model and database operations
 │   └── team.go               # Team data model and database operations

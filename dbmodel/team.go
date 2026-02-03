@@ -2,8 +2,6 @@ package dbmodel
 
 import (
 	"fmt"
-
-	"github.com/rbrabson/ftcstanding/database"
 )
 
 // Team represents a team that participates in competitions.
@@ -29,7 +27,7 @@ func InitTeamStatements() error {
 	}
 
 	for name, query := range queries {
-		if err := database.PrepareStatement(name, query); err != nil {
+		if err := PrepareStatement(name, query); err != nil {
 			return fmt.Errorf("failed to prepare statement %s: %w", name, err)
 		}
 	}
@@ -39,7 +37,7 @@ func InitTeamStatements() error {
 // GetTeam retrieves a team from a database by its ID.
 func GetTeam(teamID int) *Team {
 	var team Team
-	stmt := database.GetStatement("getTeam")
+	stmt := GetStatement("getTeam")
 	if stmt == nil {
 		return nil
 	}
@@ -61,9 +59,9 @@ func GetTeam(teamID int) *Team {
 	return &team
 }
 
-// GetAllTeams retrieves all teams from the database.
+// GetAllTeams retrieves all teams from the
 func GetAllTeams() []Team {
-	stmt := database.GetStatement("getAllTeams")
+	stmt := GetStatement("getAllTeams")
 	if stmt == nil {
 		return nil
 	}
@@ -96,9 +94,9 @@ func GetAllTeams() []Team {
 	return teams
 }
 
-// SaveTeam saves or updates a team in the database.
+// SaveTeam saves or updates a team in the
 func SaveTeam(team *Team) error {
-	stmt := database.GetStatement("saveTeam")
+	stmt := GetStatement("saveTeam")
 	if stmt == nil {
 		return fmt.Errorf("prepared statement not found")
 	}

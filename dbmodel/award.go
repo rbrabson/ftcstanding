@@ -2,8 +2,6 @@ package dbmodel
 
 import (
 	"fmt"
-
-	"github.com/rbrabson/ftcstanding/database"
 )
 
 // Award is an award that is given in a given season
@@ -23,7 +21,7 @@ func InitAwardStatements() error {
 	}
 
 	for name, query := range queries {
-		if err := database.PrepareStatement(name, query); err != nil {
+		if err := PrepareStatement(name, query); err != nil {
 			return fmt.Errorf("failed to prepare statement %s: %w", name, err)
 		}
 	}
@@ -33,7 +31,7 @@ func InitAwardStatements() error {
 // GetAward retrieves an award from a database by its ID.
 func GetAward(awardID int) *Award {
 	var award Award
-	stmt := database.GetStatement("getAward")
+	stmt := GetStatement("getAward")
 	if stmt == nil {
 		return nil
 	}
@@ -49,9 +47,9 @@ func GetAward(awardID int) *Award {
 	return &award
 }
 
-// GetAllAwards retrieves all awards from the database.
+// GetAllAwards retrieves all awards from the
 func GetAllAwards() []Award {
-	stmt := database.GetStatement("getAllAwards")
+	stmt := GetStatement("getAllAwards")
 	if stmt == nil {
 		return nil
 	}
@@ -78,9 +76,9 @@ func GetAllAwards() []Award {
 	return awards
 }
 
-// SaveAward saves or updates an award in the database.
+// SaveAward saves or updates an award in the
 func SaveAward(award *Award) error {
-	stmt := database.GetStatement("saveAward")
+	stmt := GetStatement("saveAward")
 	if stmt == nil {
 		return fmt.Errorf("prepared statement not found")
 	}

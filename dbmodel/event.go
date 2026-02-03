@@ -3,8 +3,6 @@ package dbmodel
 import (
 	"fmt"
 	"time"
-
-	"github.com/rbrabson/ftcstanding/database"
 )
 
 // InitEventStatements prepares all SQL statements for event operations.
@@ -21,7 +19,7 @@ func InitEventStatements() error {
 	}
 
 	for name, query := range queries {
-		if err := database.PrepareStatement(name, query); err != nil {
+		if err := PrepareStatement(name, query); err != nil {
 			return fmt.Errorf("failed to prepare statement %s: %w", name, err)
 		}
 	}
@@ -88,7 +86,7 @@ func GetEventID(eventCode string, dateStart time.Time) string {
 // GetEvent retrieves an event from the database by its ID.
 func GetEvent(eventID string) *Event {
 	var event Event
-	stmt := database.GetStatement("getEvent")
+	stmt := GetStatement("getEvent")
 	if stmt == nil {
 		return nil
 	}
@@ -116,9 +114,9 @@ func GetEvent(eventID string) *Event {
 	return &event
 }
 
-// SaveEvent saves or updates an event in the database.
+// SaveEvent saves or updates an event in the
 func SaveEvent(event *Event) error {
-	stmt := database.GetStatement("saveEvent")
+	stmt := GetStatement("saveEvent")
 	if stmt == nil {
 		return fmt.Errorf("prepared statement not found")
 	}
@@ -145,7 +143,7 @@ func SaveEvent(event *Event) error {
 
 // GetEventAwards retrieves all awards given at a specific event.
 func GetEventAwards(eventID string) []EventAward {
-	stmt := database.GetStatement("getEventAwards")
+	stmt := GetStatement("getEventAwards")
 	if stmt == nil {
 		return nil
 	}
@@ -167,9 +165,9 @@ func GetEventAwards(eventID string) []EventAward {
 	return awards
 }
 
-// SaveEventAward saves or updates an event award in the database.
+// SaveEventAward saves or updates an event award in the
 func SaveEventAward(ea *EventAward) error {
-	stmt := database.GetStatement("saveEventAward")
+	stmt := GetStatement("saveEventAward")
 	if stmt == nil {
 		return fmt.Errorf("prepared statement not found")
 	}
@@ -179,7 +177,7 @@ func SaveEventAward(ea *EventAward) error {
 
 // GetEventRankings retrieves all rankings for a specific event.
 func GetEventRankings(eventID string) []EventRanking {
-	stmt := database.GetStatement("getEventRankings")
+	stmt := GetStatement("getEventRankings")
 	if stmt == nil {
 		return nil
 	}
@@ -217,9 +215,9 @@ func GetEventRankings(eventID string) []EventRanking {
 	return rankings
 }
 
-// SaveEventRanking saves or updates an event ranking in the database.
+// SaveEventRanking saves or updates an event ranking in the
 func SaveEventRanking(er *EventRanking) error {
-	stmt := database.GetStatement("saveEventRanking")
+	stmt := GetStatement("saveEventRanking")
 	if stmt == nil {
 		return fmt.Errorf("prepared statement not found")
 	}
@@ -229,7 +227,7 @@ func SaveEventRanking(er *EventRanking) error {
 
 // GetEventAdvancements retrieves all team advancements for a specific event.
 func GetEventAdvancements(eventID string) []EventAdvancement {
-	stmt := database.GetStatement("getEventAdvancements")
+	stmt := GetStatement("getEventAdvancements")
 	if stmt == nil {
 		return nil
 	}
@@ -251,9 +249,9 @@ func GetEventAdvancements(eventID string) []EventAdvancement {
 	return advancements
 }
 
-// SaveEventAdvancement saves or updates an event advancement in the database.
+// SaveEventAdvancement saves or updates an event advancement in the
 func SaveEventAdvancement(ea *EventAdvancement) error {
-	stmt := database.GetStatement("saveEventAdvancement")
+	stmt := GetStatement("saveEventAdvancement")
 	if stmt == nil {
 		return fmt.Errorf("prepared statement not found")
 	}
