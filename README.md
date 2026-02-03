@@ -13,11 +13,14 @@ ftcstanding/
 │   └── db.go                 # Database connection and prepared statement management
 ├── dbmodel/
 │   ├── award.go              # Award data model and database operations
+│   ├── dbmodel.go            # Base database model functionality
 │   ├── event.go              # Event data model and database operations
 │   ├── match.go              # Match data model and database operations
 │   └── team.go               # Team data model and database operations
+├── Configfile                # Configuration for Makefile
 ├── go.mod                    # Go module dependencies
 ├── go.sum                    # Go module checksums
+├── Makefile                  # Build automation for multiple platforms
 ├── .env                      # Environment configuration (not in git)
 ├── LICENSE
 └── README.md
@@ -75,14 +78,23 @@ The application expects a MySQL database with the following tables:
 
 ## Usage
 
-Build and run the application:
+After building (see Development section), run the appropriate binary for your platform:
 
 ```bash
-go build -o ftcstanding ./cmd/ftc
-./ftcstanding
+# macOS ARM (Apple Silicon)
+./bin/macos/arm64/rank
+
+# macOS Intel
+./bin/macos/amd64/rank
+
+# Linux
+./bin/linux/amd64/rank
+
+# Windows
+.\bin\windows\amd64\rank
 ```
 
-Or run directly:
+Or run directly without building:
 
 ```bash
 go run ./cmd/ftc
@@ -129,8 +141,29 @@ All database operations use prepared statements which are initialized at applica
 
 ### Building
 
+The project includes a Makefile for building cross-platform binaries. See the [Makefile](Makefile) for build targets.
+
+Build for all platforms:
+
 ```bash
-go build ./...
+make build
+```
+
+Build for specific platforms:
+
+```bash
+make build-linux      # Linux AMD64
+make build-mac-amd    # macOS Intel
+make build-mac-arm    # macOS ARM (Apple Silicon)
+make build-windows    # Windows AMD64
+```
+
+Binaries will be output to the `bin/` directory under the respective platform subdirectories.
+
+Clean build artifacts:
+
+```bash
+make clean
 ```
 
 ### Testing
