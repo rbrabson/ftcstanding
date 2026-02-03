@@ -21,9 +21,10 @@ type Team struct {
 // InitTeamStatements prepares all SQL statements for team operations.
 func InitTeamStatements() error {
 	queries := map[string]string{
-		"getTeam":     "SELECT team_id, name, full_name, city, state_prov, country, website, rookie_year, home_region, robot_name FROM teams WHERE team_id = ?",
-		"getAllTeams": "SELECT team_id, name, full_name, city, state_prov, country, website, rookie_year, home_region, robot_name FROM teams",
-		"saveTeam":    "INSERT INTO teams (team_id, name, full_name, city, state_prov, country, website, rookie_year, home_region, robot_name) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE name = VALUES(name), full_name = VALUES(full_name), city = VALUES(city), state_prov = VALUES(state_prov), country = VALUES(country), website = VALUES(website), rookie_year = VALUES(rookie_year), home_region = VALUES(home_region), robot_name = VALUES(robot_name)",
+		"getTeam":          "SELECT team_id, name, full_name, city, state_prov, country, website, rookie_year, home_region, robot_name FROM teams WHERE team_id = ?",
+		"getAllTeams":      "SELECT team_id, name, full_name, city, state_prov, country, website, rookie_year, home_region, robot_name FROM teams",
+		"getTeamsByRegion": "SELECT team_id, name, full_name, city, state_prov, country, website, rookie_year, home_region, robot_name FROM teams WHERE home_region = ? ORDER BY team_id",
+		"saveTeam":         "INSERT INTO teams (team_id, name, full_name, city, state_prov, country, website, rookie_year, home_region, robot_name) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE name = VALUES(name), full_name = VALUES(full_name), city = VALUES(city), state_prov = VALUES(state_prov), country = VALUES(country), website = VALUES(website), rookie_year = VALUES(rookie_year), home_region = VALUES(home_region), robot_name = VALUES(robot_name)",
 	}
 
 	for name, query := range queries {
@@ -113,4 +114,39 @@ func SaveTeam(team *Team) error {
 		team.RobotName,
 	)
 	return err
+}
+
+// GetTeamsByRegion retrieves all teams in a given home region, ordered by team ID.
+func GetTeamsByRegion(region string) []Team {
+	stmt := GetStatement("getTeamsByRegion")
+	if stmt == nil {
+		return nil
+	}
+	rows, err := stmt.Query(region)
+	if err != nil {
+		return nil
+	}
+	defer rows.Close()
+
+	var teams []Team
+	for rows.Next() {
+		var team Team
+		err := rows.Scan(
+			&team.TeamID,
+			&team.Name,
+			&team.FullName,
+			&team.City,
+			&team.StateProv,
+			&team.Country,
+			&team.Website,
+			&team.RookieYear,
+			&team.HomeRegion,
+			&team.RobotName,
+		)
+		if err != nil {
+			continue
+		}
+		teams = append(teams, team)
+	}
+	return teams
 }

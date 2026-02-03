@@ -14,10 +14,12 @@ func InitMatchStatements() error {
 	queries := map[string]string{
 		"getMatch":               "SELECT match_id, event_id, match_number, actual_start_time, description, tournament_level FROM matches WHERE match_id = ?",
 		"getAllMatches":          "SELECT match_id, event_id, match_number, actual_start_time, description, tournament_level FROM matches",
+		"getMatchesByEvent":      "SELECT match_id, event_id, match_number, actual_start_time, description, tournament_level FROM matches WHERE event_id = ? ORDER BY match_number",
 		"saveMatch":              "INSERT INTO matches (match_id, event_id, match_number, actual_start_time, description, tournament_level) VALUES (?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE event_id = VALUES(event_id), match_number = VALUES(match_number), actual_start_time = VALUES(actual_start_time), description = VALUES(description), tournament_level = VALUES(tournament_level)",
 		"getMatchAllianceScore":  "SELECT match_id, alliance, auto_points, teleop_points, foul_points_committed, pre_foul_total, total_points, major_fouls, minor_fouls FROM match_alliance_scores WHERE match_id = ? AND alliance = ?",
 		"saveMatchAllianceScore": "INSERT INTO match_alliance_scores (match_id, alliance, auto_points, teleop_points, foul_points_committed, pre_foul_total, total_points, major_fouls, minor_fouls) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE auto_points = VALUES(auto_points), teleop_points = VALUES(teleop_points), foul_points_committed = VALUES(foul_points_committed), pre_foul_total = VALUES(pre_foul_total), total_points = VALUES(total_points), major_fouls = VALUES(major_fouls), minor_fouls = VALUES(minor_fouls)",
 		"getMatchTeams":          "SELECT match_id, team_id, alliance, dq, on_field FROM match_teams WHERE match_id = ?",
+		"getTeamsByEvent":        "SELECT DISTINCT mt.team_id FROM match_teams mt INNER JOIN matches m ON mt.match_id = m.match_id WHERE m.event_id = ? ORDER BY mt.team_id",
 		"saveMatchTeam":          "INSERT INTO match_teams (match_id, team_id, alliance, dq, on_field) VALUES (?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE alliance = VALUES(alliance), dq = VALUES(dq), on_field = VALUES(on_field)",
 	}
 
@@ -94,6 +96,37 @@ func GetAllMatches() []Match {
 		return nil
 	}
 	rows, err := stmt.Query()
+	if err != nil {
+		return nil
+	}
+	defer rows.Close()
+
+	var matches []Match
+	for rows.Next() {
+		var match Match
+		err := rows.Scan(
+			&match.MatchID,
+			&match.EventID,
+			&match.MatchNumber,
+			&match.ActualStartTime,
+			&match.Description,
+			&match.TournamentLevel,
+		)
+		if err != nil {
+			continue
+		}
+		matches = append(matches, match)
+	}
+	return matches
+}
+
+// GetMatchesByEvent retrieves all matches for a specific event, ordered by match number.
+func GetMatchesByEvent(eventID string) []Match {
+	stmt := GetStatement("getMatchesByEvent")
+	if stmt == nil {
+		return nil
+	}
+	rows, err := stmt.Query(eventID)
 	if err != nil {
 		return nil
 	}
@@ -222,4 +255,28 @@ func SaveMatchTeam(team *MatchTeam) error {
 		team.OnField,
 	)
 	return err
+}
+
+// GetTeamsByEvent retrieves all unique team IDs that participated at a specific event, ordered by team ID.
+func GetTeamsByEvent(eventID string) []int {
+	stmt := GetStatement("getTeamsByEvent")
+	if stmt == nil {
+		return nil
+	}
+	rows, err := stmt.Query(eventID)
+	if err != nil {
+		return nil
+	}
+	defer rows.Close()
+
+	var teamIDs []int
+	for rows.Next() {
+		var teamID int
+		err := rows.Scan(&teamID)
+		if err != nil {
+			continue
+		}
+		teamIDs = append(teamIDs, teamID)
+	}
+	return teamIDs
 }

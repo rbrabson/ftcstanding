@@ -9,10 +9,14 @@ ftcstanding/
 ├── cmd/
 │   └── ftc/
 │       └── main.go           # Application entry point
+├── database/
+│   ├── db.go                 # Database connection and prepared statement management
+│   ├── event.go              # Event data model and database operations
+│   ├── match.go              # Match data model and database operations
+│   └── team.go               # Team data model and database operations
 ├── dbmodel/
 │   ├── award.go              # Award data model and database operations
 │   ├── dbmodel.go            # Base database model functionality
-│   ├── db.go                 # Database connection and prepared statement management
 │   ├── event.go              # Event data model and database operations
 │   ├── match.go              # Match data model and database operations
 │   └── team.go               # Team data model and database operations
@@ -107,27 +111,36 @@ All database operations use prepared statements which are initialized at applica
 
 - `GetTeam(teamID)` - Retrieve a specific team
 - `GetAllTeams()` - Retrieve all teams
+- `GetTeamsByRegion(region)` - Retrieve all teams in a specific home region
 - `SaveTeam(team)` - Insert or update a team
 
 ### Events
 
 - `GetEvent(eventID)` - Retrieve a specific event
 - `SaveEvent(event)` - Insert or update an event
+- `GetRegionCodes()` - Get all unique region codes
+- `GetEventCodesByRegion(regionCode)` - Get all event codes for a specific region
 - `GetEventAwards(eventID)` - Get awards for an event
+- `GetTeamAwardsByEvent(eventID, teamID)` - Get all awards for a specific team at a specific event
+- `GetAllTeamAwards(teamID)` - Get all awards for a specific team across all events
 - `SaveEventAward(eventAward)` - Record an award
-- `GetEventRankings(eventID)` - Get team rankings
+- `GetEventRankings(eventID)` - Get team rankings for an event
 - `SaveEventRanking(ranking)` - Update rankings
-- `GetEventAdvancements(eventID)` - Get advancing teams
+- `GetEventAdvancements(eventID)` - Get advancing teams from an event
+- `GetAdvancementsByRegion(regionCode)` - Get all advancements from events in a specific region
+- `GetAllAdvancements()` - Get all advancements from all events
 - `SaveEventAdvancement(advancement)` - Record advancement
 
 ### Matches
 
 - `GetMatch(matchID)` - Retrieve a specific match
 - `GetAllMatches()` - Retrieve all matches
+- `GetMatchesByEvent(eventID)` - Retrieve all matches for a specific event
 - `SaveMatch(match)` - Insert or update a match
 - `GetMatchAllianceScore(matchID, alliance)` - Get alliance score
 - `SaveMatchAllianceScore(score)` - Update alliance score
 - `GetMatchTeams(matchID)` - Get teams in a match
+- `GetTeamsByEvent(eventID)` - Get all unique team IDs that participated in a specific event
 - `SaveMatchTeam(matchTeam)` - Record team participation
 
 ### Awards
