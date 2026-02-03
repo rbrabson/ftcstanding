@@ -15,6 +15,7 @@ const (
 func InitMatchStatements() error {
 	queries := map[string]string{
 		"getMatch":               "SELECT match_id, event_id, match_number, actual_start_time, description, tournament_level FROM matches WHERE match_id = ?",
+		"getAllMatches":          "SELECT match_id, event_id, match_number, actual_start_time, description, tournament_level FROM matches",
 		"saveMatch":              "INSERT INTO matches (match_id, event_id, match_number, actual_start_time, description, tournament_level) VALUES (?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE event_id = VALUES(event_id), match_number = VALUES(match_number), actual_start_time = VALUES(actual_start_time), description = VALUES(description), tournament_level = VALUES(tournament_level)",
 		"getMatchAllianceScore":  "SELECT match_id, alliance, auto_points, teleop_points, foul_points_committed, pre_foul_total, total_points, major_fouls, minor_fouls FROM match_alliance_scores WHERE match_id = ? AND alliance = ?",
 		"saveMatchAllianceScore": "INSERT INTO match_alliance_scores (match_id, alliance, auto_points, teleop_points, foul_points_committed, pre_foul_total, total_points, major_fouls, minor_fouls) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE auto_points = VALUES(auto_points), teleop_points = VALUES(teleop_points), foul_points_committed = VALUES(foul_points_committed), pre_foul_total = VALUES(pre_foul_total), total_points = VALUES(total_points), major_fouls = VALUES(major_fouls), minor_fouls = VALUES(minor_fouls)",
@@ -67,6 +68,7 @@ func GetMatchID(eventID string, matchNumber int) string {
 	return fmt.Sprintf("%s : %d", eventID, matchNumber)
 }
 
+// GetMatch retrieves a match from the database by its ID.
 func GetMatch(matchID string) *Match {
 	var match Match
 	stmt := database.GetStatement("getMatch")
@@ -87,6 +89,38 @@ func GetMatch(matchID string) *Match {
 	return &match
 }
 
+// GetAllMatches retrieves all matches from the database.
+func GetAllMatches() []Match {
+	stmt := database.GetStatement("getAllMatches")
+	if stmt == nil {
+		return nil
+	}
+	rows, err := stmt.Query()
+	if err != nil {
+		return nil
+	}
+	defer rows.Close()
+
+	var matches []Match
+	for rows.Next() {
+		var match Match
+		err := rows.Scan(
+			&match.MatchID,
+			&match.EventID,
+			&match.MatchNumber,
+			&match.ActualStartTime,
+			&match.Description,
+			&match.TournamentLevel,
+		)
+		if err != nil {
+			continue
+		}
+		matches = append(matches, match)
+	}
+	return matches
+}
+
+// SaveMatch saves or updates a match in the database.
 func SaveMatch(match *Match) error {
 	stmt := database.GetStatement("saveMatch")
 	if stmt == nil {
@@ -103,6 +137,7 @@ func SaveMatch(match *Match) error {
 	return err
 }
 
+// GetMatchAllianceScore retrieves the score for a specific alliance in a match.
 func GetMatchAllianceScore(matchID, alliance string) *MatchAllianceScore {
 	var score MatchAllianceScore
 	stmt := database.GetStatement("getMatchAllianceScore")
@@ -126,6 +161,7 @@ func GetMatchAllianceScore(matchID, alliance string) *MatchAllianceScore {
 	return &score
 }
 
+// SaveMatchAllianceScore saves or updates the score for a specific alliance in a match.
 func SaveMatchAllianceScore(score *MatchAllianceScore) error {
 	stmt := database.GetStatement("saveMatchAllianceScore")
 	if stmt == nil {
@@ -145,6 +181,7 @@ func SaveMatchAllianceScore(score *MatchAllianceScore) error {
 	return err
 }
 
+// GetMatchTeams retrieves all teams participating in a specific match.
 func GetMatchTeams(matchID string) []MatchTeam {
 	stmt := database.GetStatement("getMatchTeams")
 	if stmt == nil {
@@ -173,6 +210,7 @@ func GetMatchTeams(matchID string) []MatchTeam {
 	return teams
 }
 
+// SaveMatchTeam saves or updates a match team in the database.
 func SaveMatchTeam(team *MatchTeam) error {
 	stmt := database.GetStatement("saveMatchTeam")
 	if stmt == nil {

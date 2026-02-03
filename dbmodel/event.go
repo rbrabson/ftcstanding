@@ -85,6 +85,7 @@ func GetEventID(eventCode string, dateStart time.Time) string {
 	return fmt.Sprintf("%s : %04d-%02d-%02d", eventCode, dateStart.Year(), int(dateStart.Month()), dateStart.Day())
 }
 
+// GetEvent retrieves an event from the database by its ID.
 func GetEvent(eventID string) *Event {
 	var event Event
 	stmt := database.GetStatement("getEvent")
@@ -115,6 +116,7 @@ func GetEvent(eventID string) *Event {
 	return &event
 }
 
+// SaveEvent saves or updates an event in the database.
 func SaveEvent(event *Event) error {
 	stmt := database.GetStatement("saveEvent")
 	if stmt == nil {
@@ -141,6 +143,7 @@ func SaveEvent(event *Event) error {
 	return err
 }
 
+// GetEventAwards retrieves all awards given at a specific event.
 func GetEventAwards(eventID string) []EventAward {
 	stmt := database.GetStatement("getEventAwards")
 	if stmt == nil {
@@ -164,6 +167,7 @@ func GetEventAwards(eventID string) []EventAward {
 	return awards
 }
 
+// SaveEventAward saves or updates an event award in the database.
 func SaveEventAward(ea *EventAward) error {
 	stmt := database.GetStatement("saveEventAward")
 	if stmt == nil {
@@ -173,6 +177,7 @@ func SaveEventAward(ea *EventAward) error {
 	return err
 }
 
+// GetEventRankings retrieves all rankings for a specific event.
 func GetEventRankings(eventID string) []EventRanking {
 	stmt := database.GetStatement("getEventRankings")
 	if stmt == nil {
@@ -212,6 +217,7 @@ func GetEventRankings(eventID string) []EventRanking {
 	return rankings
 }
 
+// SaveEventRanking saves or updates an event ranking in the database.
 func SaveEventRanking(er *EventRanking) error {
 	stmt := database.GetStatement("saveEventRanking")
 	if stmt == nil {
@@ -221,6 +227,7 @@ func SaveEventRanking(er *EventRanking) error {
 	return err
 }
 
+// GetEventAdvancements retrieves all team advancements for a specific event.
 func GetEventAdvancements(eventID string) []EventAdvancement {
 	stmt := database.GetStatement("getEventAdvancements")
 	if stmt == nil {
@@ -244,6 +251,7 @@ func GetEventAdvancements(eventID string) []EventAdvancement {
 	return advancements
 }
 
+// SaveEventAdvancement saves or updates an event advancement in the database.
 func SaveEventAdvancement(ea *EventAdvancement) error {
 	stmt := database.GetStatement("saveEventAdvancement")
 	if stmt == nil {
