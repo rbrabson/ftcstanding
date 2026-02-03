@@ -1,0 +1,45 @@
+version: "3.8"
+
+services:
+  db:
+    image: mariadb:11.6
+    container_name: ftcstanding-db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-rootpassword}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-ftcstanding}
+      MYSQL_USER: ${MYSQL_USER:-ftcuser}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-ftcpassword}
+    volumes:
+      - mariadb_data:/var/lib/mysql
+    ports:
+      - "3306:3306"
+    networks:
+      - ftc-network
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ftcstanding-app
+    restart: unless-stopped
+    environment:
+      DATA_SOURCE_NAME: ${MYSQL_USER:-ftcuser}:${MYSQL_PASSWORD:-ftcpassword}@tcp(db:3306)/${MYSQL_DATABASE:-ftcstanding}
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - ftc-network
+
+networks:
+  ftc-network:
+    driver: bridge
+
+volumes:
+  mariadb_data:
+    driver: local
