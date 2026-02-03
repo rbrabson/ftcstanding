@@ -1,4 +1,4 @@
-package dbmodel
+package database
 
 // InitStatements initializes all prepared statements for the dbmodel package.
 func InitStatements() error {

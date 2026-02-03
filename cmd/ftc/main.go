@@ -4,7 +4,7 @@ import (
 	"os"
 
 	"github.com/joho/godotenv"
-	"github.com/rbrabson/ftcstanding/dbmodel"
+	"github.com/rbrabson/ftcstanding/database"
 )
 
 func main() {
@@ -13,13 +13,13 @@ func main() {
 	if dsn == "" {
 		panic("DATA_SOURCE_NAME environment variable not set")
 	}
-	if err := dbmodel.InitDB(dsn); err != nil {
+	if err := database.InitDB(dsn); err != nil {
 		panic(err)
 	}
-	defer dbmodel.CloseStatements()
+	defer database.CloseStatements()
 
 	// Initialize prepared statements
-	if err := dbmodel.InitStatements(); err != nil {
+	if err := database.InitStatements(); err != nil {
 		panic(err)
 	}
 
