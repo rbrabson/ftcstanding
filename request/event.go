@@ -1,0 +1,152 @@
+package request
+
+// Add code to request and build the database models and save them in the database.
+// This should use the ftc package to do all of the processing.
+
+import (
+	"strconv"
+	"time"
+
+	"github.com/rbrabson/ftc"
+	"github.com/rbrabson/ftcstanding/database"
+)
+
+// RequestAndSaveEvents requests events from the FTC API for a given season and saves them in the database.
+func RequestAndSaveEvents(season string) []*database.Event {
+	events := RequestEvents(season)
+	for _, event := range events {
+		database.SaveEvent(event)
+	}
+	return events
+}
+
+// RequestEvents requests events from the FTC API for a given season.
+func RequestEvents(season string) []*database.Event {
+	ftcEvents, err := ftc.GetEvents(season)
+	if err != nil {
+		return nil
+	}
+	events := make([]*database.Event, 0, len(ftcEvents))
+	for _, ftcEvent := range ftcEvents {
+		dateStart := time.Time(ftcEvent.DateStart)
+		dateEnd := time.Time(ftcEvent.DateEnd)
+		eventID := database.GetEventID(ftcEvent.Code, dateStart)
+
+		event := database.Event{
+			EventID:    eventID,
+			EventCode:  ftcEvent.Code,
+			Year:       dateStart.Year(),
+			Name:       ftcEvent.Name,
+			Type:       ftcEvent.Type,
+			RegionCode: ftcEvent.RegionCode,
+			Venue:      ftcEvent.Venue,
+			Address:    ftcEvent.Address,
+			City:       ftcEvent.City,
+			StateProv:  ftcEvent.Stateprov,
+			Country:    ftcEvent.Country,
+			Timezone:   ftcEvent.Timezone,
+			DateStart:  dateStart,
+			DateEnd:    dateEnd,
+		}
+		if ftcEvent.DivisionCode != nil {
+			event.DivisionCode = *ftcEvent.DivisionCode
+		}
+		if ftcEvent.LeagueCode != nil {
+			event.LeagueCode = *ftcEvent.LeagueCode
+		}
+		events = append(events, &event)
+	}
+	return events
+}
+
+// RequestAndSaveEventAwards requests event awards from the FTC API for a given event and saves them in the database.
+func RequestAndSaveEventAwards(event *database.Event) []*database.EventAward {
+	eventAwards := RequestEventAwards(event)
+	for _, eventAward := range eventAwards {
+		database.SaveEventAward(eventAward)
+	}
+	return eventAwards
+}
+
+// RequestEventAwards requests event awards from the FTC API for a given event.
+func RequestEventAwards(event *database.Event) []*database.EventAward {
+	ftcEventAwards, err := ftc.GetEventAwards(strconv.Itoa(event.Year), event.EventCode)
+	if err != nil {
+		return nil
+	}
+	eventAwards := make([]*database.EventAward, 0, len(ftcEventAwards))
+	for _, ftcEventAward := range ftcEventAwards {
+		eventAward := database.EventAward{
+			EventID: event.EventID,
+			AwardID: ftcEventAward.AwardID,
+			TeamID:  ftcEventAward.TeamNumber,
+		}
+		eventAwards = append(eventAwards, &eventAward)
+	}
+	return eventAwards
+}
+
+// RequestAndSaveEventRankings requests event rankings from the FTC API for a given event and saves them in the database.
+func RequestAndSaveEventRankings(event *database.Event) []*database.EventRanking {
+	eventRankings := RequestEventRanking(event)
+	for _, eventRanking := range eventRankings {
+		database.SaveEventRanking(eventRanking)
+	}
+	return eventRankings
+}
+
+// RequestEventRanking requests event rankings from the FTC API for a given event.
+func RequestEventRanking(event *database.Event) []*database.EventRanking {
+	ftcEventRankings, err := ftc.GetRankings(strconv.Itoa(event.Year), event.EventCode)
+	if err != nil {
+		return nil
+	}
+	eventRankings := make([]*database.EventRanking, 0, len(ftcEventRankings))
+	for _, ftcEventRanking := range ftcEventRankings {
+		eventRanking := database.EventRanking{
+			EventID:        event.EventID,
+			TeamID:         ftcEventRanking.TeamNumber,
+			Rank:           ftcEventRanking.Rank,
+			SortOrder1:     ftcEventRanking.SortOrder1,
+			SortOrder2:     ftcEventRanking.SortOrder2,
+			SortOrder3:     ftcEventRanking.SortOrder3,
+			SortOrder4:     ftcEventRanking.SortOrder4,
+			SortOrder5:     ftcEventRanking.SortOrder5,
+			SortOrder6:     ftcEventRanking.SortOrder6,
+			Wins:           ftcEventRanking.Wins,
+			Losses:         ftcEventRanking.Losses,
+			Ties:           ftcEventRanking.Ties,
+			Dq:             ftcEventRanking.DQ,
+			MatchesPlayed:  ftcEventRanking.MatchesPlayed,
+			MatchesCounted: ftcEventRanking.MatchesCounted,
+		}
+		eventRankings = append(eventRankings, &eventRanking)
+	}
+	return eventRankings
+}
+
+// GetAndSaveEventAdvancements requests event advancements from the FTC API for a given event and saves them in the database.
+func GetAndSaveEventAdvancements(event *database.Event) []*database.EventAdvancement {
+	eventAdvancements := GetEventAdvancements(event)
+	for _, eventAdvancement := range eventAdvancements {
+		database.SaveEventAdvancement(eventAdvancement)
+	}
+	return eventAdvancements
+}
+
+// GetEventAdvancements requests event advancements from the FTC API for a given season and event.
+func GetEventAdvancements(event *database.Event) []*database.EventAdvancement {
+	ftcEventAdvancements, err := ftc.GetAdvancementsTo(strconv.Itoa(event.Year), event.EventCode)
+	if err != nil {
+		return nil
+	}
+	eventAdvancements := make([]*database.EventAdvancement, 0, len(ftcEventAdvancements.Advancement))
+	for _, ftcEventAdvancement := range ftcEventAdvancements.Advancement {
+		eventAdvancement := database.EventAdvancement{
+			EventID: event.EventID,
+			TeamID:  ftcEventAdvancement.Team,
+		}
+		eventAdvancements = append(eventAdvancements, &eventAdvancement)
+	}
+	return eventAdvancements
+}
