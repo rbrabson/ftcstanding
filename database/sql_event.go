@@ -5,6 +5,33 @@ import (
 	"time"
 )
 
+// InitEventStatements prepares all SQL statements for event operations.
+func (db *sqldb) initEventStatements() error {
+	queries := map[string]string{
+		"getEvent":                "SELECT event_id, event_code, year, name, type, division_code, region_code, league_code, venue, address, city, state_prov, country, timezone, date_start, date_end FROM events WHERE event_id = ?",
+		"saveEvent":               "INSERT INTO events (event_id, event_code, year, name, type, division_code, region_code, league_code, venue, address, city, state_prov, country, timezone, date_start, date_end) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE event_code = VALUES(event_code), year = VALUES(year), name = VALUES(name), type = VALUES(type), division_code = VALUES(division_code), region_code = VALUES(region_code), league_code = VALUES(league_code), venue = VALUES(venue), address = VALUES(address), city = VALUES(city), state_prov = VALUES(state_prov), country = VALUES(country), timezone = VALUES(timezone), date_start = VALUES(date_start), date_end = VALUES(date_end)",
+		"getEventAwards":          "SELECT event_id, team_id, award_id FROM event_awards WHERE event_id = ?",
+		"saveEventAward":          "INSERT INTO event_awards (event_id, team_id, award_id) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE event_id = event_id",
+		"getTeamAwardsByEvent":    "SELECT event_id, team_id, award_id FROM event_awards WHERE event_id = ? AND team_id = ?",
+		"getAllTeamAwards":        "SELECT event_id, team_id, award_id FROM event_awards WHERE team_id = ? ORDER BY event_id",
+		"getEventRankings":        "SELECT event_id, team_id, rank, sort_order1, sort_order2, sort_order3, sort_order4, sort_order5, sort_order6, wins, losses, ties, dq, matches_played, matches_counted FROM event_rankings WHERE event_id = ?",
+		"saveEventRanking":        "INSERT INTO event_rankings (event_id, team_id, rank, sort_order1, sort_order2, sort_order3, sort_order4, sort_order5, sort_order6, wins, losses, ties, dq, matches_played, matches_counted) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE rank = VALUES(rank), sort_order1 = VALUES(sort_order1), sort_order2 = VALUES(sort_order2), sort_order3 = VALUES(sort_order3), sort_order4 = VALUES(sort_order4), sort_order5 = VALUES(sort_order5), sort_order6 = VALUES(sort_order6), wins = VALUES(wins), losses = VALUES(losses), ties = VALUES(ties), dq = VALUES(dq), matches_played = VALUES(matches_played), matches_counted = VALUES(matches_counted)",
+		"getEventAdvancements":    "SELECT event_id, team_id FROM event_advancements WHERE event_id = ?",
+		"saveEventAdvancement":    "INSERT INTO event_advancements (event_id, team_id) VALUES (?, ?) ON DUPLICATE KEY UPDATE event_id = event_id",
+		"getAllAdvancements":      "SELECT event_id, team_id FROM event_advancements ORDER BY event_id, team_id",
+		"getRegionCodes":          "SELECT DISTINCT region_code FROM events WHERE region_code IS NOT NULL AND region_code != '' ORDER BY region_code",
+		"getEventCodesByRegion":   "SELECT DISTINCT event_code FROM events WHERE region_code = ? ORDER BY event_code",
+		"getAdvancementsByRegion": "SELECT ea.event_id, ea.team_id FROM event_advancements ea INNER JOIN events e ON ea.event_id = e.event_id WHERE e.region_code = ? ORDER BY ea.event_id, ea.team_id",
+	}
+
+	for name, query := range queries {
+		if err := db.prepareStatement(name, query); err != nil {
+			return fmt.Errorf("failed to prepare statement %s: %w", name, err)
+		}
+	}
+	return nil
+}
+
 // GetEventID generates an EventID from the given EventCode and DateStart.
 func (db *sqldb) GetEventID(eventCode string, dateStart time.Time) string {
 	return fmt.Sprintf("%s : %04d-%02d-%02d", eventCode, dateStart.Year(), int(dateStart.Month()), dateStart.Day())

@@ -2,6 +2,23 @@ package database
 
 import "fmt"
 
+// InitTeamStatements prepares all SQL statements for team operations.
+func (db *sqldb) initTeamStatements() error {
+	queries := map[string]string{
+		"getTeam":          "SELECT team_id, name, full_name, city, state_prov, country, website, rookie_year, home_region, robot_name FROM teams WHERE team_id = ?",
+		"getAllTeams":      "SELECT team_id, name, full_name, city, state_prov, country, website, rookie_year, home_region, robot_name FROM teams",
+		"getTeamsByRegion": "SELECT team_id, name, full_name, city, state_prov, country, website, rookie_year, home_region, robot_name FROM teams WHERE home_region = ? ORDER BY team_id",
+		"saveTeam":         "INSERT INTO teams (team_id, name, full_name, city, state_prov, country, website, rookie_year, home_region, robot_name) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE name = VALUES(name), full_name = VALUES(full_name), city = VALUES(city), state_prov = VALUES(state_prov), country = VALUES(country), website = VALUES(website), rookie_year = VALUES(rookie_year), home_region = VALUES(home_region), robot_name = VALUES(robot_name)",
+	}
+
+	for name, query := range queries {
+		if err := db.prepareStatement(name, query); err != nil {
+			return fmt.Errorf("failed to prepare statement %s: %w", name, err)
+		}
+	}
+	return nil
+}
+
 // GetTeam retrieves a team from a database by its ID.
 func (db *sqldb) GetTeam(teamID int) *Team {
 	var team Team
