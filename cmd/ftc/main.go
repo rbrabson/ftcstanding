@@ -22,5 +22,5 @@ func main() {
 	defer db.Close()
 
 	request.Init(db)
-	request.RequestAndSaveAll(season)
+	request.RequestAndSaveAll(season, false)
 }

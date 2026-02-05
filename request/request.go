@@ -1,6 +1,11 @@
 package request
 
-import "github.com/rbrabson/ftcstanding/database"
+import (
+	"log/slog"
+	"time"
+
+	"github.com/rbrabson/ftcstanding/database"
+)
 
 var (
 	db database.DB
@@ -12,14 +17,28 @@ func Init(database database.DB) {
 }
 
 // RequestAndSaveAll requests and saves all data for a given season.
-func RequestAndSaveAll(season string) {
+func RequestAndSaveAll(season string, refresh bool) {
 	RequestAndSaveAwards(season)
 	RequestAndSaveTeams(season)
 	events := RequestAndSaveEvents(season)
 	for _, event := range events {
-		RequestAndSaveEventAwards(event)
-		RequestAndSaveEventRankings(event)
-		RequestAndSaveEventAdvancements(event)
-		RequestAndSaveMatches(event)
+		// TODO: keep track of the last time we requested event details, and don't re-process details unless requested to refresh all data.
+		//       alternatively, see if we've previously processed it by looking one of the other DB tables and skipping if the details are
+		//       there. This should dramatically speed things up.
+		if event.DateStart.Before(time.Now()) {
+			if !refresh {
+				rankings := db.GetEventRankings(event.EventID)
+				if len(rankings) > 0 {
+					slog.Info("Skipping event details for already processed event", "event", event.EventCode, "dateStart", event.DateStart)
+					continue
+				}
+			}
+			RequestAndSaveEventAwards(event)
+			RequestAndSaveEventRankings(event)
+			RequestAndSaveEventAdvancements(event)
+			RequestAndSaveMatches(event)
+		} else {
+			slog.Info("Skipping event details for future event", "event", event.EventCode, "dateStart", event.DateStart)
+		}
 	}
 }
