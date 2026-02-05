@@ -36,16 +36,17 @@ func RequestAndSaveMatchesByType(event *database.Event, matchType ftc.MatchType)
 func RequestMatchesByType(event *database.Event, matchType ftc.MatchType) []*database.Match {
 	ftcMatches, err := ftc.GetMatchResults(strconv.Itoa(event.Year), event.EventCode, matchType)
 	if err != nil {
-		slog.Error("Error requesting match results:", "year", event.Year, "eventCode", event.EventCode, "error", err)
+		slog.Error("Error requesting match results:", "year", event.Year, "eventCode", event.EventCode, "matchType", matchType, "error", err)
 		return nil
 	}
-	slog.Info("Requesting match results...", "count", len(ftcMatches))
+	slog.Info("Retrieved match results...", "count", len(ftcMatches))
 
 	ftcScores, err := ftc.GetEventScores(strconv.Itoa(event.Year), event.EventCode, matchType)
 	if err != nil {
-		slog.Error("failed to get event scores", "year", event.Year, "eventCode", event.EventCode, "error", err)
+		slog.Error("failed to get event scores", "year", event.Year, "eventCode", event.EventCode, "matchType", matchType, "error", err)
 		return nil
 	}
+	slog.Info("Retrieved event scores...", "count", len(ftcScores))
 
 	matches := make([]*database.Match, 0, len(ftcMatches))
 	for _, ftcMatch := range ftcMatches {
@@ -58,6 +59,9 @@ func RequestMatchesByType(event *database.Event, matchType ftc.MatchType) []*dat
 				ftcScore = score
 				break
 			}
+		}
+		if ftcScore == nil {
+			slog.Info("No match scores available", "year", event.Year, "eventCode", event.EventCode, "matchType", matchType)
 		}
 
 		redScore, blueScore := getMatchScores(match, ftcMatch, ftcScore)
@@ -72,7 +76,7 @@ func RequestMatchesByType(event *database.Event, matchType ftc.MatchType) []*dat
 			_ = db.SaveMatchTeam(team)
 		}
 	}
-	slog.Info("Finished requesting match results", "count", len(matches))
+	slog.Info("Finished processing match results and event results", "count", len(matches))
 	return matches
 }
 
@@ -128,7 +132,7 @@ func getMatchScores(match *database.Match, ftcMatch *ftc.Match, ftcScore *ftc.Ma
 			}
 		}
 	}
-	slog.Debug("Finished requesting match scores", "redScore", redScore, "blueScore", blueScore)
+	slog.Debug("Finished processing match scores", "redScore", redScore, "blueScore", blueScore)
 	return redScore, blueScore
 }
 
@@ -156,6 +160,6 @@ func getMatchTeams(match *database.Match, ftcMatch *ftc.Match) (redTeams, blueTe
 			blueTeams = append(blueTeams, matchTeam)
 		}
 	}
-	slog.Debug("Finished requesting match teams", "redTeams", redTeams, "blueTeams", blueTeams)
+	slog.Debug("Finished processing match teams", "redTeams", redTeams, "blueTeams", blueTeams)
 	return redTeams, blueTeams
 }

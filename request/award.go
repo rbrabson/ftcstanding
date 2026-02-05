@@ -26,7 +26,7 @@ func RequestAwards(season string) []*database.Award {
 		slog.Error("Error requesting awards:", "year", season, "error", err)
 		return nil
 	}
-	slog.Info("Requesting awards...", "count", len(ftcAwards))
+	slog.Info("Retrieved awards...", "count", len(ftcAwards))
 	awards := make([]*database.Award, 0, len(ftcAwards))
 	for _, ftcAward := range ftcAwards {
 		award := database.Award{
@@ -37,6 +37,6 @@ func RequestAwards(season string) []*database.Award {
 		}
 		awards = append(awards, &award)
 	}
-	slog.Info("Finished requesting awards", "count", len(awards))
+	slog.Info("Finished processing awards", "count", len(awards))
 	return awards
 }

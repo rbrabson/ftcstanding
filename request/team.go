@@ -25,7 +25,7 @@ func RequestTeams(season string) []*database.Team {
 		slog.Error("Error requesting teams:", "year", season, "error", err)
 		return nil
 	}
-	slog.Info("Requesting teams...", "count", len(ftcTeams))
+	slog.Info("Retrieved teams...", "count", len(ftcTeams))
 	teams := make([]*database.Team, 0, len(ftcTeams))
 	for _, ftcTeam := range ftcTeams {
 		team := database.Team{
@@ -48,6 +48,6 @@ func RequestTeams(season string) []*database.Team {
 		}
 		teams = append(teams, &team)
 	}
-	slog.Info("Finished requesting teams", "count", len(teams))
+	slog.Info("Finished processing teams", "count", len(teams))
 	return teams
 }

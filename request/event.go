@@ -28,7 +28,7 @@ func RequestEvents(season string) []*database.Event {
 		slog.Error("Error requesting events:", "year", season, "error", err)
 		return nil
 	}
-	slog.Info("Requesting events...", "count", len(ftcEvents))
+	slog.Info("Retrieved events...", "count", len(ftcEvents))
 	events := make([]*database.Event, 0, len(ftcEvents))
 	for _, ftcEvent := range ftcEvents {
 		dateStart := time.Time(ftcEvent.DateStart)
@@ -59,7 +59,7 @@ func RequestEvents(season string) []*database.Event {
 		}
 		events = append(events, &event)
 	}
-	slog.Info("Finished requesting events", "count", len(events))
+	slog.Info("Finished processing events", "count", len(events))
 	return events
 }
 
@@ -79,7 +79,7 @@ func RequestEventAwards(event *database.Event) []*database.EventAward {
 		slog.Error("Error requesting event awards:", "year", event.Year, "eventCode", event.EventCode, "error", err)
 		return nil
 	}
-	slog.Info("Requesting event awards...", "count", len(ftcEventAwards))
+	slog.Info("Retrieved event awards...", "count", len(ftcEventAwards))
 	eventAwards := make([]*database.EventAward, 0, len(ftcEventAwards))
 	for _, ftcEventAward := range ftcEventAwards {
 		eventAward := database.EventAward{
@@ -89,7 +89,7 @@ func RequestEventAwards(event *database.Event) []*database.EventAward {
 		}
 		eventAwards = append(eventAwards, &eventAward)
 	}
-	slog.Info("Finished requesting event awards", "count", len(eventAwards))
+	slog.Info("Finished processing event awards", "count", len(eventAwards))
 	return eventAwards
 }
 
@@ -130,7 +130,7 @@ func RequestEventRanking(event *database.Event) []*database.EventRanking {
 		}
 		eventRankings = append(eventRankings, &eventRanking)
 	}
-	slog.Info("Finished requesting event rankings", "count", len(eventRankings))
+	slog.Info("Finished processing event rankings", "count", len(eventRankings))
 	return eventRankings
 }
 
@@ -158,6 +158,6 @@ func RequestEventAdvancements(event *database.Event) []*database.EventAdvancemen
 		}
 		eventAdvancements = append(eventAdvancements, &eventAdvancement)
 	}
-	slog.Info("Finished requesting event advancements", "count", len(eventAdvancements))
+	slog.Info("Finished processing event advancements", "count", len(eventAdvancements))
 	return eventAdvancements
 }
