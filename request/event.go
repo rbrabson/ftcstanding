@@ -4,7 +4,6 @@ package request
 // This should use the ftc package to do all of the processing.
 
 import (
-	"fmt"
 	"log/slog"
 	"strconv"
 	"time"
@@ -16,7 +15,6 @@ import (
 // RequestAndSaveEvents requests events from the FTC API for a given season and saves them in the database.
 func RequestAndSaveEvents(season string) []*database.Event {
 	events := RequestEvents(season)
-	fmt.Println("Requesting and saving events...", len(events))
 	for _, event := range events {
 		db.SaveEvent(event)
 	}
