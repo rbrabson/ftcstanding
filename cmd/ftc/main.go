@@ -20,7 +20,8 @@ func main() {
 		panic(err)
 	}
 	request.Init(db)
-	// request.RequestAndSaveTeams(season)
+	request.RequestAndSaveAwards(season)
+	request.RequestAndSaveTeams(season)
 	events := request.RequestAndSaveEvents(season)
 	for _, event := range events {
 		request.RequestAndSaveEventAwards(event)
