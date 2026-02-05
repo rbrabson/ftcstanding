@@ -128,7 +128,7 @@ func getMatchScores(match *database.Match, ftcMatch *ftc.Match, ftcScore *ftc.Ma
 			}
 		}
 	}
-	slog.Info("Finished requesting match scores", "redScore", redScore, "blueScore", blueScore)
+	slog.Debug("Finished requesting match scores", "redScore", redScore, "blueScore", blueScore)
 	return redScore, blueScore
 }
 
@@ -156,6 +156,6 @@ func getMatchTeams(match *database.Match, ftcMatch *ftc.Match) (redTeams, blueTe
 			blueTeams = append(blueTeams, matchTeam)
 		}
 	}
-	slog.Info("Finished requesting match teams", "redTeams", redTeams, "blueTeams", blueTeams)
+	slog.Debug("Finished requesting match teams", "redTeams", redTeams, "blueTeams", blueTeams)
 	return redTeams, blueTeams
 }
