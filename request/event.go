@@ -29,6 +29,7 @@ func RequestEvents(season string) []*database.Event {
 		return nil
 	}
 	slog.Info("Retrieved events...", "count", len(ftcEvents))
+	year, _ := strconv.Atoi(season)
 	events := make([]*database.Event, 0, len(ftcEvents))
 	for _, ftcEvent := range ftcEvents {
 		dateStart := time.Time(ftcEvent.DateStart)
@@ -38,7 +39,7 @@ func RequestEvents(season string) []*database.Event {
 		event := database.Event{
 			EventID:    eventID,
 			EventCode:  ftcEvent.Code,
-			Year:       dateStart.Year(),
+			Year:       year,
 			Name:       ftcEvent.Name,
 			Type:       ftcEvent.Type,
 			RegionCode: ftcEvent.RegionCode,
