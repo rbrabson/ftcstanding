@@ -1,55 +1,45 @@
 package database
 
-import (
-	"context"
-	"database/sql"
-	"time"
-
-	_ "github.com/go-sql-driver/mysql"
-)
-
-var (
-	ctx   = context.Background()
-	DB    *sql.DB
-	stmts = make(map[string]*sql.Stmt)
-)
-
 // InitDB initializes the database connection.
-func InitDB(dataSourceName string) error {
-	var err error
-	DB, err = sql.Open("mysql", dataSourceName)
-	if err != nil {
-		return err
-	}
-	if err := DB.PingContext(ctx); err != nil {
-		return err
-	}
-	// Set database connection pool settings
-	DB.SetConnMaxLifetime(time.Minute * 3) // Make it less than 5 minutes to avoid timeouts
-	DB.SetMaxOpenConns(10)
-	DB.SetMaxIdleConns(10)
-	return nil
+func Init() (*sqldb, error) {
+	return InitSQLDB()
 }
 
-// PrepareStatement prepares and caches a SQL statement.
-func PrepareStatement(name, query string) error {
-	stmt, err := DB.Prepare(query)
-	if err != nil {
-		return err
-	}
-	stmts[name] = stmt
-	return nil
-}
+// DB defines the interface for database operations.
+type DB interface {
+	Close()
 
-// GetStatement retrieves a prepared statement by name.
-func GetStatement(name string) *sql.Stmt {
-	return stmts[name]
-}
+	GetAward(awardID int) *Award
+	GetAllAwards() []Award
+	SaveAward(award *Award) error
 
-// CloseStatements closes all prepared statements.
-func CloseStatements() {
-	for _, stmt := range stmts {
-		stmt.Close()
-	}
-	stmts = make(map[string]*sql.Stmt)
+	GetEvent(eventID string) *Event
+	SaveEvent(event *Event) error
+	GetEventAwards(eventID string) []*EventAward
+	SaveEventAward(ea *EventAward) error
+	GetTeamAwardsByEvent(eventID string, teamID int) []*EventAward
+	GetAllTeamAwards(teamID int) []*EventAward
+	GetEventRankings(eventID string) []*EventRanking
+	SaveEventRanking(er *EventRanking) error
+	GetEventAdvancements(eventID string) []*EventAdvancement
+	SaveEventAdvancement(ea *EventAdvancement) error
+	GetRegionCodes() []string
+	GetEventCodesByRegion(regionCode string) []string
+	GetAdvancementsByRegion(regionCode string) []*EventAdvancement
+	GetAllAdvancements() []*EventAdvancement
+
+	GetMatch(matchID string) *Match
+	GetAllMatches() []*Match
+	GetMatchesByEvent(eventID string) []*Match
+	SaveMatch(match *Match) error
+	GetMatchAllianceScore(matchID, alliance string) *MatchAllianceScore
+	SaveMatchAllianceScore(score *MatchAllianceScore) error
+	GetMatchTeams(matchID string) []*MatchTeam
+	SaveMatchTeam(team *MatchTeam) error
+	GetTeamsByEvent(eventID string) []int
+
+	GetTeam(teamID int) *Team
+	GetAllTeams() []*Team
+	SaveTeam(team *Team) error
+	GetTeamsByRegion(region string) []*Team
 }

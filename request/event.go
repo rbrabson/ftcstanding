@@ -15,7 +15,7 @@ import (
 func RequestAndSaveEvents(season string) []*database.Event {
 	events := RequestEvents(season)
 	for _, event := range events {
-		database.SaveEvent(event)
+		db.SaveEvent(event)
 	}
 	return events
 }
@@ -30,7 +30,7 @@ func RequestEvents(season string) []*database.Event {
 	for _, ftcEvent := range ftcEvents {
 		dateStart := time.Time(ftcEvent.DateStart)
 		dateEnd := time.Time(ftcEvent.DateEnd)
-		eventID := database.GetEventID(ftcEvent.Code, dateStart)
+		eventID := database.GetEventID(ftcEvent, dateStart)
 
 		event := database.Event{
 			EventID:    eventID,
@@ -63,7 +63,7 @@ func RequestEvents(season string) []*database.Event {
 func RequestAndSaveEventAwards(event *database.Event) []*database.EventAward {
 	eventAwards := RequestEventAwards(event)
 	for _, eventAward := range eventAwards {
-		database.SaveEventAward(eventAward)
+		db.SaveEventAward(eventAward)
 	}
 	return eventAwards
 }
@@ -90,7 +90,7 @@ func RequestEventAwards(event *database.Event) []*database.EventAward {
 func RequestAndSaveEventRankings(event *database.Event) []*database.EventRanking {
 	eventRankings := RequestEventRanking(event)
 	for _, eventRanking := range eventRankings {
-		database.SaveEventRanking(eventRanking)
+		db.SaveEventRanking(eventRanking)
 	}
 	return eventRankings
 }
@@ -129,7 +129,7 @@ func RequestEventRanking(event *database.Event) []*database.EventRanking {
 func GetAndSaveEventAdvancements(event *database.Event) []*database.EventAdvancement {
 	eventAdvancements := GetEventAdvancements(event)
 	for _, eventAdvancement := range eventAdvancements {
-		database.SaveEventAdvancement(eventAdvancement)
+		db.SaveEventAdvancement(eventAdvancement)
 	}
 	return eventAdvancements
 }

@@ -12,7 +12,7 @@ import (
 func RequestAndSaveAwards(season string) []*database.Award {
 	awards := RequestAwards(season)
 	for _, award := range awards {
-		database.SaveAward(award)
+		db.SaveAward(award)
 	}
 	return awards
 }

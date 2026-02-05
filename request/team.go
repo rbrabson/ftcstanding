@@ -14,7 +14,7 @@ func RequestAndStoreTeams(season int) {
 		return
 	}
 	for _, team := range teams {
-		database.SaveTeam(team)
+		db.SaveTeam(team)
 	}
 }
 

@@ -27,7 +27,7 @@ func RequestMatches(event *database.Event) []*database.Match {
 func RequestAndSaveMatchesByType(event *database.Event, matchType ftc.MatchType) []*database.Match {
 	matches := RequestMatchesByType(event, matchType)
 	for _, match := range matches {
-		_ = database.SaveMatch(match)
+		_ = db.SaveMatch(match)
 	}
 	return matches
 }
@@ -58,15 +58,15 @@ func RequestMatchesByType(event *database.Event, matchType ftc.MatchType) []*dat
 		}
 
 		redScore, blueScore := getMatchScores(match, ftcMatch, ftcScore)
-		_ = database.SaveMatchAllianceScore(redScore)
-		_ = database.SaveMatchAllianceScore(blueScore)
+		_ = db.SaveMatchAllianceScore(redScore)
+		_ = db.SaveMatchAllianceScore(blueScore)
 
 		redTeams, blueTeams := getMatchTeams(match, ftcMatch)
 		for _, team := range redTeams {
-			_ = database.SaveMatchTeam(team)
+			_ = db.SaveMatchTeam(team)
 		}
 		for _, team := range blueTeams {
-			_ = database.SaveMatchTeam(team)
+			_ = db.SaveMatchTeam(team)
 		}
 	}
 	return matches
@@ -76,7 +76,7 @@ func RequestMatchesByType(event *database.Event, matchType ftc.MatchType) []*dat
 func getMatch(event *database.Event, ftcMatch *ftc.Match) *database.Match {
 	match := &database.Match{
 		EventID:         event.EventID,
-		MatchID:         database.GetMatchID(event.EventID, ftcMatch.MatchNumber),
+		MatchID:         database.GetMatchID(event, ftcMatch),
 		MatchNumber:     ftcMatch.MatchNumber,
 		ActualStartTime: ftcMatch.ActualStartTime,
 		Description:     ftcMatch.Description,
