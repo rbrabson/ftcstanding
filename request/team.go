@@ -1,14 +1,14 @@
 package request
 
 import (
-	"strconv"
+	"log/slog"
 
 	"github.com/rbrabson/ftc"
 	"github.com/rbrabson/ftcstanding/database"
 )
 
-// RequestAndStoreTeams retrieves the list of teams for a given season and stores them in the database.
-func RequestAndStoreTeams(season int) {
+// RequestAndSaveTeams retrieves the list of teams for a given season and stores them in the database.
+func RequestAndSaveTeams(season string) {
 	teams := RequestTeams(season)
 	if teams == nil {
 		return
@@ -19,11 +19,13 @@ func RequestAndStoreTeams(season int) {
 }
 
 // RequestTeams retrieves the list of teams for a given season.
-func RequestTeams(season int) []*database.Team {
-	ftcTeams, err := ftc.GetTeams(strconv.Itoa(season))
+func RequestTeams(season string) []*database.Team {
+	ftcTeams, err := ftc.GetTeams(season)
 	if err != nil {
+		slog.Error("Error requesting teams:", "error", err)
 		return nil
 	}
+	slog.Debug("Requesting teams...", "count", len(ftcTeams))
 	teams := make([]*database.Team, 0, len(ftcTeams))
 	for _, ftcTeam := range ftcTeams {
 		team := database.Team{
@@ -46,5 +48,6 @@ func RequestTeams(season int) []*database.Team {
 		}
 		teams = append(teams, &team)
 	}
+	slog.Info("Finished requesting teams", "count", len(teams))
 	return teams
 }

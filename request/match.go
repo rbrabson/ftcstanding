@@ -36,8 +36,10 @@ func RequestAndSaveMatchesByType(event *database.Event, matchType ftc.MatchType)
 func RequestMatchesByType(event *database.Event, matchType ftc.MatchType) []*database.Match {
 	ftcMatches, err := ftc.GetMatchResults(strconv.Itoa(event.Year), event.EventCode, matchType)
 	if err != nil {
+		slog.Error("Error requesting match results:", "error", err)
 		return nil
 	}
+	slog.Debug("Requesting match results...", "count", len(ftcMatches))
 
 	ftcScores, err := ftc.GetEventScores(strconv.Itoa(event.Year), event.EventCode, matchType)
 	if err != nil {
@@ -69,6 +71,7 @@ func RequestMatchesByType(event *database.Event, matchType ftc.MatchType) []*dat
 			_ = db.SaveMatchTeam(team)
 		}
 	}
+	slog.Info("Finished requesting match results", "count", len(matches))
 	return matches
 }
 
@@ -124,6 +127,7 @@ func getMatchScores(match *database.Match, ftcMatch *ftc.Match, ftcScore *ftc.Ma
 			}
 		}
 	}
+	slog.Debug("Finished requesting match scores", "redScore", redScore, "blueScore", blueScore)
 	return redScore, blueScore
 }
 
@@ -151,5 +155,6 @@ func getMatchTeams(match *database.Match, ftcMatch *ftc.Match) (redTeams, blueTe
 			blueTeams = append(blueTeams, matchTeam)
 		}
 	}
+	slog.Debug("Finished requesting match teams", "redTeams", redTeams, "blueTeams", blueTeams)
 	return redTeams, blueTeams
 }

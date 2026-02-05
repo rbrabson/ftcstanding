@@ -4,6 +4,8 @@ package request
 // This should use the ftc package to do all of the processing.
 
 import (
+	"log/slog"
+
 	"github.com/rbrabson/ftc"
 	"github.com/rbrabson/ftcstanding/database"
 )
@@ -21,8 +23,10 @@ func RequestAndSaveAwards(season string) []*database.Award {
 func RequestAwards(season string) []*database.Award {
 	ftcAwards, err := ftc.GetAwardListing(season)
 	if err != nil {
+		slog.Error("Error requesting awards:", "error", err)
 		return nil
 	}
+	slog.Debug("Requesting awards...", "count", len(ftcAwards))
 	awards := make([]*database.Award, 0, len(ftcAwards))
 	for _, ftcAward := range ftcAwards {
 		award := database.Award{
@@ -33,5 +37,6 @@ func RequestAwards(season string) []*database.Award {
 		}
 		awards = append(awards, &award)
 	}
+	slog.Info("Finished requesting awards", "count", len(awards))
 	return awards
 }

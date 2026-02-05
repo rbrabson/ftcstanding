@@ -4,6 +4,8 @@ package request
 // This should use the ftc package to do all of the processing.
 
 import (
+	"fmt"
+	"log/slog"
 	"strconv"
 	"time"
 
@@ -14,6 +16,7 @@ import (
 // RequestAndSaveEvents requests events from the FTC API for a given season and saves them in the database.
 func RequestAndSaveEvents(season string) []*database.Event {
 	events := RequestEvents(season)
+	fmt.Println("Requesting and saving events...", len(events))
 	for _, event := range events {
 		db.SaveEvent(event)
 	}
@@ -24,8 +27,10 @@ func RequestAndSaveEvents(season string) []*database.Event {
 func RequestEvents(season string) []*database.Event {
 	ftcEvents, err := ftc.GetEvents(season)
 	if err != nil {
+		slog.Error("Error requesting events:", "error", err)
 		return nil
 	}
+	slog.Debug("Requesting events...", "count", len(ftcEvents))
 	events := make([]*database.Event, 0, len(ftcEvents))
 	for _, ftcEvent := range ftcEvents {
 		dateStart := time.Time(ftcEvent.DateStart)
@@ -56,6 +61,7 @@ func RequestEvents(season string) []*database.Event {
 		}
 		events = append(events, &event)
 	}
+	slog.Info("Finished requesting events", "count", len(events))
 	return events
 }
 
@@ -72,8 +78,10 @@ func RequestAndSaveEventAwards(event *database.Event) []*database.EventAward {
 func RequestEventAwards(event *database.Event) []*database.EventAward {
 	ftcEventAwards, err := ftc.GetEventAwards(strconv.Itoa(event.Year), event.EventCode)
 	if err != nil {
+		slog.Error("Error requesting event awards:", "error", err)
 		return nil
 	}
+	slog.Debug("Requesting event awards...", "count", len(ftcEventAwards))
 	eventAwards := make([]*database.EventAward, 0, len(ftcEventAwards))
 	for _, ftcEventAward := range ftcEventAwards {
 		eventAward := database.EventAward{
@@ -83,6 +91,7 @@ func RequestEventAwards(event *database.Event) []*database.EventAward {
 		}
 		eventAwards = append(eventAwards, &eventAward)
 	}
+	slog.Info("Finished requesting event awards", "count", len(eventAwards))
 	return eventAwards
 }
 
@@ -99,6 +108,7 @@ func RequestAndSaveEventRankings(event *database.Event) []*database.EventRanking
 func RequestEventRanking(event *database.Event) []*database.EventRanking {
 	ftcEventRankings, err := ftc.GetRankings(strconv.Itoa(event.Year), event.EventCode)
 	if err != nil {
+		slog.Error("Error requesting event rankings:", "error", err)
 		return nil
 	}
 	eventRankings := make([]*database.EventRanking, 0, len(ftcEventRankings))
@@ -122,22 +132,24 @@ func RequestEventRanking(event *database.Event) []*database.EventRanking {
 		}
 		eventRankings = append(eventRankings, &eventRanking)
 	}
+	slog.Info("Finished requesting event rankings", "count", len(eventRankings))
 	return eventRankings
 }
 
-// GetAndSaveEventAdvancements requests event advancements from the FTC API for a given event and saves them in the database.
-func GetAndSaveEventAdvancements(event *database.Event) []*database.EventAdvancement {
-	eventAdvancements := GetEventAdvancements(event)
+// RequestAndSaveEventAdvancements requests event advancements from the FTC API for a given event and saves them in the database.
+func RequestAndSaveEventAdvancements(event *database.Event) []*database.EventAdvancement {
+	eventAdvancements := RequestEventAdvancements(event)
 	for _, eventAdvancement := range eventAdvancements {
 		db.SaveEventAdvancement(eventAdvancement)
 	}
 	return eventAdvancements
 }
 
-// GetEventAdvancements requests event advancements from the FTC API for a given season and event.
-func GetEventAdvancements(event *database.Event) []*database.EventAdvancement {
+// RequestEventAdvancements requests event advancements from the FTC API for a given season and event.
+func RequestEventAdvancements(event *database.Event) []*database.EventAdvancement {
 	ftcEventAdvancements, err := ftc.GetAdvancementsTo(strconv.Itoa(event.Year), event.EventCode)
 	if err != nil {
+		slog.Error("Error requesting event advancements:", "error", err)
 		return nil
 	}
 	eventAdvancements := make([]*database.EventAdvancement, 0, len(ftcEventAdvancements.Advancement))
@@ -148,5 +160,6 @@ func GetEventAdvancements(event *database.Event) []*database.EventAdvancement {
 		}
 		eventAdvancements = append(eventAdvancements, &eventAdvancement)
 	}
+	slog.Info("Finished requesting event advancements", "count", len(eventAdvancements))
 	return eventAdvancements
 }
