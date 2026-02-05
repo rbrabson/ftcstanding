@@ -1,16 +1,19 @@
 package database
 
-// InitDB initializes the database connection.
-func Init() (*sqldb, error) {
-	return InitSQLDB()
-}
+import (
+	"errors"
+	"fmt"
+	"os"
+
+	"github.com/joho/godotenv"
+)
 
 // DB defines the interface for database operations.
 type DB interface {
 	Close()
 
 	GetAward(awardID int) *Award
-	GetAllAwards() []Award
+	GetAllAwards() []*Award
 	SaveAward(award *Award) error
 
 	GetEvent(eventID string) *Event
@@ -42,4 +45,20 @@ type DB interface {
 	GetAllTeams() []*Team
 	SaveTeam(team *Team) error
 	GetTeamsByRegion(region string) []*Team
+}
+
+// InitDB initializes the database connection.
+func Init() (DB, error) {
+	godotenv.Load()
+	dbType := os.Getenv("DB_TYPE")
+	if dbType == "" {
+		return nil, errors.New("DB_TYPE environment variable not set")
+	}
+	switch dbType {
+	case "sql":
+		return initSQLDB()
+	case "file":
+		return initFileDB()
+	}
+	return nil, fmt.Errorf("unsupported DB_TYPE: %s", dbType)
 }

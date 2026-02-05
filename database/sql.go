@@ -19,8 +19,8 @@ type sqldb struct {
 	stmts map[string]*sql.Stmt
 }
 
-// InitDB initializes the database connection.
-func InitSQLDB() (*sqldb, error) {
+// initDB initializes the database connection.
+func initSQLDB() (*sqldb, error) {
 	godotenv.Load()
 	dsn := os.Getenv("DATA_SOURCE_NAME")
 	if dsn == "" {
