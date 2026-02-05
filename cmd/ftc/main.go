@@ -19,6 +19,8 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+	defer db.Close()
+
 	request.Init(db)
 	request.RequestAndSaveAwards(season)
 	request.RequestAndSaveTeams(season)
@@ -31,5 +33,4 @@ func main() {
 		request.RequestAndSaveMatches(event)
 
 	}
-	defer db.Close()
 }
