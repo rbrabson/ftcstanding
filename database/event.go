@@ -59,6 +59,30 @@ type EventAdvancement struct {
 	TeamID  int    `json:"team_id"`
 }
 
+// String returns a string representation of the Event.
+func (e *Event) String() string {
+	return fmt.Sprintf("Event{ID: %q, Code: %q, Name: %q, Year: %d, City: %s, %s}",
+		e.EventID, e.EventCode, e.Name, e.Year, e.City, e.StateProv)
+}
+
+// String returns a string representation of the EventAward.
+func (ea *EventAward) String() string {
+	return fmt.Sprintf("EventAward{EventID: %q, TeamID: %d, AwardID: %d}",
+		ea.EventID, ea.TeamID, ea.AwardID)
+}
+
+// String returns a string representation of the EventRanking.
+func (er *EventRanking) String() string {
+	return fmt.Sprintf("EventRanking{EventID: %q, TeamID: %d, Rank: %d, Record: %d-%d-%d}",
+		er.EventID, er.TeamID, er.Rank, er.Wins, er.Losses, er.Ties)
+}
+
+// String returns a string representation of the EventAdvancement.
+func (ea *EventAdvancement) String() string {
+	return fmt.Sprintf("EventAdvancement{EventID: %q, TeamID: %d}",
+		ea.EventID, ea.TeamID)
+}
+
 // GetEventID generates a unique ID for an event based on its FTC code and start date.
 func GetEventID(ftcEvent *ftc.Event, dateStart time.Time) string {
 	return fmt.Sprintf("%s : %d", ftcEvent.Code, dateStart.Year())

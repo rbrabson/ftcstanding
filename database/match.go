@@ -43,6 +43,30 @@ type MatchTeam struct {
 	OnField  bool   `json:"on_field"`
 }
 
+// String returns a string representation of the Match.
+func (m *Match) String() string {
+	return fmt.Sprintf("Match{ID: %q, EventID: %q, Number: %d, Level: %s}",
+		m.MatchID, m.EventID, m.MatchNumber, m.TournamentLevel)
+}
+
+// String returns a string representation of the MatchAllianceScore.
+func (mas *MatchAllianceScore) String() string {
+	return fmt.Sprintf("MatchAllianceScore{MatchID: %q, Alliance: %s, Total: %d, Auto: %d, Teleop: %d}",
+		mas.MatchID, mas.Alliance, mas.TotalPoints, mas.AutoPoints, mas.TeleopPoints)
+}
+
+// String returns a string representation of the MatchTeam.
+func (mt *MatchTeam) String() string {
+	status := ""
+	if mt.Dq {
+		status = ", DQ"
+	} else if !mt.OnField {
+		status = ", Surrogate"
+	}
+	return fmt.Sprintf("MatchTeam{MatchID: %q, TeamID: %d, Alliance: %s%s}",
+		mt.MatchID, mt.TeamID, mt.Alliance, status)
+}
+
 // GetMatchID generates a unique ID for a match based on its event ID and match number.
 func GetMatchID(event *Event, ftcMatch *ftc.Match) string {
 	return fmt.Sprintf("%s : %d", event.EventID, ftcMatch.MatchNumber)

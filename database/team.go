@@ -1,5 +1,7 @@
 package database
 
+import "fmt"
+
 // Team represents a team that participates in competitions.
 type Team struct {
 	TeamID     int    `json:"team_id"`
@@ -12,4 +14,10 @@ type Team struct {
 	RookieYear int    `json:"rookie_year"`
 	HomeRegion string `json:"home_region"`
 	RobotName  string `json:"robot_name"`
+}
+
+// String returns a string representation of the Team.
+func (t *Team) String() string {
+	return fmt.Sprintf("Team{ID: %d, Name: %q, City: %s, %s, Region: %s}",
+		t.TeamID, t.Name, t.City, t.StateProv, t.HomeRegion)
 }

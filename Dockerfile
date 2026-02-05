@@ -19,7 +19,7 @@ COPY . .
 # Build the application for Linux AMD64
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
     -ldflags='-w -s -extldflags "-static"' \
-    -o rank \
+    -o ftc \
     ./cmd/ftc/main.go
 
 # Runtime stage
@@ -31,7 +31,7 @@ RUN apk --no-cache add ca-certificates
 WORKDIR /app
 
 # Copy the binary from builder
-COPY --from=builder /build/rank .
+COPY --from=builder /build/ftc .
 
 # Change ownership to non-root user
 RUN chown -R 65532:65532 /app
@@ -46,4 +46,4 @@ USER 65532:65532
 ENV DATA_SOURCE_NAME=""
 
 # Run the application
-CMD ["./rank"]
+CMD ["./ftc"]

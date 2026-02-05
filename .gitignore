@@ -11,6 +11,9 @@
 # binary output directories
 bin/
 
+# Home directory link
+~/
+
 # Test binary, built with `go test -c`
 *.test
 
