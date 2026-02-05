@@ -23,10 +23,10 @@ func RequestAndSaveAwards(season string) []*database.Award {
 func RequestAwards(season string) []*database.Award {
 	ftcAwards, err := ftc.GetAwardListing(season)
 	if err != nil {
-		slog.Error("Error requesting awards:", "error", err)
+		slog.Error("Error requesting awards:", "year", season, "error", err)
 		return nil
 	}
-	slog.Debug("Requesting awards...", "count", len(ftcAwards))
+	slog.Info("Requesting awards...", "count", len(ftcAwards))
 	awards := make([]*database.Award, 0, len(ftcAwards))
 	for _, ftcAward := range ftcAwards {
 		award := database.Award{

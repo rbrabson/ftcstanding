@@ -22,10 +22,10 @@ func RequestAndSaveTeams(season string) {
 func RequestTeams(season string) []*database.Team {
 	ftcTeams, err := ftc.GetTeams(season)
 	if err != nil {
-		slog.Error("Error requesting teams:", "error", err)
+		slog.Error("Error requesting teams:", "year", season, "error", err)
 		return nil
 	}
-	slog.Debug("Requesting teams...", "count", len(ftcTeams))
+	slog.Info("Requesting teams...", "count", len(ftcTeams))
 	teams := make([]*database.Team, 0, len(ftcTeams))
 	for _, ftcTeam := range ftcTeams {
 		team := database.Team{

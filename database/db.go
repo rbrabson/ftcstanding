@@ -3,6 +3,7 @@ package database
 import (
 	"errors"
 	"fmt"
+	"log/slog"
 	"os"
 
 	"github.com/joho/godotenv"
@@ -56,8 +57,10 @@ func Init() (DB, error) {
 	}
 	switch dbType {
 	case "sql":
+		slog.Info("Initializing SQL database")
 		return initSQLDB()
 	case "file":
+		slog.Info("Initializing file database")
 		return initFileDB()
 	}
 	return nil, fmt.Errorf("unsupported DB_TYPE: %s", dbType)

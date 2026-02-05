@@ -25,10 +25,10 @@ func RequestAndSaveEvents(season string) []*database.Event {
 func RequestEvents(season string) []*database.Event {
 	ftcEvents, err := ftc.GetEvents(season)
 	if err != nil {
-		slog.Error("Error requesting events:", "error", err)
+		slog.Error("Error requesting events:", "year", season, "error", err)
 		return nil
 	}
-	slog.Debug("Requesting events...", "count", len(ftcEvents))
+	slog.Info("Requesting events...", "count", len(ftcEvents))
 	events := make([]*database.Event, 0, len(ftcEvents))
 	for _, ftcEvent := range ftcEvents {
 		dateStart := time.Time(ftcEvent.DateStart)
@@ -76,10 +76,10 @@ func RequestAndSaveEventAwards(event *database.Event) []*database.EventAward {
 func RequestEventAwards(event *database.Event) []*database.EventAward {
 	ftcEventAwards, err := ftc.GetEventAwards(strconv.Itoa(event.Year), event.EventCode)
 	if err != nil {
-		slog.Error("Error requesting event awards:", "error", err)
+		slog.Error("Error requesting event awards:", "year", event.Year, "eventCode", event.EventCode, "error", err)
 		return nil
 	}
-	slog.Debug("Requesting event awards...", "count", len(ftcEventAwards))
+	slog.Info("Requesting event awards...", "count", len(ftcEventAwards))
 	eventAwards := make([]*database.EventAward, 0, len(ftcEventAwards))
 	for _, ftcEventAward := range ftcEventAwards {
 		eventAward := database.EventAward{
@@ -106,7 +106,7 @@ func RequestAndSaveEventRankings(event *database.Event) []*database.EventRanking
 func RequestEventRanking(event *database.Event) []*database.EventRanking {
 	ftcEventRankings, err := ftc.GetRankings(strconv.Itoa(event.Year), event.EventCode)
 	if err != nil {
-		slog.Error("Error requesting event rankings:", "error", err)
+		slog.Error("Error requesting event rankings:", "year", event.Year, "eventCode", event.EventCode, "error", err)
 		return nil
 	}
 	eventRankings := make([]*database.EventRanking, 0, len(ftcEventRankings))
@@ -147,7 +147,7 @@ func RequestAndSaveEventAdvancements(event *database.Event) []*database.EventAdv
 func RequestEventAdvancements(event *database.Event) []*database.EventAdvancement {
 	ftcEventAdvancements, err := ftc.GetAdvancementsTo(strconv.Itoa(event.Year), event.EventCode)
 	if err != nil {
-		slog.Error("Error requesting event advancements:", "error", err)
+		slog.Error("Error requesting event advancements:", "year", event.Year, "eventCode", event.EventCode, "error", err)
 		return nil
 	}
 	eventAdvancements := make([]*database.EventAdvancement, 0, len(ftcEventAdvancements.Advancement))
