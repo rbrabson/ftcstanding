@@ -22,14 +22,5 @@ func main() {
 	defer db.Close()
 
 	request.Init(db)
-	request.RequestAndSaveAwards(season)
-	request.RequestAndSaveTeams(season)
-	events := request.RequestAndSaveEvents(season)
-	for _, event := range events {
-		request.RequestAndSaveEventAwards(event)
-		request.RequestAndSaveEventRankings(event)
-		request.RequestAndSaveEventAdvancements(event)
-
-		request.RequestAndSaveMatches(event)
-	}
+	request.RequestAndSaveAll(season)
 }
