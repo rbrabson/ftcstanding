@@ -31,6 +31,5 @@ func main() {
 		request.RequestAndSaveEventAdvancements(event)
 
 		request.RequestAndSaveMatches(event)
-
 	}
 }
