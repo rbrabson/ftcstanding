@@ -5,6 +5,7 @@ import (
 
 	"github.com/joho/godotenv"
 	"github.com/rbrabson/ftcstanding/database"
+	"github.com/rbrabson/ftcstanding/query"
 	"github.com/rbrabson/ftcstanding/request"
 )
 
@@ -22,5 +23,7 @@ func main() {
 	defer db.Close()
 
 	request.Init(db)
+	query.Init(db)
+
 	request.RequestAndSaveAll(season, false)
 }

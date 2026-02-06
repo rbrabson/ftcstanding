@@ -7,6 +7,7 @@ import (
 	"github.com/joho/godotenv"
 	"github.com/rbrabson/ftcstanding/cli"
 	"github.com/rbrabson/ftcstanding/database"
+	"github.com/rbrabson/ftcstanding/query"
 	"github.com/rbrabson/ftcstanding/request"
 )
 
@@ -24,7 +25,12 @@ func main() {
 	defer db.Close()
 
 	request.Init(db)
+	query.Init(db)
 
-	output := cli.RenderTable(db)
+	filter := database.TeamFilter{
+		HomeRegions: []string{"USNC"},
+	}
+	teams := query.TeamsQuery(filter)
+	output := cli.RenderTeams(teams)
 	fmt.Println(output)
 }

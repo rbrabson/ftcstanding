@@ -8,17 +8,15 @@ import (
 	"github.com/rodaine/table"
 )
 
-func RenderTable(db database.DB) string {
+// RenderTeams renders a list of teams as a table.
+func RenderTeams(teams []*database.Team) string {
 	headerFmt := color.New(color.FgGreen, color.Underline).SprintfFunc()
 	columnFmt := color.New(color.FgYellow).SprintfFunc()
 
 	tbl := table.New("ID", "Name", "Country", "Region")
 	tbl.WithHeaderFormatter(headerFmt).WithFirstColumnFormatter(columnFmt)
 
-	filter := database.TeamFilter{
-		HomeRegions: []string{"USNC"},
-	}
-	for _, team := range db.GetAllTeams(filter) {
+	for _, team := range teams {
 		tbl.AddRow(team.TeamID, team.Name, team.Country, team.HomeRegion)
 	}
 
