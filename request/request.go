@@ -22,12 +22,12 @@ func RequestAndSaveAll(season string, refresh bool) {
 	RequestAndSaveTeams(season)
 	events := RequestAndSaveEvents(season)
 	for _, event := range events {
-		if event.DateStart.After(time.Now()) {
-			slog.Info("Skipping event details for future event", "event", event.EventCode, "dateStart", event.DateStart)
+		if event.DateEnd.After(time.Now()) {
+			slog.Info("Skipping event details for future event", "event", event.EventCode, "dateEnd", event.DateEnd)
 			continue
 		}
-		if event.DateEnd.Before(time.Now().Add(-48*time.Hour)) && !refresh {
-			slog.Info("Skipping event details for already processed event", "event", event.EventCode, "dateStart", event.DateStart)
+		if event.DateEnd.Before(time.Now().Add(-24*time.Hour)) && !refresh {
+			slog.Info("Skipping event details for already processed event", "event", event.EventCode, "dateEnd", event.DateEnd)
 			continue
 		}
 		slog.Info("Processing event details for event", "event", event.EventCode, "dateEnd", event.DateEnd, "timeSince", time.Since(event.DateEnd))
