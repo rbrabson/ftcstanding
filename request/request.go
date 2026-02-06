@@ -26,7 +26,11 @@ func RequestAndSaveAll(season string, refresh bool) {
 			slog.Info("Skipping event details for future event", "event", event.EventCode, "dateEnd", event.DateEnd)
 			continue
 		}
-		if event.DateEnd.Before(time.Now().Add(-24*time.Hour)) && !refresh {
+		filter := database.MatchFilter{
+			EventIDs: []string{event.EventID},
+		}
+		matches := db.GetAllMatches(filter)
+		if len(matches) > 0 && event.DateEnd.Before(time.Now().Add(-24*time.Hour)) && !refresh {
 			slog.Info("Skipping event details for already processed event", "event", event.EventCode, "dateEnd", event.DateEnd)
 			continue
 		}
