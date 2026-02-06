@@ -1,5 +1,7 @@
 package database
 
+import "sort"
+
 // GetTeam retrieves a team from the file database by its ID.
 func (db *filedb) GetTeam(teamID int) *Team {
 	db.teamsMu.RLock()
@@ -28,6 +30,10 @@ func (db *filedb) GetAllTeams(filters ...TeamFilter) []*Team {
 			teamCopy := *team
 			teams = append(teams, &teamCopy)
 		}
+		// Sort by TeamID
+		sort.Slice(teams, func(i, j int) bool {
+			return teams[i].TeamID < teams[j].TeamID
+		})
 		return teams
 	}
 
@@ -86,6 +92,10 @@ func (db *filedb) GetAllTeams(filters ...TeamFilter) []*Team {
 		}
 	}
 
+	// Sort by TeamID
+	sort.Slice(teams, func(i, j int) bool {
+		return teams[i].TeamID < teams[j].TeamID
+	})
 	return teams
 }
 
@@ -114,5 +124,9 @@ func (db *filedb) GetTeamsByRegion(region string) []*Team {
 			teams = append(teams, &teamCopy)
 		}
 	}
+	// Sort by TeamID
+	sort.Slice(teams, func(i, j int) bool {
+		return teams[i].TeamID < teams[j].TeamID
+	})
 	return teams
 }
