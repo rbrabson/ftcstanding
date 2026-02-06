@@ -35,6 +35,6 @@ func RequestAndSaveAll(season string, refresh bool) {
 		RequestAndSaveEventRankings(event)
 		RequestAndSaveEventAdvancements(event)
 		RequestAndSaveMatches(event)
-
+		slog.Info("Finished processing event details for event", "event", event.EventCode)
 	}
 }
