@@ -27,10 +27,14 @@ func main() {
 	request.Init(db)
 	query.Init(db)
 
-	filter := database.TeamFilter{
-		HomeRegions: []string{"USNC"},
-	}
-	teams := query.TeamsQuery(filter)
-	output := cli.RenderTeams(teams)
+	// filter := database.TeamFilter{
+	// 	HomeRegions: []string{"USNC"},
+	// }
+	// teams := query.TeamsQuery(filter)
+	// output := cli.RenderTeams(teams)
+	// fmt.Println(output)
+
+	matchResults := query.GetTeamMatchesByEvent(23532, "USNCROQ", 2025)
+	output := cli.RenderTeamMatchDetails(matchResults)
 	fmt.Println(output)
 }
