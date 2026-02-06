@@ -22,24 +22,21 @@ func RequestAndSaveAll(season string, refresh bool) {
 	RequestAndSaveTeams(season)
 	events := RequestAndSaveEvents(season)
 	for _, event := range events {
-		// TODO: keep track of the last time we requested event details, and don't re-process details unless requested to refresh all data.
-		//       alternatively, see if we've previously processed it by looking one of the other DB tables and skipping if the details are
-		//       there. This should dramatically speed things up.
-		if event.DateStart.Before(time.Now()) {
-			if !refresh {
-				// Skip events that finished more than 2 days ago
-				if event.DateEnd.Before(time.Now().Add(-48 * time.Hour)) {
-					slog.Info("Skipping event details for already processed event", "event", event.EventCode, "dateStart", event.DateStart)
-					continue
-				}
-			}
-			slog.Info("Processing event details for recent event", "event", event.EventCode, "dateEnd", event.DateEnd, "timeSince", time.Since(event.DateEnd))
-			RequestAndSaveEventAwards(event)
-			RequestAndSaveEventRankings(event)
-			RequestAndSaveEventAdvancements(event)
-			RequestAndSaveMatches(event)
-		} else {
+		if event.DateStart.After(time.Now()) {
 			slog.Info("Skipping event details for future event", "event", event.EventCode, "dateStart", event.DateStart)
+			continue
 		}
+		if !refresh {
+			if event.DateEnd.Before(time.Now().Add(-48 * time.Hour)) {
+				slog.Info("Skipping event details for already processed event", "event", event.EventCode, "dateStart", event.DateStart)
+				continue
+			}
+		}
+		slog.Info("Processing event details for event", "event", event.EventCode, "dateEnd", event.DateEnd, "timeSince", time.Since(event.DateEnd))
+		RequestAndSaveEventAwards(event)
+		RequestAndSaveEventRankings(event)
+		RequestAndSaveEventAdvancements(event)
+		RequestAndSaveMatches(event)
+
 	}
 }
