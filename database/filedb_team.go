@@ -14,16 +14,78 @@ func (db *filedb) GetTeam(teamID int) *Team {
 	return &teamCopy
 }
 
-// GetAllTeams retrieves all teams from the file database.
-func (db *filedb) GetAllTeams() []*Team {
+// GetAllTeams retrieves all teams from the file database with optional filters.
+// If no filters are provided, returns all teams.
+// Filters are combined with OR logic within each field and AND logic between fields.
+func (db *filedb) GetAllTeams(filters ...TeamFilter) []*Team {
 	db.mu.RLock()
 	defer db.mu.RUnlock()
 
-	teams := make([]*Team, 0, len(db.teams))
-	for _, team := range db.teams {
-		teamCopy := *team
-		teams = append(teams, &teamCopy)
+	// If no filters, return all teams
+	if len(filters) == 0 {
+		teams := make([]*Team, 0, len(db.teams))
+		for _, team := range db.teams {
+			teamCopy := *team
+			teams = append(teams, &teamCopy)
+		}
+		return teams
 	}
+
+	filter := filters[0]
+	teams := make([]*Team, 0)
+
+	for _, team := range db.teams {
+		// Apply filters with AND logic between different filter types
+		matchesFilter := true
+
+		// Check TeamID filter (OR within field)
+		if len(filter.TeamIDs) > 0 {
+			found := false
+			for _, id := range filter.TeamIDs {
+				if team.TeamID == id {
+					found = true
+					break
+				}
+			}
+			if !found {
+				matchesFilter = false
+			}
+		}
+
+		// Check Country filter (OR within field)
+		if matchesFilter && len(filter.Countries) > 0 {
+			found := false
+			for _, country := range filter.Countries {
+				if team.Country == country {
+					found = true
+					break
+				}
+			}
+			if !found {
+				matchesFilter = false
+			}
+		}
+
+		// Check HomeRegion filter (OR within field)
+		if matchesFilter && len(filter.HomeRegions) > 0 {
+			found := false
+			for _, region := range filter.HomeRegions {
+				if team.HomeRegion == region {
+					found = true
+					break
+				}
+			}
+			if !found {
+				matchesFilter = false
+			}
+		}
+
+		if matchesFilter {
+			teamCopy := *team
+			teams = append(teams, &teamCopy)
+		}
+	}
+
 	return teams
 }
 

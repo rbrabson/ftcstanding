@@ -67,6 +67,11 @@ func (mt *MatchTeam) String() string {
 		mt.MatchID, mt.TeamID, mt.Alliance, status)
 }
 
+// MatchFilter defines criteria for filtering matches.
+type MatchFilter struct {
+	EventIDs []string
+}
+
 // GetMatchID generates a unique ID for a match based on its event ID and match number.
 func GetMatchID(event *Event, ftcMatch *ftc.Match) string {
 	return fmt.Sprintf("%s : %d", event.EventID, ftcMatch.MatchNumber)

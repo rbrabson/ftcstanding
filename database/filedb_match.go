@@ -14,16 +14,49 @@ func (db *filedb) GetMatch(matchID string) *Match {
 	return &matchCopy
 }
 
-// GetAllMatches retrieves all matches from the file database.
-func (db *filedb) GetAllMatches() []*Match {
+// GetAllMatches retrieves all matches from the file database with optional filters.
+// If no filters are provided, returns all matches.
+// Filters are combined with OR logic within each field.
+func (db *filedb) GetAllMatches(filters ...MatchFilter) []*Match {
 	db.mu.RLock()
 	defer db.mu.RUnlock()
 
-	matches := make([]*Match, 0, len(db.matches))
-	for _, match := range db.matches {
-		matchCopy := *match
-		matches = append(matches, &matchCopy)
+	// If no filters, return all matches
+	if len(filters) == 0 {
+		matches := make([]*Match, 0, len(db.matches))
+		for _, match := range db.matches {
+			matchCopy := *match
+			matches = append(matches, &matchCopy)
+		}
+		return matches
 	}
+
+	filter := filters[0]
+	matches := make([]*Match, 0)
+
+	for _, match := range db.matches {
+		matchesFilter := true
+
+		// Check EventID filter (OR within field)
+		if len(filter.EventIDs) > 0 {
+			found := false
+			for _, eventID := range filter.EventIDs {
+				if match.EventID == eventID {
+					found = true
+					break
+				}
+			}
+			if !found {
+				matchesFilter = false
+			}
+		}
+
+		if matchesFilter {
+			matchCopy := *match
+			matches = append(matches, &matchCopy)
+		}
+	}
+
 	return matches
 }
 

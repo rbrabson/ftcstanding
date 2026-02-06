@@ -83,6 +83,19 @@ func (ea *EventAdvancement) String() string {
 		ea.EventID, ea.TeamID)
 }
 
+// EventFilter defines criteria for filtering events.
+type EventFilter struct {
+	EventCodes  []string
+	RegionCodes []string
+	Countries   []string
+}
+
+// AdvancementFilter defines criteria for filtering event advancements.
+type AdvancementFilter struct {
+	Countries   []string
+	RegionCodes []string
+}
+
 // GetEventID generates a unique ID for an event based on its FTC code and start date.
 func GetEventID(ftcEvent *ftc.Event, dateStart time.Time) string {
 	return fmt.Sprintf("%s : %d", ftcEvent.Code, dateStart.Year())

@@ -18,6 +18,7 @@ type DB interface {
 	SaveAward(award *Award) error
 
 	GetEvent(eventID string) *Event
+	GetAllEvents(filters ...EventFilter) []*Event
 	SaveEvent(event *Event) error
 	GetEventAwards(eventID string) []*EventAward
 	SaveEventAward(ea *EventAward) error
@@ -30,10 +31,10 @@ type DB interface {
 	GetRegionCodes() []string
 	GetEventCodesByRegion(regionCode string) []string
 	GetAdvancementsByRegion(regionCode string) []*EventAdvancement
-	GetAllAdvancements() []*EventAdvancement
+	GetAllAdvancements(filters ...AdvancementFilter) []*EventAdvancement
 
 	GetMatch(matchID string) *Match
-	GetAllMatches() []*Match
+	GetAllMatches(filters ...MatchFilter) []*Match
 	GetMatchesByEvent(eventID string) []*Match
 	SaveMatch(match *Match) error
 	GetMatchAllianceScore(matchID, alliance string) *MatchAllianceScore
@@ -43,7 +44,7 @@ type DB interface {
 	GetTeamsByEvent(eventID string) []int
 
 	GetTeam(teamID int) *Team
-	GetAllTeams() []*Team
+	GetAllTeams(filters ...TeamFilter) []*Team
 	SaveTeam(team *Team) error
 	GetTeamsByRegion(region string) []*Team
 }
