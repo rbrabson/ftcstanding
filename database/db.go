@@ -31,7 +31,7 @@ type DB interface {
 	GetRegionCodes() []string
 	GetEventCodesByRegion(regionCode string) []string
 	GetAdvancementsByRegion(regionCode string) []*EventAdvancement
-	GetAllAdvancements() []*EventAdvancement
+	GetAllAdvancements(filters ...AdvancementFilter) []*EventAdvancement
 
 	GetMatch(matchID string) *Match
 	GetAllMatches(filters ...MatchFilter) []*Match

@@ -423,13 +423,52 @@ func (db *sqldb) GetAdvancementsByRegion(regionCode string) []*EventAdvancement 
 	return advancements
 }
 
-// GetAllAdvancements retrieves all event advancements from all events, ordered by event ID and team ID.
-func (db *sqldb) GetAllAdvancements() []*EventAdvancement {
-	stmt := db.getStatement("getAllAdvancements")
-	if stmt == nil {
-		return nil
+// GetAllAdvancements retrieves all event advancements from all events with optional filters.
+// If no filters are provided, returns all advancements.
+// Filters are combined with OR logic within each field and AND logic between fields.
+func (db *sqldb) GetAllAdvancements(filters ...AdvancementFilter) []*EventAdvancement {
+	// Build dynamic query
+	query := "SELECT ea.event_id, ea.team_id FROM event_advancements ea"
+	args := []interface{}{}
+
+	if len(filters) > 0 {
+		filter := filters[0]
+		// Need to join with events table for filtering
+		if len(filter.Countries) > 0 || len(filter.RegionCodes) > 0 {
+			query += " INNER JOIN events e ON ea.event_id = e.event_id WHERE 1=1"
+
+			// Add Country filter
+			if len(filter.Countries) > 0 {
+				query += " AND e.country IN ("
+				for i, country := range filter.Countries {
+					if i > 0 {
+						query += ","
+					}
+					query += "?"
+					args = append(args, country)
+				}
+				query += ")"
+			}
+
+			// Add RegionCode filter
+			if len(filter.RegionCodes) > 0 {
+				query += " AND e.region_code IN ("
+				for i, code := range filter.RegionCodes {
+					if i > 0 {
+						query += ","
+					}
+					query += "?"
+					args = append(args, code)
+				}
+				query += ")"
+			}
+		}
 	}
-	rows, err := stmt.Query()
+
+	query += " ORDER BY ea.event_id, ea.team_id"
+
+	// Execute query
+	rows, err := db.sqldb.Query(query, args...)
 	if err != nil {
 		return nil
 	}

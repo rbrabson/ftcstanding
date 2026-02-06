@@ -340,17 +340,72 @@ func (db *filedb) GetAdvancementsByRegion(regionCode string) []*EventAdvancement
 	return result
 }
 
-// GetAllAdvancements retrieves all event advancements from all events.
-func (db *filedb) GetAllAdvancements() []*EventAdvancement {
+// GetAllAdvancements retrieves all event advancements from all events with optional filters.
+// If no filters are provided, returns all advancements.
+// Filters are combined with OR logic within each field and AND logic between fields.
+func (db *filedb) GetAllAdvancements(filters ...AdvancementFilter) []*EventAdvancement {
 	db.mu.RLock()
 	defer db.mu.RUnlock()
 
+	// If no filters, return all advancements
+	if len(filters) == 0 {
+		result := make([]*EventAdvancement, 0)
+		for _, advancements := range db.eventAdvancements {
+			for _, advancement := range advancements {
+				advancementCopy := *advancement
+				result = append(result, &advancementCopy)
+			}
+		}
+		return result
+	}
+
+	filter := filters[0]
 	result := make([]*EventAdvancement, 0)
-	for _, advancements := range db.eventAdvancements {
-		for _, advancement := range advancements {
-			advancementCopy := *advancement
-			result = append(result, &advancementCopy)
+
+	for eventID, advancements := range db.eventAdvancements {
+		event, ok := db.events[eventID]
+		if !ok {
+			continue
+		}
+
+		// Apply filters with AND logic between different filter types
+		matchesFilter := true
+
+		// Check Country filter (OR within field)
+		if len(filter.Countries) > 0 {
+			found := false
+			for _, country := range filter.Countries {
+				if event.Country == country {
+					found = true
+					break
+				}
+			}
+			if !found {
+				matchesFilter = false
+			}
+		}
+
+		// Check RegionCode filter (OR within field)
+		if matchesFilter && len(filter.RegionCodes) > 0 {
+			found := false
+			for _, code := range filter.RegionCodes {
+				if event.RegionCode == code {
+					found = true
+					break
+				}
+			}
+			if !found {
+				matchesFilter = false
+			}
+		}
+
+		if matchesFilter {
+			for _, advancement := range advancements {
+				advancementCopy := *advancement
+				result = append(result, &advancementCopy)
+			}
 		}
 	}
+
 	return result
 }
