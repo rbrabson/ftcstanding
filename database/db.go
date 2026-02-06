@@ -34,7 +34,7 @@ type DB interface {
 	GetAllAdvancements() []*EventAdvancement
 
 	GetMatch(matchID string) *Match
-	GetAllMatches() []*Match
+	GetAllMatches(filters ...MatchFilter) []*Match
 	GetMatchesByEvent(eventID string) []*Match
 	SaveMatch(match *Match) error
 	GetMatchAllianceScore(matchID, alliance string) *MatchAllianceScore

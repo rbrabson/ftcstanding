@@ -50,13 +50,63 @@ func (db *sqldb) GetMatch(matchID string) *Match {
 	return &match
 }
 
-// GetAllMatches retrieves all matches from the
-func (db *sqldb) GetAllMatches() []*Match {
-	stmt := db.getStatement("getAllMatches")
-	if stmt == nil {
-		return nil
+// GetAllMatches retrieves all matches from the database with optional filters.
+// If no filters are provided, returns all matches.
+// Filters are combined with OR logic within each field.
+func (db *sqldb) GetAllMatches(filters ...MatchFilter) []*Match {
+	// If no filters, use the prepared statement
+	if len(filters) == 0 {
+		stmt := db.getStatement("getAllMatches")
+		if stmt == nil {
+			return nil
+		}
+		rows, err := stmt.Query()
+		if err != nil {
+			return nil
+		}
+		defer rows.Close()
+
+		var matches []*Match
+		for rows.Next() {
+			var match Match
+			err := rows.Scan(
+				&match.MatchID,
+				&match.EventID,
+				&match.MatchNumber,
+				&match.ActualStartTime,
+				&match.Description,
+				&match.TournamentLevel,
+			)
+			if err != nil {
+				continue
+			}
+			matches = append(matches, &match)
+		}
+		return matches
 	}
-	rows, err := stmt.Query()
+
+	filter := filters[0]
+
+	// Build dynamic query
+	query := "SELECT match_id, event_id, match_number, actual_start_time, description, tournament_level FROM matches"
+	args := []interface{}{}
+
+	if len(filter.EventIDs) > 0 {
+		query += " WHERE event_id IN ("
+		for i, eventID := range filter.EventIDs {
+			if i > 0 {
+				query += ","
+			}
+			query += "?"
+			args = append(args, eventID)
+		}
+		query += ")"
+	}
+
+	query += " ORDER BY event_id, match_number"
+
+	// Execute query
+	rows, err := db.sqldb.Query(query, args...)
 	if err != nil {
 		return nil
 	}
