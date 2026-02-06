@@ -25,5 +25,5 @@ func main() {
 	request.Init(db)
 	query.Init(db)
 
-	request.RequestAndSaveAll(season, false)
+	request.RequestAndSaveAll(season, true)
 }
