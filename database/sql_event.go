@@ -68,6 +68,96 @@ func (db *sqldb) GetEvent(eventID string) *Event {
 	return &event
 }
 
+// GetAllEvents retrieves all events from the database with optional filters.
+// If no filters are provided, returns all events.
+// Filters are combined with OR logic within each field and AND logic between fields.
+func (db *sqldb) GetAllEvents(filters ...EventFilter) []*Event {
+	// Build dynamic query
+	query := "SELECT event_id, event_code, year, name, type, division_code, region_code, league_code, venue, address, city, state_prov, country, timezone, date_start, date_end FROM events"
+	args := []interface{}{}
+
+	if len(filters) > 0 {
+		filter := filters[0]
+		query += " WHERE 1=1"
+
+		// Add EventCode filter
+		if len(filter.EventCodes) > 0 {
+			query += " AND event_code IN ("
+			for i, code := range filter.EventCodes {
+				if i > 0 {
+					query += ","
+				}
+				query += "?"
+				args = append(args, code)
+			}
+			query += ")"
+		}
+
+		// Add RegionCode filter
+		if len(filter.RegionCodes) > 0 {
+			query += " AND region_code IN ("
+			for i, code := range filter.RegionCodes {
+				if i > 0 {
+					query += ","
+				}
+				query += "?"
+				args = append(args, code)
+			}
+			query += ")"
+		}
+
+		// Add Country filter
+		if len(filter.Countries) > 0 {
+			query += " AND country IN ("
+			for i, country := range filter.Countries {
+				if i > 0 {
+					query += ","
+				}
+				query += "?"
+				args = append(args, country)
+			}
+			query += ")"
+		}
+	}
+
+	query += " ORDER BY date_start, event_code"
+
+	// Execute query
+	rows, err := db.sqldb.Query(query, args...)
+	if err != nil {
+		return nil
+	}
+	defer rows.Close()
+
+	var events []*Event
+	for rows.Next() {
+		var event Event
+		err := rows.Scan(
+			&event.EventID,
+			&event.EventCode,
+			&event.Year,
+			&event.Name,
+			&event.Type,
+			&event.DivisionCode,
+			&event.RegionCode,
+			&event.LeagueCode,
+			&event.Venue,
+			&event.Address,
+			&event.City,
+			&event.StateProv,
+			&event.Country,
+			&event.Timezone,
+			&event.DateStart,
+			&event.DateEnd,
+		)
+		if err != nil {
+			continue
+		}
+		events = append(events, &event)
+	}
+	return events
+}
+
 // SaveEvent saves or updates an event in the
 func (db *sqldb) SaveEvent(event *Event) error {
 	stmt := db.getStatement("saveEvent")

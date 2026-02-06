@@ -18,6 +18,7 @@ type DB interface {
 	SaveAward(award *Award) error
 
 	GetEvent(eventID string) *Event
+	GetAllEvents(filters ...EventFilter) []*Event
 	SaveEvent(event *Event) error
 	GetEventAwards(eventID string) []*EventAward
 	SaveEventAward(ea *EventAward) error
