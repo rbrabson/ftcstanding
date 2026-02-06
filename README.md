@@ -34,6 +34,12 @@ ftcstanding/
 - **Multiple Database Backends**:
   - SQL database (MySQL) with connection pooling
   - File-based database using JSON storage (for development/testing)
+- **Flexible Filtering**: Query data with optional filters for teams, events, matches, and advancements
+  - Filter teams by ID, country, or home region
+  - Filter events by event code, region code, or country
+  - Filter matches by event IDs
+  - Filter advancements by country or region code
+  - Combine multiple filter criteria with intuitive OR/AND logic
 - **Prepared Statements**: All SQL operations use prepared statements for performance and security
 - **SQL Query Constants**: All SQL queries are defined as package-level constants for maintainability
 - **String Representations**: All data models implement the `fmt.Stringer` interface for easy debugging and logging
@@ -173,6 +179,48 @@ After building (see Development section), run the appropriate binary for your pl
 
 The `database.DB` interface provides a consistent API for both SQL and file-based backends. All database operations are available through this interface.
 
+### Using Filters
+
+The database supports flexible filtering for querying data. Filters use optional variadic parameters:
+
+```go
+// Get all teams (no filter)
+allTeams := db.GetAllTeams()
+
+// Get teams from specific countries
+usaCanadaTeams := db.GetAllTeams(database.TeamFilter{
+    Countries: []string{"USA", "Canada"},
+})
+
+// Get specific teams by ID
+selectedTeams := db.GetAllTeams(database.TeamFilter{
+    TeamIDs: []int{12345, 67890},
+})
+
+// Combine filters (AND logic between fields)
+californiaUSATeams := db.GetAllTeams(database.TeamFilter{
+    Countries: []string{"USA"},
+    HomeRegions: []string{"California"},
+})
+
+// Filter events by region
+regionalEvents := db.GetAllEvents(database.EventFilter{
+    RegionCodes: []string{"USCALA", "USTXHO"},
+})
+
+// Filter matches by event
+eventMatches := db.GetAllMatches(database.MatchFilter{
+    EventIDs: []string{"EVENT-123 : 2024", "EVENT-456 : 2024"},
+})
+
+// Filter advancements by country
+usaAdvancements := db.GetAllAdvancements(database.AdvancementFilter{
+    Countries: []string{"USA"},
+})
+```
+
+### String Representations
+
 All data models implement the `fmt.Stringer` interface for convenient logging and debugging:
 
 ```go
@@ -196,13 +244,18 @@ All database operations use prepared statements which are initialized at applica
 ### Teams
 
 - `GetTeam(teamID)` - Retrieve a specific team
-- `GetAllTeams()` - Retrieve all teams
+- `GetAllTeams(filters...)` - Retrieve all teams with optional filtering
+  - Filter by `TeamIDs`, `Countries`, or `HomeRegions`
+  - Example: `GetAllTeams(TeamFilter{Countries: []string{"USA", "Canada"}})`
 - `GetTeamsByRegion(region)` - Retrieve all teams in a specific home region
 - `SaveTeam(team)` - Insert or update a team
 
 ### Events
 
 - `GetEvent(eventID)` - Retrieve a specific event
+- `GetAllEvents(filters...)` - Retrieve all events with optional filtering
+  - Filter by `EventCodes`, `RegionCodes`, or `Countries`
+  - Example: `GetAllEvents(EventFilter{Countries: []string{"USA"}})`
 - `SaveEvent(event)` - Insert or update an event
 - `GetRegionCodes()` - Get all unique region codes
 - `GetEventCodesByRegion(regionCode)` - Get all event codes for a specific region
@@ -214,13 +267,17 @@ All database operations use prepared statements which are initialized at applica
 - `SaveEventRanking(ranking)` - Update rankings
 - `GetEventAdvancements(eventID)` - Get advancing teams from an event
 - `GetAdvancementsByRegion(regionCode)` - Get all advancements from events in a specific region
-- `GetAllAdvancements()` - Get all advancements from all events
+- `GetAllAdvancements(filters...)` - Get all advancements from all events with optional filtering
+  - Filter by `Countries` or `RegionCodes`
+  - Example: `GetAllAdvancements(AdvancementFilter{RegionCodes: []string{"USCALA"}})`
 - `SaveEventAdvancement(advancement)` - Record advancement
 
 ### Matches
 
 - `GetMatch(matchID)` - Retrieve a specific match
-- `GetAllMatches()` - Retrieve all matches
+- `GetAllMatches(filters...)` - Retrieve all matches with optional filtering
+  - Filter by `EventIDs`
+  - Example: `GetAllMatches(MatchFilter{EventIDs: []string{"EVENT-123 : 2024"}})`
 - `GetMatchesByEvent(eventID)` - Retrieve all matches for a specific event
 - `SaveMatch(match)` - Insert or update a match
 - `GetMatchAllianceScore(matchID, alliance)` - Get alliance score
@@ -234,6 +291,53 @@ All database operations use prepared statements which are initialized at applica
 - `GetAward(awardID)` - Retrieve a specific award
 - `GetAllAwards()` - Retrieve all awards
 - `SaveAward(award)` - Insert or update an award
+
+## Filter Types
+
+The database supports flexible filtering for retrieving data:
+
+### TeamFilter
+
+```go
+type TeamFilter struct {
+    TeamIDs     []int    // Filter by team IDs
+    Countries   []string // Filter by countries
+    HomeRegions []string // Filter by home regions
+}
+```
+
+### EventFilter
+
+```go
+type EventFilter struct {
+    EventCodes  []string // Filter by event codes
+    RegionCodes []string // Filter by region codes
+    Countries   []string // Filter by countries
+}
+```
+
+### MatchFilter
+
+```go
+type MatchFilter struct {
+    EventIDs []string // Filter by event IDs
+}
+```
+
+### AdvancementFilter
+
+```go
+type AdvancementFilter struct {
+    Countries   []string // Filter by countries
+    RegionCodes []string // Filter by region codes
+}
+```
+
+**Filter Logic:**
+
+- Multiple values within the same field use OR logic (e.g., `Countries: []string{"USA", "Canada"}` matches USA OR Canada)
+- Multiple fields use AND logic (e.g., filtering by both Country AND Region requires both to match)
+- Omitting a filter returns all records
 
 ## Development
 
