@@ -43,7 +43,7 @@ type DB interface {
 	GetTeamsByEvent(eventID string) []int
 
 	GetTeam(teamID int) *Team
-	GetAllTeams() []*Team
+	GetAllTeams(filters ...TeamFilter) []*Team
 	SaveTeam(team *Team) error
 	GetTeamsByRegion(region string) []*Team
 }

@@ -21,3 +21,10 @@ func (t *Team) String() string {
 	return fmt.Sprintf("Team{ID: %d, Name: %q, City: %s, %s, Region: %s}",
 		t.TeamID, t.Name, t.City, t.StateProv, t.HomeRegion)
 }
+
+// TeamFilter defines criteria for filtering teams.
+type TeamFilter struct {
+	TeamIDs     []int
+	Countries   []string
+	HomeRegions []string
+}
