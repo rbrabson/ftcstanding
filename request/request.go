@@ -27,8 +27,8 @@ func RequestAndSaveAll(season string, refresh bool) {
 		//       there. This should dramatically speed things up.
 		if event.DateStart.Before(time.Now()) {
 			if !refresh {
-				rankings := db.GetEventRankings(event.EventID)
-				if len(rankings) > 0 {
+				// Skip events that finished more than 2 days ago
+				if event.DateEnd.Before(time.Now().Add(-48 * time.Hour)) {
 					slog.Info("Skipping event details for already processed event", "event", event.EventCode, "dateStart", event.DateStart)
 					continue
 				}
