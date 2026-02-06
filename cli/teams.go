@@ -1,7 +1,7 @@
 package cli
 
 import (
-	"github.com/jedib0t/go-pretty/table"
+	"github.com/jedib0t/go-pretty/v6/table"
 	"github.com/rbrabson/ftcstanding/database"
 	"github.com/rbrabson/ftcstanding/query"
 )
