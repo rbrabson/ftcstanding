@@ -21,8 +21,9 @@ import (
 // matches, etc.) is stored in a separate JSON file for easy inspection and
 // manual editing if needed.
 //
-// The filedb is thread-safe and uses read-write locks to allow concurrent
-// reads while ensuring exclusive access for writes.
+// The filedb is thread-safe and uses table-level read-write locks to allow
+// concurrent operations on different tables while ensuring exclusive access
+// for writes within each table.
 //
 // Usage:
 //
@@ -36,7 +37,17 @@ import (
 //	team := db.GetTeam(12345)
 type filedb struct {
 	dataDir string
-	mu      sync.RWMutex
+
+	// Table-level locks for fine-grained concurrency control
+	awardsMu            sync.RWMutex
+	teamsMu             sync.RWMutex
+	eventsMu            sync.RWMutex
+	eventAwardsMu       sync.RWMutex
+	eventRankingsMu     sync.RWMutex
+	eventAdvancementsMu sync.RWMutex
+	matchesMu           sync.RWMutex
+	matchScoresMu       sync.RWMutex
+	matchTeamsMu        sync.RWMutex
 
 	awards            map[int]*Award
 	teams             map[int]*Team
@@ -96,8 +107,25 @@ func (db *filedb) Close() {
 
 // loadAll loads all data from JSON files.
 func (db *filedb) loadAll() error {
-	db.mu.Lock()
-	defer db.mu.Unlock()
+	// Lock all tables for loading
+	db.awardsMu.Lock()
+	defer db.awardsMu.Unlock()
+	db.teamsMu.Lock()
+	defer db.teamsMu.Unlock()
+	db.eventsMu.Lock()
+	defer db.eventsMu.Unlock()
+	db.eventAwardsMu.Lock()
+	defer db.eventAwardsMu.Unlock()
+	db.eventRankingsMu.Lock()
+	defer db.eventRankingsMu.Unlock()
+	db.eventAdvancementsMu.Lock()
+	defer db.eventAdvancementsMu.Unlock()
+	db.matchesMu.Lock()
+	defer db.matchesMu.Unlock()
+	db.matchScoresMu.Lock()
+	defer db.matchScoresMu.Unlock()
+	db.matchTeamsMu.Lock()
+	defer db.matchTeamsMu.Unlock()
 
 	// Load awards
 	if err := db.loadJSONFile("awards.json", &db.awards); err != nil && !os.IsNotExist(err) {
@@ -149,8 +177,25 @@ func (db *filedb) loadAll() error {
 
 // saveAll saves all data to JSON files.
 func (db *filedb) saveAll() error {
-	db.mu.RLock()
-	defer db.mu.RUnlock()
+	// Lock all tables for saving (read locks since we're only reading the data structures to save)
+	db.awardsMu.RLock()
+	defer db.awardsMu.RUnlock()
+	db.teamsMu.RLock()
+	defer db.teamsMu.RUnlock()
+	db.eventsMu.RLock()
+	defer db.eventsMu.RUnlock()
+	db.eventAwardsMu.RLock()
+	defer db.eventAwardsMu.RUnlock()
+	db.eventRankingsMu.RLock()
+	defer db.eventRankingsMu.RUnlock()
+	db.eventAdvancementsMu.RLock()
+	defer db.eventAdvancementsMu.RUnlock()
+	db.matchesMu.RLock()
+	defer db.matchesMu.RUnlock()
+	db.matchScoresMu.RLock()
+	defer db.matchScoresMu.RUnlock()
+	db.matchTeamsMu.RLock()
+	defer db.matchTeamsMu.RUnlock()
 
 	if err := db.saveJSONFile("awards.json", db.awards); err != nil {
 		return err

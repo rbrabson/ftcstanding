@@ -2,8 +2,8 @@ package database
 
 // GetAward retrieves an award from the file database by its ID.
 func (db *filedb) GetAward(awardID int) *Award {
-	db.mu.RLock()
-	defer db.mu.RUnlock()
+	db.awardsMu.RLock()
+	defer db.awardsMu.RUnlock()
 
 	award, ok := db.awards[awardID]
 	if !ok {
@@ -16,8 +16,8 @@ func (db *filedb) GetAward(awardID int) *Award {
 
 // GetAllAwards retrieves all awards from the file database.
 func (db *filedb) GetAllAwards() []*Award {
-	db.mu.RLock()
-	defer db.mu.RUnlock()
+	db.awardsMu.RLock()
+	defer db.awardsMu.RUnlock()
 
 	awards := make([]*Award, 0, len(db.awards))
 	for _, award := range db.awards {
@@ -29,8 +29,8 @@ func (db *filedb) GetAllAwards() []*Award {
 
 // SaveAward saves or updates an award in the file database.
 func (db *filedb) SaveAward(award *Award) error {
-	db.mu.Lock()
-	defer db.mu.Unlock()
+	db.awardsMu.Lock()
+	defer db.awardsMu.Unlock()
 
 	// Make a copy to avoid external modifications
 	awardCopy := *award

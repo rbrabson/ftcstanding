@@ -4,8 +4,8 @@ import "sort"
 
 // GetEvent retrieves an event from the file database by its ID.
 func (db *filedb) GetEvent(eventID string) *Event {
-	db.mu.RLock()
-	defer db.mu.RUnlock()
+	db.eventsMu.RLock()
+	defer db.eventsMu.RUnlock()
 
 	event, ok := db.events[eventID]
 	if !ok {
@@ -20,8 +20,8 @@ func (db *filedb) GetEvent(eventID string) *Event {
 // If no filters are provided, returns all events.
 // Filters are combined with OR logic within each field and AND logic between fields.
 func (db *filedb) GetAllEvents(filters ...EventFilter) []*Event {
-	db.mu.RLock()
-	defer db.mu.RUnlock()
+	db.eventsMu.RLock()
+	defer db.eventsMu.RUnlock()
 
 	// If no filters, return all events
 	if len(filters) == 0 {
@@ -93,8 +93,8 @@ func (db *filedb) GetAllEvents(filters ...EventFilter) []*Event {
 
 // SaveEvent saves or updates an event in the file database.
 func (db *filedb) SaveEvent(event *Event) error {
-	db.mu.Lock()
-	defer db.mu.Unlock()
+	db.eventsMu.Lock()
+	defer db.eventsMu.Unlock()
 
 	// Make a copy to avoid external modifications
 	eventCopy := *event
@@ -106,8 +106,8 @@ func (db *filedb) SaveEvent(event *Event) error {
 
 // GetEventAwards retrieves all awards given at a specific event.
 func (db *filedb) GetEventAwards(eventID string) []*EventAward {
-	db.mu.RLock()
-	defer db.mu.RUnlock()
+	db.eventAwardsMu.RLock()
+	defer db.eventAwardsMu.RUnlock()
 
 	awards, ok := db.eventAwards[eventID]
 	if !ok {
@@ -125,8 +125,8 @@ func (db *filedb) GetEventAwards(eventID string) []*EventAward {
 
 // SaveEventAward saves or updates an event award in the file database.
 func (db *filedb) SaveEventAward(ea *EventAward) error {
-	db.mu.Lock()
-	defer db.mu.Unlock()
+	db.eventAwardsMu.Lock()
+	defer db.eventAwardsMu.Unlock()
 
 	// Check if this award already exists for this event/team
 	awards := db.eventAwards[ea.EventID]
@@ -153,8 +153,8 @@ func (db *filedb) SaveEventAward(ea *EventAward) error {
 
 // GetTeamAwardsByEvent retrieves all awards for a specific team at a specific event.
 func (db *filedb) GetTeamAwardsByEvent(eventID string, teamID int) []*EventAward {
-	db.mu.RLock()
-	defer db.mu.RUnlock()
+	db.eventAwardsMu.RLock()
+	defer db.eventAwardsMu.RUnlock()
 
 	awards, ok := db.eventAwards[eventID]
 	if !ok {
@@ -173,8 +173,8 @@ func (db *filedb) GetTeamAwardsByEvent(eventID string, teamID int) []*EventAward
 
 // GetAllTeamAwards retrieves all awards for a specific team across all events.
 func (db *filedb) GetAllTeamAwards(teamID int) []*EventAward {
-	db.mu.RLock()
-	defer db.mu.RUnlock()
+	db.eventAwardsMu.RLock()
+	defer db.eventAwardsMu.RUnlock()
 
 	result := make([]*EventAward, 0)
 	for _, awards := range db.eventAwards {
@@ -190,8 +190,8 @@ func (db *filedb) GetAllTeamAwards(teamID int) []*EventAward {
 
 // GetEventRankings retrieves all rankings for a specific event.
 func (db *filedb) GetEventRankings(eventID string) []*EventRanking {
-	db.mu.RLock()
-	defer db.mu.RUnlock()
+	db.eventRankingsMu.RLock()
+	defer db.eventRankingsMu.RUnlock()
 
 	rankings, ok := db.eventRankings[eventID]
 	if !ok {
@@ -209,8 +209,8 @@ func (db *filedb) GetEventRankings(eventID string) []*EventRanking {
 
 // SaveEventRanking saves or updates an event ranking in the file database.
 func (db *filedb) SaveEventRanking(er *EventRanking) error {
-	db.mu.Lock()
-	defer db.mu.Unlock()
+	db.eventRankingsMu.Lock()
+	defer db.eventRankingsMu.Unlock()
 
 	// Check if this ranking already exists for this event/team
 	rankings := db.eventRankings[er.EventID]
@@ -237,8 +237,8 @@ func (db *filedb) SaveEventRanking(er *EventRanking) error {
 
 // GetEventAdvancements retrieves all team advancements for a specific event.
 func (db *filedb) GetEventAdvancements(eventID string) []*EventAdvancement {
-	db.mu.RLock()
-	defer db.mu.RUnlock()
+	db.eventAdvancementsMu.RLock()
+	defer db.eventAdvancementsMu.RUnlock()
 
 	advancements, ok := db.eventAdvancements[eventID]
 	if !ok {
@@ -256,8 +256,8 @@ func (db *filedb) GetEventAdvancements(eventID string) []*EventAdvancement {
 
 // SaveEventAdvancement saves or updates an event advancement in the file database.
 func (db *filedb) SaveEventAdvancement(ea *EventAdvancement) error {
-	db.mu.Lock()
-	defer db.mu.Unlock()
+	db.eventAdvancementsMu.Lock()
+	defer db.eventAdvancementsMu.Unlock()
 
 	// Check if this advancement already exists for this event/team
 	advancements := db.eventAdvancements[ea.EventID]
@@ -284,8 +284,8 @@ func (db *filedb) SaveEventAdvancement(ea *EventAdvancement) error {
 
 // GetRegionCodes retrieves all unique region codes from events.
 func (db *filedb) GetRegionCodes() []string {
-	db.mu.RLock()
-	defer db.mu.RUnlock()
+	db.eventsMu.RLock()
+	defer db.eventsMu.RUnlock()
 
 	regionMap := make(map[string]bool)
 	for _, event := range db.events {
@@ -304,8 +304,8 @@ func (db *filedb) GetRegionCodes() []string {
 
 // GetEventCodesByRegion retrieves all unique event codes for a given region.
 func (db *filedb) GetEventCodesByRegion(regionCode string) []string {
-	db.mu.RLock()
-	defer db.mu.RUnlock()
+	db.eventsMu.RLock()
+	defer db.eventsMu.RUnlock()
 
 	eventCodeMap := make(map[string]bool)
 	for _, event := range db.events {
@@ -324,8 +324,11 @@ func (db *filedb) GetEventCodesByRegion(regionCode string) []string {
 
 // GetAdvancementsByRegion retrieves all event advancements for events in a given region.
 func (db *filedb) GetAdvancementsByRegion(regionCode string) []*EventAdvancement {
-	db.mu.RLock()
-	defer db.mu.RUnlock()
+	// Need to lock both events and eventAdvancements since we read from both
+	db.eventsMu.RLock()
+	defer db.eventsMu.RUnlock()
+	db.eventAdvancementsMu.RLock()
+	defer db.eventAdvancementsMu.RUnlock()
 
 	result := make([]*EventAdvancement, 0)
 	for eventID, advancements := range db.eventAdvancements {
@@ -344,8 +347,9 @@ func (db *filedb) GetAdvancementsByRegion(regionCode string) []*EventAdvancement
 // If no filters are provided, returns all advancements.
 // Filters are combined with OR logic within each field and AND logic between fields.
 func (db *filedb) GetAllAdvancements(filters ...AdvancementFilter) []*EventAdvancement {
-	db.mu.RLock()
-	defer db.mu.RUnlock()
+	// Lock eventAdvancements for all cases
+	db.eventAdvancementsMu.RLock()
+	defer db.eventAdvancementsMu.RUnlock()
 
 	// If no filters, return all advancements
 	if len(filters) == 0 {
@@ -358,6 +362,10 @@ func (db *filedb) GetAllAdvancements(filters ...AdvancementFilter) []*EventAdvan
 		}
 		return result
 	}
+
+	// Need to also lock events when filtering
+	db.eventsMu.RLock()
+	defer db.eventsMu.RUnlock()
 
 	filter := filters[0]
 	result := make([]*EventAdvancement, 0)

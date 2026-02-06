@@ -2,8 +2,8 @@ package database
 
 // GetTeam retrieves a team from the file database by its ID.
 func (db *filedb) GetTeam(teamID int) *Team {
-	db.mu.RLock()
-	defer db.mu.RUnlock()
+	db.teamsMu.RLock()
+	defer db.teamsMu.RUnlock()
 
 	team, ok := db.teams[teamID]
 	if !ok {
@@ -18,8 +18,8 @@ func (db *filedb) GetTeam(teamID int) *Team {
 // If no filters are provided, returns all teams.
 // Filters are combined with OR logic within each field and AND logic between fields.
 func (db *filedb) GetAllTeams(filters ...TeamFilter) []*Team {
-	db.mu.RLock()
-	defer db.mu.RUnlock()
+	db.teamsMu.RLock()
+	defer db.teamsMu.RUnlock()
 
 	// If no filters, return all teams
 	if len(filters) == 0 {
@@ -91,8 +91,8 @@ func (db *filedb) GetAllTeams(filters ...TeamFilter) []*Team {
 
 // SaveTeam saves or updates a team in the file database.
 func (db *filedb) SaveTeam(team *Team) error {
-	db.mu.Lock()
-	defer db.mu.Unlock()
+	db.teamsMu.Lock()
+	defer db.teamsMu.Unlock()
 
 	// Make a copy to avoid external modifications
 	teamCopy := *team
@@ -104,8 +104,8 @@ func (db *filedb) SaveTeam(team *Team) error {
 
 // GetTeamsByRegion retrieves all teams in a given home region from the file database.
 func (db *filedb) GetTeamsByRegion(region string) []*Team {
-	db.mu.RLock()
-	defer db.mu.RUnlock()
+	db.teamsMu.RLock()
+	defer db.teamsMu.RUnlock()
 
 	teams := make([]*Team, 0)
 	for _, team := range db.teams {

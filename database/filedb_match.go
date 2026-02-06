@@ -2,8 +2,8 @@ package database
 
 // GetMatch retrieves a match from the file database by its ID.
 func (db *filedb) GetMatch(matchID string) *Match {
-	db.mu.RLock()
-	defer db.mu.RUnlock()
+	db.matchesMu.RLock()
+	defer db.matchesMu.RUnlock()
 
 	match, ok := db.matches[matchID]
 	if !ok {
@@ -18,8 +18,8 @@ func (db *filedb) GetMatch(matchID string) *Match {
 // If no filters are provided, returns all matches.
 // Filters are combined with OR logic within each field.
 func (db *filedb) GetAllMatches(filters ...MatchFilter) []*Match {
-	db.mu.RLock()
-	defer db.mu.RUnlock()
+	db.matchesMu.RLock()
+	defer db.matchesMu.RUnlock()
 
 	// If no filters, return all matches
 	if len(filters) == 0 {
@@ -62,8 +62,8 @@ func (db *filedb) GetAllMatches(filters ...MatchFilter) []*Match {
 
 // GetMatchesByEvent retrieves all matches for a specific event.
 func (db *filedb) GetMatchesByEvent(eventID string) []*Match {
-	db.mu.RLock()
-	defer db.mu.RUnlock()
+	db.matchesMu.RLock()
+	defer db.matchesMu.RUnlock()
 
 	matches := make([]*Match, 0)
 	for _, match := range db.matches {
@@ -77,8 +77,8 @@ func (db *filedb) GetMatchesByEvent(eventID string) []*Match {
 
 // SaveMatch saves or updates a match in the file database.
 func (db *filedb) SaveMatch(match *Match) error {
-	db.mu.Lock()
-	defer db.mu.Unlock()
+	db.matchesMu.Lock()
+	defer db.matchesMu.Unlock()
 
 	// Make a copy to avoid external modifications
 	matchCopy := *match
@@ -90,8 +90,8 @@ func (db *filedb) SaveMatch(match *Match) error {
 
 // GetMatchAllianceScore retrieves the score for a specific alliance in a match.
 func (db *filedb) GetMatchAllianceScore(matchID, alliance string) *MatchAllianceScore {
-	db.mu.RLock()
-	defer db.mu.RUnlock()
+	db.matchScoresMu.RLock()
+	defer db.matchScoresMu.RUnlock()
 
 	matchScores, ok := db.matchScores[matchID]
 	if !ok {
@@ -110,8 +110,8 @@ func (db *filedb) GetMatchAllianceScore(matchID, alliance string) *MatchAlliance
 
 // SaveMatchAllianceScore saves or updates the score for a specific alliance in a match.
 func (db *filedb) SaveMatchAllianceScore(score *MatchAllianceScore) error {
-	db.mu.Lock()
-	defer db.mu.Unlock()
+	db.matchScoresMu.Lock()
+	defer db.matchScoresMu.Unlock()
 
 	// Ensure the match score map exists
 	if db.matchScores[score.MatchID] == nil {
@@ -128,8 +128,8 @@ func (db *filedb) SaveMatchAllianceScore(score *MatchAllianceScore) error {
 
 // GetMatchTeams retrieves all teams participating in a specific match.
 func (db *filedb) GetMatchTeams(matchID string) []*MatchTeam {
-	db.mu.RLock()
-	defer db.mu.RUnlock()
+	db.matchTeamsMu.RLock()
+	defer db.matchTeamsMu.RUnlock()
 
 	teams, ok := db.matchTeams[matchID]
 	if !ok {
@@ -147,8 +147,8 @@ func (db *filedb) GetMatchTeams(matchID string) []*MatchTeam {
 
 // SaveMatchTeam saves or updates a match team in the file database.
 func (db *filedb) SaveMatchTeam(team *MatchTeam) error {
-	db.mu.Lock()
-	defer db.mu.Unlock()
+	db.matchTeamsMu.Lock()
+	defer db.matchTeamsMu.Unlock()
 
 	// Check if this team already exists for this match
 	teams := db.matchTeams[team.MatchID]
@@ -175,8 +175,11 @@ func (db *filedb) SaveMatchTeam(team *MatchTeam) error {
 
 // GetTeamsByEvent retrieves all unique team IDs that participated at a specific event.
 func (db *filedb) GetTeamsByEvent(eventID string) []int {
-	db.mu.RLock()
-	defer db.mu.RUnlock()
+	// Need to lock both matches and matchTeams since we read from both
+	db.matchesMu.RLock()
+	defer db.matchesMu.RUnlock()
+	db.matchTeamsMu.RLock()
+	defer db.matchTeamsMu.RUnlock()
 
 	teamIDMap := make(map[int]bool)
 
