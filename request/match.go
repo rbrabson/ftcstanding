@@ -1,8 +1,6 @@
 package request
 
 import (
-	"encoding/json"
-	"fmt"
 	"log/slog"
 	"strconv"
 	"strings"
@@ -32,8 +30,6 @@ func RequestMatches(event *database.Event) []*database.Match {
 // GetAndSaveMatchesByType retrieves all qualification matches for an event and saves them to the database.
 func RequestAndSaveMatchesByType(event *database.Event, matchType ftc.MatchType) []*database.Match {
 	matches := RequestMatchesByType(event, matchType)
-	data, _ := json.Marshal(matches)
-	fmt.Println("Saving matches...", string(data))
 	for _, match := range matches {
 		_ = db.SaveMatch(match)
 	}
@@ -79,8 +75,6 @@ func RequestMatchesByType(event *database.Event, matchType ftc.MatchType) []*dat
 			slog.Info("No match scores available", "year", event.Year, "eventCode", event.EventCode, "matchType", matchType)
 		}
 
-		fmt.Println("NumTeams", len(ftcMatch.Teams))
-
 		redScore, blueScore := getMatchScores(match, ftcMatch, ftcScore)
 		_ = db.SaveMatchAllianceScore(redScore)
 		_ = db.SaveMatchAllianceScore(blueScore)
@@ -106,7 +100,6 @@ func getMatch(event *database.Event, ftcMatch *ftc.Match) *database.Match {
 	} else {
 		matchNumber = ftcMatch.MatchNumber
 	}
-	fmt.Println("MatchNumber:", ftcMatch.MatchNumber, "Series:", ftcMatch.Series, "TournamentLevel:", tournamentLevel)
 
 	match := &database.Match{
 		EventID:         event.EventID,
@@ -149,7 +142,6 @@ func getMatchScores(match *database.Match, ftcMatch *ftc.Match, ftcScore *ftc.Ma
 				redScore.MinorFouls = allianceScore.MinorFouls
 				redScore.MajorFouls = allianceScore.MajorFouls
 				redScore.PreFoulTotal = allianceScore.PreFoulTotal
-				fmt.Println("Red Alliance Score:", redScore.TotalPoints, "allianceScore:", allianceScore.TotalPoints)
 			} else {
 				blueScore.AutoPoints = allianceScore.AutoPoints
 				blueScore.TeleopPoints = allianceScore.TeleopPoints
