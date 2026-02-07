@@ -72,7 +72,7 @@ func main() {
 	// output := cli.RenderTeamsByEvent(eventTeams)
 	// fmt.Println(output)
 
-	rankings := query.EventTeamRankingQuery("USNCROQ", 2025)
+	rankings := query.EventTeamRankingQuery("USNCSHQ", 2025)
 	output := cli.RenderTeamRankings(rankings)
 	fmt.Println(output)
 }

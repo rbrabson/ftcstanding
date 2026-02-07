@@ -144,7 +144,7 @@ func RenderTeamRankings(eventRankings *query.EventTeamRankings) string {
 		sb.WriteString("\nNo rankings found for this event.\n")
 	} else {
 		for _, tr := range eventRankings.TeamRankings {
-			team := fmt.Sprintf("%d - %s", tr.Team.TeamID, tr.Team.Name)
+			team := fmt.Sprintf("%#5d - %s", tr.Team.TeamID, tr.Team.Name)
 			wlt := fmt.Sprintf("%d–%d–%d", tr.Ranking.Wins, tr.Ranking.Losses, tr.Ranking.Ties)
 			table.Append([]string{
 				strconv.Itoa(tr.Ranking.Rank),
