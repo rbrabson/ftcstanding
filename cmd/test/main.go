@@ -29,7 +29,7 @@ func setLogLevelFromEnv() slog.Level {
 		logLevel = slog.LevelInfo
 	}
 
-	slog.SetLogLoggerLevel(logLevel)
+	slog.SetDefault(slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: logLevel})))
 	return logLevel
 }
 
@@ -64,11 +64,11 @@ func main() {
 	// output := cli.RenderTeamMatchDetails(matchResults)
 	// fmt.Println(output)
 
-	// matchresults := query.MatchesByEventQuery("USNCSHQ2", 2025)
-	// output := cli.RenderMatchDetails(matchresults)
-	// fmt.Println(output)
-
-	eventTeams := query.TeamsByEventQuery("USNCROQ", 2025)
-	output := cli.RenderTeamsByEvent(eventTeams)
+	matchresults := query.MatchesByEventQuery("USNCROQ", 2025)
+	output := cli.RenderMatchDetails(matchresults)
 	fmt.Println(output)
+
+	// eventTeams := query.TeamsByEventQuery("USNCROQ", 2025)
+	// output := cli.RenderTeamsByEvent(eventTeams)
+	// fmt.Println(output)
 }

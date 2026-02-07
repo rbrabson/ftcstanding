@@ -14,6 +14,22 @@ import (
 
 // RenderMatchDetails renders a list of MatchDetails in a formatted table.
 func RenderMatchDetails(details []*query.MatchDetails) string {
+	var sb strings.Builder
+
+	// Render event information header
+	if len(details) > 0 {
+		event := details[0].Event
+		sb.WriteString(color.New(color.FgGreen, color.Bold).Sprint("Event Information\n"))
+		sb.WriteString(color.New(color.FgCyan).Sprintf("Code: %s\n", event.EventCode))
+		sb.WriteString(color.New(color.FgCyan).Sprintf("Name: %s\n", event.Name))
+		sb.WriteString(color.New(color.FgCyan).Sprintf("Year: %d\n", event.Year))
+		sb.WriteString(color.New(color.FgCyan).Sprintf("Location: %s, %s, %s\n",
+			event.City, event.StateProv, event.Country))
+		sb.WriteString(color.New(color.FgCyan).Sprintf("Dates: %s to %s\n\n",
+			event.DateStart.Format("Jan 2, 2006"),
+			event.DateEnd.Format("Jan 2, 2006")))
+	}
+
 	colorCfg := renderer.ColorizedConfig{
 		Header: renderer.Tint{
 			FG: renderer.Colors{color.FgGreen, color.Bold}, // Green bold headers
@@ -37,7 +53,6 @@ func RenderMatchDetails(details []*query.MatchDetails) string {
 		Settings:  tw.Settings{Separators: tw.Separators{BetweenRows: tw.On}},
 	}
 
-	var sb strings.Builder
 	table := tablewriter.NewTable(&sb,
 		tablewriter.WithRenderer(renderer.NewColorized(colorCfg)),
 		tablewriter.WithConfig(tablewriter.Config{

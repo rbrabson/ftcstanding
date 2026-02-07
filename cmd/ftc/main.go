@@ -27,7 +27,8 @@ func setLogLevelFromEnv() slog.Level {
 		logLevel = slog.LevelInfo
 	}
 
-	slog.SetLogLoggerLevel(logLevel)
+	slog.SetDefault(slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: logLevel})))
+
 	return logLevel
 }
 
