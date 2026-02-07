@@ -1,6 +1,8 @@
 package query
 
 import (
+	"slices"
+
 	"github.com/rbrabson/ftcstanding/database"
 )
 
@@ -49,6 +51,10 @@ func TeamsByEventQuery(eventCode string, year int) *EventTeams {
 			teams = append(teams, team)
 		}
 	}
+
+	slices.SortFunc(teams, func(a, b *database.Team) int {
+		return a.TeamID - b.TeamID
+	})
 
 	return &EventTeams{
 		Event: event,
