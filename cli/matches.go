@@ -37,8 +37,6 @@ func RenderMatchDetails(details []*query.MatchDetails) string {
 		Settings:  tw.Settings{Separators: tw.Separators{BetweenRows: tw.On}},
 	}
 
-	// TODO: only accepts one renderer. Not sure how to combine the colorization and formatting....
-	//       look into the ConfigBuilder interface to see if it helps....
 	var sb strings.Builder
 	table := tablewriter.NewTable(&sb,
 		tablewriter.WithRenderer(renderer.NewColorized(colorCfg)),
