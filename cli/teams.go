@@ -11,6 +11,7 @@ import (
 	"github.com/rbrabson/ftcstanding/query"
 )
 
+// RenderTeams renders a list of teams in a table format.
 func RenderTeams(teams []*database.Team) string {
 	colorCfg := renderer.ColorizedConfig{
 		Header: renderer.Tint{
@@ -56,6 +57,7 @@ func RenderTeams(teams []*database.Team) string {
 	return sb.String()
 }
 
+// RenderTeamMatchDetails renders the details of team matches in a table format.
 func RenderTeamMatchDetails(details []*query.TeamMatchDetails) string {
 	var sb strings.Builder
 	table := tablewriter.NewTable(&sb)

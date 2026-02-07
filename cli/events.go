@@ -8,6 +8,7 @@ import (
 	"github.com/fatih/color"
 	"github.com/olekukonko/tablewriter"
 	"github.com/olekukonko/tablewriter/renderer"
+	"github.com/olekukonko/tablewriter/tw"
 	"github.com/rbrabson/ftcstanding/query"
 )
 
@@ -34,7 +35,6 @@ func RenderTeamsByEvent(eventTeams *query.EventTeams) string {
 	colorCfg := renderer.ColorizedConfig{
 		Header: renderer.Tint{
 			FG: renderer.Colors{color.FgGreen, color.Bold}, // Green bold headers
-			BG: renderer.Colors{color.BgHiWhite},           // White background
 		},
 		Column: renderer.Tint{
 			FG: renderer.Colors{color.FgCyan}, // Default cyan for rows
@@ -52,7 +52,14 @@ func RenderTeamsByEvent(eventTeams *query.EventTeams) string {
 		Separator: renderer.Tint{FG: renderer.Colors{color.FgWhite}}, // White separators
 	}
 
-	table := tablewriter.NewTable(&sb, tablewriter.WithRenderer(renderer.NewColorized(colorCfg)))
+	table := tablewriter.NewTable(&sb,
+		tablewriter.WithRenderer(renderer.NewColorized(colorCfg)),
+		tablewriter.WithConfig(tablewriter.Config{
+			Header: tw.CellConfig{
+				Alignment: tw.CellAlignment{Global: tw.AlignLeft},
+			},
+		}),
+	)
 	table.Header([]string{"Number", "Name", "Location", "Region", "Rookie Year"})
 
 	if len(eventTeams.Teams) == 0 {
