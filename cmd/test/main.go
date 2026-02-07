@@ -34,7 +34,11 @@ func main() {
 	// output := cli.RenderTeams(teams)
 	// fmt.Println(output)
 
-	matchResults := query.GetTeamMatchesByEvent(23532, "USNCROQ", 2025)
-	output := cli.RenderTeamMatchDetails(matchResults)
+	// matchResults := query.TeamMatchesByEventQuery(23532, "USNCROQ", 2025)
+	// output := cli.RenderTeamMatchDetails(matchResults)
+	// fmt.Println(output)
+
+	matchresults := query.MatchesByEventQuery("USNCROQ", 2025)
+	output := cli.RenderMatchDetails(matchresults)
 	fmt.Println(output)
 }

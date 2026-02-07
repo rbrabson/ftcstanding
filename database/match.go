@@ -2,8 +2,6 @@ package database
 
 import (
 	"fmt"
-
-	"github.com/rbrabson/ftc"
 )
 
 const (
@@ -15,6 +13,7 @@ const (
 type Match struct {
 	MatchID         string `json:"matchID"`
 	EventID         string `json:"event_id"`
+	MatchType       string `json:"matchType"`
 	MatchNumber     int    `json:"matchNumber"`
 	ActualStartTime string `json:"actualStartTime"`
 	Description     string `json:"description"`
@@ -73,6 +72,6 @@ type MatchFilter struct {
 }
 
 // GetMatchID generates a unique ID for a match based on its event ID and match number.
-func GetMatchID(event *Event, ftcMatch *ftc.Match) string {
-	return fmt.Sprintf("%s : %d", event.EventID, ftcMatch.MatchNumber)
+func GetMatchID(event *Event, matchType string, matchNumber int) string {
+	return fmt.Sprintf("%s : %s : %d", event.EventID, matchType, matchNumber)
 }

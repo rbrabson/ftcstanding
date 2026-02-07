@@ -1,13 +1,19 @@
 package request
 
 import (
+	"encoding/json"
+	"fmt"
 	"log/slog"
 	"strconv"
 	"strings"
 
 	"github.com/rbrabson/ftc"
 	"github.com/rbrabson/ftcstanding/database"
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 )
+
+var titleCaser = cases.Title(language.English)
 
 // GetAndSaveMatches retrieves all matches for an event and saves them to the database.
 func RequestAndSaveMatches(event *database.Event) []*database.Match {
@@ -26,6 +32,8 @@ func RequestMatches(event *database.Event) []*database.Match {
 // GetAndSaveMatchesByType retrieves all qualification matches for an event and saves them to the database.
 func RequestAndSaveMatchesByType(event *database.Event, matchType ftc.MatchType) []*database.Match {
 	matches := RequestMatchesByType(event, matchType)
+	data, _ := json.Marshal(matches)
+	fmt.Println("Saving matches...", string(data))
 	for _, match := range matches {
 		_ = db.SaveMatch(match)
 	}
@@ -64,6 +72,8 @@ func RequestMatchesByType(event *database.Event, matchType ftc.MatchType) []*dat
 			slog.Info("No match scores available", "year", event.Year, "eventCode", event.EventCode, "matchType", matchType)
 		}
 
+		fmt.Println("NumTeams", len(ftcMatch.Teams))
+
 		redScore, blueScore := getMatchScores(match, ftcMatch, ftcScore)
 		_ = db.SaveMatchAllianceScore(redScore)
 		_ = db.SaveMatchAllianceScore(blueScore)
@@ -82,10 +92,20 @@ func RequestMatchesByType(event *database.Event, matchType ftc.MatchType) []*dat
 
 // getMatch creates a database.Match from an ftc.Match.
 func getMatch(event *database.Event, ftcMatch *ftc.Match) *database.Match {
+	tournamentLevel := titleCaser.String(ftcMatch.TournamentLevel)
+	var matchNumber int
+	if strings.EqualFold(tournamentLevel, string(ftc.PLAYOFF)) {
+		matchNumber = ftcMatch.Series
+	} else {
+		matchNumber = ftcMatch.MatchNumber
+	}
+	fmt.Println("MatchNumber:", ftcMatch.MatchNumber, "Series:", ftcMatch.Series, "TournamentLevel:", tournamentLevel)
+
 	match := &database.Match{
 		EventID:         event.EventID,
-		MatchID:         database.GetMatchID(event, ftcMatch),
-		MatchNumber:     ftcMatch.MatchNumber,
+		MatchID:         database.GetMatchID(event, ftcMatch.TournamentLevel, matchNumber),
+		MatchType:       tournamentLevel,
+		MatchNumber:     matchNumber,
 		ActualStartTime: ftcMatch.ActualStartTime,
 		Description:     ftcMatch.Description,
 		TournamentLevel: ftcMatch.TournamentLevel,

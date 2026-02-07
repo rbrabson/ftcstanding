@@ -8,6 +8,7 @@ require (
 	github.com/joho/godotenv v1.5.1
 	github.com/olekukonko/tablewriter v1.1.3
 	github.com/rbrabson/ftc v0.0.0-20260205181238-6917ef8ce55b
+	golang.org/x/text v0.33.0
 )
 
 require (

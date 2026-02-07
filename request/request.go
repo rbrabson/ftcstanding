@@ -18,10 +18,13 @@ func Init(database database.DB) {
 
 // RequestAndSaveAll requests and saves all data for a given season.
 func RequestAndSaveAll(season string, refresh bool) {
-	RequestAndSaveAwards(season)
-	RequestAndSaveTeams(season)
-	events := RequestAndSaveEvents(season)
-	for _, event := range events {
+	// RequestAndSaveAwards(season)
+	// RequestAndSaveTeams(season)
+	// events := RequestAndSaveEvents(season)
+	events := make([]*database.Event, 0, 1)                // TODO: delete
+	events = append(events, db.GetEvent("USNCROQ : 2026")) // TODO: delete
+	for i, event := range events {
+		slog.Info("Processing event", "eventNumber", i+1, "totalEvents", len(events), "event", event.EventCode)
 		if event.DateEnd.After(time.Now()) {
 			slog.Info("Skipping event details for future event", "event", event.EventCode, "dateEnd", event.DateEnd)
 			continue
@@ -34,7 +37,7 @@ func RequestAndSaveAll(season string, refresh bool) {
 			slog.Info("Skipping event details for already processed event", "event", event.EventCode, "dateEnd", event.DateEnd)
 			continue
 		}
-		slog.Info("Processing event details for event", "event", event.EventCode, "dateEnd", event.DateEnd, "timeSince", time.Since(event.DateEnd))
+		slog.Info("Processing event details for event", "event", event.EventCode)
 		RequestAndSaveEventAwards(event)
 		RequestAndSaveEventRankings(event)
 		RequestAndSaveEventAdvancements(event)

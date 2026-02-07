@@ -59,12 +59,13 @@ func RenderTeams(teams []*database.Team) string {
 func RenderTeamMatchDetails(details []*query.TeamMatchDetails) string {
 	var sb strings.Builder
 	table := tablewriter.NewTable(&sb)
-	table.Header([]string{"Event", "Match", "Alliance", "Total Points", "Teams"})
+	table.Header([]string{"Event", "Type", "Match", "Alliance", "Total Points", "Teams"})
 
 	for _, detail := range details {
 		for _, mt := range detail.Teams {
 			table.Append([]string{
 				detail.Event.EventCode,
+				detail.Match.MatchType,
 				strconv.Itoa(detail.Match.MatchNumber),
 				detail.AllianceScore.Alliance,
 				strconv.Itoa(detail.AllianceScore.TotalPoints),

@@ -5,10 +5,10 @@ import "fmt"
 // InitMatchStatements prepares all SQL statements for match operations.
 func (db *sqldb) initMatchStatements() error {
 	queries := map[string]string{
-		"getMatch":               "SELECT match_id, event_id, match_number, actual_start_time, description, tournament_level FROM matches WHERE match_id = ?",
-		"getAllMatches":          "SELECT match_id, event_id, match_number, actual_start_time, description, tournament_level FROM matches",
-		"getMatchesByEvent":      "SELECT match_id, event_id, match_number, actual_start_time, description, tournament_level FROM matches WHERE event_id = ? ORDER BY match_number",
-		"saveMatch":              "INSERT INTO matches (match_id, event_id, match_number, actual_start_time, description, tournament_level) VALUES (?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE event_id = VALUES(event_id), match_number = VALUES(match_number), actual_start_time = VALUES(actual_start_time), description = VALUES(description), tournament_level = VALUES(tournament_level)",
+		"getMatch":               "SELECT match_id, event_id, match_type, match_number, actual_start_time, description, tournament_level FROM matches WHERE match_id = ?",
+		"getAllMatches":          "SELECT match_id, event_id, match_type, match_number, actual_start_time, description, tournament_level FROM matches",
+		"getMatchesByEvent":      "SELECT match_id, event_id, match_type, match_number, actual_start_time, description, tournament_level FROM matches WHERE event_id = ? ORDER BY match_number",
+		"saveMatch":              "INSERT INTO matches (match_id, event_id, match_type, match_number, actual_start_time, description, tournament_level) VALUES (?, ?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE event_id = VALUES(event_id), match_type = VALUES(match_type), match_number = VALUES(match_number), actual_start_time = VALUES(actual_start_time), description = VALUES(description), tournament_level = VALUES(tournament_level)",
 		"getMatchAllianceScore":  "SELECT match_id, alliance, auto_points, teleop_points, foul_points_committed, pre_foul_total, total_points, major_fouls, minor_fouls FROM match_alliance_scores WHERE match_id = ? AND alliance = ?",
 		"saveMatchAllianceScore": "INSERT INTO match_alliance_scores (match_id, alliance, auto_points, teleop_points, foul_points_committed, pre_foul_total, total_points, major_fouls, minor_fouls) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE auto_points = VALUES(auto_points), teleop_points = VALUES(teleop_points), foul_points_committed = VALUES(foul_points_committed), pre_foul_total = VALUES(pre_foul_total), total_points = VALUES(total_points), major_fouls = VALUES(major_fouls), minor_fouls = VALUES(minor_fouls)",
 		"getMatchTeams":          "SELECT match_id, team_id, alliance, dq, on_field FROM match_teams WHERE match_id = ?",
@@ -39,6 +39,7 @@ func (db *sqldb) GetMatch(matchID string) *Match {
 	err := stmt.QueryRow(matchID).Scan(
 		&match.MatchID,
 		&match.EventID,
+		&match.MatchType,
 		&match.MatchNumber,
 		&match.ActualStartTime,
 		&match.Description,
@@ -72,6 +73,7 @@ func (db *sqldb) GetAllMatches(filters ...MatchFilter) []*Match {
 			err := rows.Scan(
 				&match.MatchID,
 				&match.EventID,
+				&match.MatchType,
 				&match.MatchNumber,
 				&match.ActualStartTime,
 				&match.Description,
@@ -88,7 +90,7 @@ func (db *sqldb) GetAllMatches(filters ...MatchFilter) []*Match {
 	filter := filters[0]
 
 	// Build dynamic query
-	query := "SELECT match_id, event_id, match_number, actual_start_time, description, tournament_level FROM matches"
+	query := "SELECT match_id, event_id, match_type, match_number, actual_start_time, description, tournament_level FROM matches"
 	args := []interface{}{}
 
 	if len(filter.EventIDs) > 0 {
@@ -118,6 +120,7 @@ func (db *sqldb) GetAllMatches(filters ...MatchFilter) []*Match {
 		err := rows.Scan(
 			&match.MatchID,
 			&match.EventID,
+			&match.MatchType,
 			&match.MatchNumber,
 			&match.ActualStartTime,
 			&match.Description,
@@ -149,6 +152,7 @@ func (db *sqldb) GetMatchesByEvent(eventID string) []*Match {
 		err := rows.Scan(
 			&match.MatchID,
 			&match.EventID,
+			&match.MatchType,
 			&match.MatchNumber,
 			&match.ActualStartTime,
 			&match.Description,
@@ -171,6 +175,7 @@ func (db *sqldb) SaveMatch(match *Match) error {
 	_, err := stmt.Exec(
 		match.MatchID,
 		match.EventID,
+		match.MatchType,
 		match.MatchNumber,
 		match.ActualStartTime,
 		match.Description,

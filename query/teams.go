@@ -1,6 +1,7 @@
 package query
 
 import (
+	"log/slog"
 	"slices"
 
 	"github.com/rbrabson/ftcstanding/database"
@@ -19,8 +20,8 @@ func TeamsQuery(filter ...database.TeamFilter) []*database.Team {
 	return db.GetAllTeams(filter...)
 }
 
-// GetTeamMatchesByEvent retrieves all matches for a team at an event, including alliance scores and all participating teams.
-func GetTeamMatchesByEvent(teamID int, eventCode string, year int) []*TeamMatchDetails {
+// TeamMatchesByEventQuery retrieves all matches for a team at an event, including alliance scores and all participating teams.
+func TeamMatchesByEventQuery(teamID int, eventCode string, year int) []*TeamMatchDetails {
 	// Get the event details
 	filter := database.EventFilter{
 		EventCodes: []string{eventCode},
@@ -54,6 +55,7 @@ func GetTeamMatchesByEvent(teamID int, eventCode string, year int) []*TeamMatchD
 		// Get all teams in this match
 		matchTeams := db.GetMatchTeams(match.MatchID)
 		if matchTeams == nil {
+			slog.Debug("no teams found", "matchID", match.MatchID)
 			continue
 		}
 
@@ -69,6 +71,7 @@ func GetTeamMatchesByEvent(teamID int, eventCode string, year int) []*TeamMatchD
 		}
 
 		if !teamFound {
+			slog.Debug("team not found in match", "matchID", match.MatchID, "teamID", teamID)
 			continue
 		}
 
@@ -84,9 +87,16 @@ func GetTeamMatchesByEvent(teamID int, eventCode string, year int) []*TeamMatchD
 	}
 
 	slices.SortFunc(results, func(a, b *TeamMatchDetails) int {
+		if b.Match.TournamentLevel < a.Match.TournamentLevel {
+			return -1
+		}
+		if b.Match.TournamentLevel > a.Match.TournamentLevel {
+			return 1
+		}
 		if a.Match.MatchNumber < b.Match.MatchNumber {
 			return -1
-		} else if a.Match.MatchNumber > b.Match.MatchNumber {
+		}
+		if a.Match.MatchNumber > b.Match.MatchNumber {
 			return 1
 		}
 		return 0
