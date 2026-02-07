@@ -37,14 +37,14 @@ func RenderMatchDetails(details []*query.MatchDetails) string {
 		Column: renderer.Tint{
 			FG: renderer.Colors{color.FgCyan}, // Default cyan for rows
 			Columns: []renderer.Tint{
-				{FG: renderer.Colors{color.FgMagenta}},          // Magenta for column 0 (Match Type)
-				{FG: renderer.Colors{color.FgYellow}},           // Yellow for column 1 (Match Number)
-				{FG: renderer.Colors{color.FgRed, color.Bold}},  // Red for column 2 (Red Team 1)
-				{FG: renderer.Colors{color.FgRed, color.Bold}},  // Red for column 3 (Red Team 2)
-				{FG: renderer.Colors{color.FgBlue, color.Bold}}, // Blue for column 4 (Blue Team 1)
-				{FG: renderer.Colors{color.FgBlue, color.Bold}}, // Blue for column 5 (Blue Team 2)
-				{}, // Default for column 6 (Scores - colors applied inline)
-				{FG: renderer.Colors{color.FgHiCyan, color.Bold}}, // High-intensity cyan for column 7 (Winning Alliance)
+				{FG: renderer.Colors{color.FgMagenta}}, // Magenta for column 0 (Match Type)
+				{FG: renderer.Colors{color.FgYellow}},  // Yellow for column 1 (Match Number)
+				{FG: renderer.Colors{color.FgHiRed}},   // Red for column 2 (Red Team 1)
+				{FG: renderer.Colors{color.FgHiRed}},   // Red for column 3 (Red Team 2)
+				{FG: renderer.Colors{color.FgHiBlue}},  // Blue for column 4 (Blue Team 1)
+				{FG: renderer.Colors{color.FgHiBlue}},  // Blue for column 5 (Blue Team 2)
+				{},                                     // Default for column 6 (Scores - colors applied inline)
+				{},                                     // Default for column 7 (Winning Alliance)
 			},
 		},
 		Border:    renderer.Tint{FG: renderer.Colors{color.FgWhite}}, // White borders
