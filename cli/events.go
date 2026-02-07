@@ -138,15 +138,14 @@ func RenderTeamRankings(eventRankings *query.EventTeamRankings) string {
 			},
 		}),
 	)
-	table.Header([]string{"Rank", "Team", "RS", "Match Pts", "Base Pts", "Auto Pts", "High Score", "W-L-T", "Matches"})
+	table.Header([]string{"Rank", "Team", "RS", "Match Pts", "Base Pts", "Auto Pts", "High Score", "W–L–T", "Matches"})
 
 	if len(eventRankings.TeamRankings) == 0 {
 		sb.WriteString("\nNo rankings found for this event.\n")
 	} else {
 		for _, tr := range eventRankings.TeamRankings {
 			team := fmt.Sprintf("%d - %s", tr.Team.TeamID, tr.Team.Name)
-			wlt := fmt.Sprintf("%d-%d-%d", tr.Ranking.Wins, tr.Ranking.Losses, tr.Ranking.Ties)
-
+			wlt := fmt.Sprintf("%d–%d–%d", tr.Ranking.Wins, tr.Ranking.Losses, tr.Ranking.Ties)
 			table.Append([]string{
 				strconv.Itoa(tr.Ranking.Rank),
 				team,
