@@ -21,27 +21,26 @@ func RenderMatchDetails(details []*query.MatchDetails) string {
 		Column: renderer.Tint{
 			FG: renderer.Colors{color.FgCyan}, // Default cyan for rows
 			Columns: []renderer.Tint{
-				{FG: renderer.Colors{color.FgMagenta}},                                              // Magenta for column 0 (Match Type)
-				{FG: renderer.Colors{color.FgYellow}},                                               // Yellow for column 1 (Match Number)
-				{FG: renderer.Colors{color.FgBlack, color.Bold}, BG: renderer.Colors{color.BgRed}},  // Red for column 2 (Red Team 1)
-				{FG: renderer.Colors{color.FgBlack, color.Bold}, BG: renderer.Colors{color.BgRed}},  // Red for column 3 (Red Team 2)
-				{FG: renderer.Colors{color.FgBlack, color.Bold}, BG: renderer.Colors{color.BgBlue}}, // Blue for column 4 (Blue Team 1)
-				{FG: renderer.Colors{color.FgBlack, color.Bold}, BG: renderer.Colors{color.BgBlue}}, // Blue for column 5 (Blue Team 2)
-				{FG: renderer.Colors{color.FgHiRed}},                                                // High-intensity red for column 6 (Red Score)
-				{FG: renderer.Colors{color.FgHiBlue}},                                               // High-intensity blue for column 7 (Blue Score)
-				{FG: renderer.Colors{color.FgHiCyan}},                                               // High-intensity cyan for column 8 (Winning Alliance)
+				{FG: renderer.Colors{color.FgMagenta}},            // Magenta for column 0 (Match Type)
+				{FG: renderer.Colors{color.FgYellow}},             // Yellow for column 1 (Match Number)
+				{FG: renderer.Colors{color.FgRed, color.Bold}},    // Red for column 2 (Red Team 1)
+				{FG: renderer.Colors{color.FgRed, color.Bold}},    // Red for column 3 (Red Team 2)
+				{FG: renderer.Colors{color.FgBlue, color.Bold}},   // Blue for column 4 (Blue Team 1)
+				{FG: renderer.Colors{color.FgBlue, color.Bold}},   // Blue for column 5 (Blue Team 2)
+				{FG: renderer.Colors{color.FgHiRed, color.Bold}},  // High-intensity red for column 6 (Red Score)
+				{FG: renderer.Colors{color.FgHiBlue, color.Bold}}, // High-intensity blue for column 7 (Blue Score)
+				{FG: renderer.Colors{color.FgHiCyan, color.Bold}}, // High-intensity cyan for column 8 (Winning Alliance)
 			},
 		},
 		Border:    renderer.Tint{FG: renderer.Colors{color.FgWhite}}, // White borders
 		Separator: renderer.Tint{FG: renderer.Colors{color.FgWhite}}, // White separators
+		Settings:  tw.Settings{Separators: tw.Separators{BetweenRows: tw.On}},
 	}
 
-	// TODO: trying some stuff out....
+	// TODO: only accepts one renderer. Not sure how to combine the colorization and formatting....
+	//       look into the ConfigBuilder interface to see if it helps....
 	var sb strings.Builder
 	table := tablewriter.NewTable(&sb,
-		tablewriter.WithRenderer(renderer.NewBlueprint(tw.Rendition{
-			Settings: tw.Settings{Separators: tw.Separators{BetweenRows: tw.On}},
-		})),
 		tablewriter.WithRenderer(renderer.NewColorized(colorCfg)),
 		tablewriter.WithConfig(tablewriter.Config{
 			Header: tw.CellConfig{
@@ -49,13 +48,23 @@ func RenderMatchDetails(details []*query.MatchDetails) string {
 				Alignment: tw.CellAlignment{Global: tw.AlignCenter},
 			},
 			Row: tw.CellConfig{
-				Merging:   tw.CellMerging{Mode: tw.MergeHierarchical},
-				Alignment: tw.CellAlignment{Global: tw.AlignCenter},
+				Merging: tw.CellMerging{Mode: tw.MergeHierarchical},
+				Alignment: tw.CellAlignment{PerColumn: []tw.Align{
+					tw.AlignLeft,
+					tw.AlignLeft,
+					tw.AlignCenter,
+					tw.AlignCenter,
+					tw.AlignCenter,
+					tw.AlignCenter,
+					tw.AlignCenter,
+					tw.AlignCenter,
+					tw.AlignCenter,
+				}},
 			},
 		}),
 	)
 
-	table.Header([]string{"Type", "Match #", "Red Teams", "Red Teams", "Blue Teams", "Blue Teams", "Red Score", "Blue Score", "Winner"})
+	table.Header([]string{"Type", "Match #", "Red Alliance", "Red Alliance", "Blue Alliance", "Blue Alliance", "Red Score", "Blue Score", "Winner"})
 
 	for _, detail := range details {
 		// Get red alliance teams
@@ -103,21 +112,10 @@ func RenderMatchDetails(details []*query.MatchDetails) string {
 			redTeams[1],
 			blueTeams[0],
 			blueTeams[1],
-			redScore + "\n" + blueScore,
-			redScore + "\n" + blueScore,
+			redScore,
+			blueScore,
 			winner,
 		})
-		// table.Append([]string{
-		// 	detail.Match.MatchType,
-		// 	strconv.Itoa(detail.Match.MatchNumber),
-		// 	redTeams[0],
-		// 	redTeams[1],
-		// 	blueTeams[0],
-		// 	blueTeams[1],
-		// 	redScore + "\n" + blueScore,
-		// 	redScore + "\n" + blueScore,
-		// 	winner,
-		// })
 	}
 
 	// Add footer with match count
