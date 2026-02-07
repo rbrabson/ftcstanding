@@ -35,7 +35,7 @@ func RequestAndSaveAll(season string, refresh bool) {
 			slog.Info("Skipping event details for already processed event", "event", event.EventCode, "dateEnd", event.DateEnd)
 			continue
 		}
-		slog.Info("Processing event details for event", "event", event.EventCode)
+		slog.Info("Processing event details for event", "event", event.EventCode, "matches", len(matches), "dateEnd", event.DateEnd)
 		RequestAndSaveEventAwards(event)
 		RequestAndSaveEventRankings(event)
 		RequestAndSaveEventAdvancements(event)
