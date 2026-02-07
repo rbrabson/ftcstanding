@@ -45,6 +45,7 @@ type filedb struct {
 	eventAwardsMu       sync.RWMutex
 	eventRankingsMu     sync.RWMutex
 	eventAdvancementsMu sync.RWMutex
+	eventTeamsMu        sync.RWMutex
 	matchesMu           sync.RWMutex
 	matchScoresMu       sync.RWMutex
 	matchTeamsMu        sync.RWMutex
@@ -55,6 +56,7 @@ type filedb struct {
 	eventAwards       map[string][]*EventAward       // keyed by eventID
 	eventRankings     map[string][]*EventRanking     // keyed by eventID
 	eventAdvancements map[string][]*EventAdvancement // keyed by eventID
+	eventTeams        map[string][]*EventTeam        // keyed by eventID
 	matches           map[string]*Match
 	matchScores       map[string]map[string]*MatchAllianceScore // matchID -> alliance -> score
 	matchTeams        map[string][]*MatchTeam                   // keyed by matchID
@@ -87,6 +89,7 @@ func initFileDB() (*filedb, error) {
 		eventAwards:       make(map[string][]*EventAward),
 		eventRankings:     make(map[string][]*EventRanking),
 		eventAdvancements: make(map[string][]*EventAdvancement),
+		eventTeams:        make(map[string][]*EventTeam),
 		matches:           make(map[string]*Match),
 		matchScores:       make(map[string]map[string]*MatchAllianceScore),
 		matchTeams:        make(map[string][]*MatchTeam),
@@ -120,6 +123,8 @@ func (db *filedb) loadAll() error {
 	defer db.eventRankingsMu.Unlock()
 	db.eventAdvancementsMu.Lock()
 	defer db.eventAdvancementsMu.Unlock()
+	db.eventTeamsMu.Lock()
+	defer db.eventTeamsMu.Unlock()
 	db.matchesMu.Lock()
 	defer db.matchesMu.Unlock()
 	db.matchScoresMu.Lock()
@@ -157,6 +162,11 @@ func (db *filedb) loadAll() error {
 		return err
 	}
 
+	// Load event teams
+	if err := db.loadJSONFile("event_teams.json", &db.eventTeams); err != nil && !os.IsNotExist(err) {
+		return err
+	}
+
 	// Load matches
 	if err := db.loadJSONFile("matches.json", &db.matches); err != nil && !os.IsNotExist(err) {
 		return err
@@ -190,6 +200,8 @@ func (db *filedb) saveAll() error {
 	defer db.eventRankingsMu.RUnlock()
 	db.eventAdvancementsMu.RLock()
 	defer db.eventAdvancementsMu.RUnlock()
+	db.eventTeamsMu.RLock()
+	defer db.eventTeamsMu.RUnlock()
 	db.matchesMu.RLock()
 	defer db.matchesMu.RUnlock()
 	db.matchScoresMu.RLock()
@@ -218,6 +230,10 @@ func (db *filedb) saveAll() error {
 	}
 
 	if err := db.saveJSONFile("event_advancements.json", db.eventAdvancements); err != nil {
+		return err
+	}
+
+	if err := db.saveJSONFile("event_teams.json", db.eventTeams); err != nil {
 		return err
 	}
 

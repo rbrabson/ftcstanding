@@ -110,3 +110,37 @@ func MatchesByEventQuery(eventCode string, year int) []*MatchDetails {
 
 	return results
 }
+
+// GetEventTeamsQuery retrieves all EventTeam entries for a given event.
+func GetEventTeamsQuery(eventCode string, year int) []*database.EventTeam {
+	// Get the event details
+	filter := database.EventFilter{
+		EventCodes: []string{eventCode},
+	}
+	events := db.GetAllEvents(filter)
+	if len(events) == 0 {
+		return nil
+	}
+	var event *database.Event
+	for _, e := range events {
+		if e.Year == year {
+			event = e
+			break
+		}
+	}
+
+	if event == nil {
+		return nil
+	}
+
+	return db.GetEventTeams(event.EventID)
+}
+
+// SaveEventTeam saves an EventTeam entry to the database.
+func SaveEventTeam(eventID string, teamID int) error {
+	eventTeam := &database.EventTeam{
+		EventID: eventID,
+		TeamID:  teamID,
+	}
+	return db.SaveEventTeam(eventTeam)
+}

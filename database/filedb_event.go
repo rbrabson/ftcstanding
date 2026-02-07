@@ -417,3 +417,67 @@ func (db *filedb) GetAllAdvancements(filters ...AdvancementFilter) []*EventAdvan
 
 	return result
 }
+
+// GetEventTeams retrieves all teams for a specific event.
+func (db *filedb) GetEventTeams(eventID string) []*EventTeam {
+	db.eventTeamsMu.RLock()
+	defer db.eventTeamsMu.RUnlock()
+
+	teams, ok := db.eventTeams[eventID]
+	if !ok {
+		return nil
+	}
+
+	// Return copies
+	result := make([]*EventTeam, len(teams))
+	for i, team := range teams {
+		teamCopy := *team
+		result[i] = &teamCopy
+	}
+	return result
+}
+
+// SaveEventTeam saves or updates an event team in the file database.
+func (db *filedb) SaveEventTeam(et *EventTeam) error {
+	db.eventTeamsMu.Lock()
+	defer db.eventTeamsMu.Unlock()
+
+	// Check if this team already exists for this event
+	teams := db.eventTeams[et.EventID]
+	found := false
+	for i, existing := range teams {
+		if existing.TeamID == et.TeamID {
+			// Update existing
+			etCopy := *et
+			teams[i] = &etCopy
+			found = true
+			break
+		}
+	}
+
+	if !found {
+		// Add new
+		etCopy := *et
+		db.eventTeams[et.EventID] = append(teams, &etCopy)
+	}
+
+	// Persist to disk
+	return db.saveJSONFile("event_teams.json", db.eventTeams)
+}
+
+// GetEventsByTeam retrieves all event IDs that a team has or will participate in.
+func (db *filedb) GetEventsByTeam(teamID int) []string {
+	db.eventTeamsMu.RLock()
+	defer db.eventTeamsMu.RUnlock()
+
+	var eventIDs []string
+	for eventID, teams := range db.eventTeams {
+		for _, team := range teams {
+			if team.TeamID == teamID {
+				eventIDs = append(eventIDs, eventID)
+				break
+			}
+		}
+	}
+	return eventIDs
+}

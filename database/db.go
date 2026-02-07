@@ -28,6 +28,9 @@ type DB interface {
 	SaveEventRanking(er *EventRanking) error
 	GetEventAdvancements(eventID string) []*EventAdvancement
 	SaveEventAdvancement(ea *EventAdvancement) error
+	GetEventTeams(eventID string) []*EventTeam
+	SaveEventTeam(et *EventTeam) error
+	GetEventsByTeam(teamID int) []string
 	GetRegionCodes() []string
 	GetEventCodesByRegion(regionCode string) []string
 	GetAdvancementsByRegion(regionCode string) []*EventAdvancement

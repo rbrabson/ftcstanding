@@ -162,3 +162,49 @@ func RequestEventAdvancements(event *database.Event) []*database.EventAdvancemen
 	slog.Info("Finished processing event advancements", "count", len(eventAdvancements))
 	return eventAdvancements
 }
+
+func RequestTeamsInEvent(event *database.Event) []*database.EventTeam {
+	// Get all matches for the event from the database
+	matches := db.GetMatchesByEvent(event.EventID)
+	if len(matches) == 0 {
+		slog.Warn("no matches found for event", "eventID", event.EventID)
+		return nil
+	}
+
+	// Collect all unique team IDs from matches
+	teamIDsMap := make(map[int]bool)
+	for _, match := range matches {
+		matchTeams := db.GetMatchTeams(match.MatchID)
+		for _, mt := range matchTeams {
+			teamIDsMap[mt.TeamID] = true
+		}
+	}
+
+	eventTeams := make([]*database.EventTeam, 0, len(teamIDsMap))
+	// Store EventTeam entries for all unique teams
+	for teamID := range teamIDsMap {
+		eventTeam := &database.EventTeam{
+			EventID: event.EventID,
+			TeamID:  teamID,
+		}
+		eventTeams = append(eventTeams, eventTeam)
+	}
+
+	slog.Info("retrieved event teams for event", "eventCode", event.EventCode, "teamCount", len(teamIDsMap))
+	return eventTeams
+}
+
+// RequestAndSaveTeamsInEvent retrieves all teams for an event and saves them to the database.
+func RequestAndSaveTeamsInEvent(event *database.Event) []*database.EventTeam {
+	eventTeams := RequestTeamsInEvent(event)
+
+	for _, eventTeam := range eventTeams {
+		if err := db.SaveEventTeam(eventTeam); err != nil {
+			slog.Error("failed to save event team", "eventID", event.EventID, "teamID", eventTeam.TeamID, "error", err)
+			return nil
+		}
+	}
+
+	slog.Info("stored event teams from matches", "eventID", event.EventID, "eventCode", event.EventCode, "teamCount", len(eventTeams))
+	return eventTeams
+}

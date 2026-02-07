@@ -183,3 +183,38 @@ func getMatchTeams(match *database.Match, ftcMatch *ftc.Match) (redTeams, blueTe
 	slog.Debug("Finished processing match teams", "redTeams", redTeams, "blueTeams", blueTeams)
 	return redTeams, blueTeams
 }
+
+// StoreEventTeamsFromMatches extracts all unique teams from matches and stores them as EventTeam entries.
+// This should be called after matches have been retrieved and saved to ensure the event_teams table is populated.
+func StoreEventTeamsFromMatches(event *database.Event) error {
+	// Get all matches for the event from the database
+	matches := db.GetMatchesByEvent(event.EventID)
+	if len(matches) == 0 {
+		slog.Warn("no matches found for event", "eventID", event.EventID)
+		return nil
+	}
+
+	// Collect all unique team IDs from matches
+	teamIDsMap := make(map[int]bool)
+	for _, match := range matches {
+		matchTeams := db.GetMatchTeams(match.MatchID)
+		for _, mt := range matchTeams {
+			teamIDsMap[mt.TeamID] = true
+		}
+	}
+
+	// Store EventTeam entries for all unique teams
+	for teamID := range teamIDsMap {
+		eventTeam := &database.EventTeam{
+			EventID: event.EventID,
+			TeamID:  teamID,
+		}
+		if err := db.SaveEventTeam(eventTeam); err != nil {
+			slog.Error("failed to save event team", "eventID", event.EventID, "teamID", teamID, "error", err)
+			return err
+		}
+	}
+
+	slog.Info("stored event teams from matches", "eventID", event.EventID, "eventCode", event.EventCode, "teamCount", len(teamIDsMap))
+	return nil
+}

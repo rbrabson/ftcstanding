@@ -59,6 +59,12 @@ type EventAdvancement struct {
 	TeamID  int    `json:"team_id"`
 }
 
+// EventTeam represents a team participating in an event. EventID and TeamID together form the primary key.
+type EventTeam struct {
+	EventID string `json:"event_id"`
+	TeamID  int    `json:"team_id"`
+}
+
 // String returns a string representation of the Event.
 func (e *Event) String() string {
 	return fmt.Sprintf("Event{ID: %q, Code: %q, Name: %q, Year: %d, City: %s, %s}",
@@ -81,6 +87,12 @@ func (er *EventRanking) String() string {
 func (ea *EventAdvancement) String() string {
 	return fmt.Sprintf("EventAdvancement{EventID: %q, TeamID: %d}",
 		ea.EventID, ea.TeamID)
+}
+
+// String returns a string representation of the EventTeam.
+func (et *EventTeam) String() string {
+	return fmt.Sprintf("EventTeam{EventID: %q, TeamID: %d}",
+		et.EventID, et.TeamID)
 }
 
 // EventFilter defines criteria for filtering events.

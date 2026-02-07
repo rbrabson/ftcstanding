@@ -18,6 +18,9 @@ func (db *sqldb) initEventStatements() error {
 		"saveEventRanking":        "INSERT INTO event_rankings (event_id, team_id, rank, sort_order1, sort_order2, sort_order3, sort_order4, sort_order5, sort_order6, wins, losses, ties, dq, matches_played, matches_counted) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE rank = VALUES(rank), sort_order1 = VALUES(sort_order1), sort_order2 = VALUES(sort_order2), sort_order3 = VALUES(sort_order3), sort_order4 = VALUES(sort_order4), sort_order5 = VALUES(sort_order5), sort_order6 = VALUES(sort_order6), wins = VALUES(wins), losses = VALUES(losses), ties = VALUES(ties), dq = VALUES(dq), matches_played = VALUES(matches_played), matches_counted = VALUES(matches_counted)",
 		"getEventAdvancements":    "SELECT event_id, team_id FROM event_advancements WHERE event_id = ?",
 		"saveEventAdvancement":    "INSERT INTO event_advancements (event_id, team_id) VALUES (?, ?) ON DUPLICATE KEY UPDATE event_id = event_id",
+		"getEventTeams":           "SELECT event_id, team_id FROM event_teams WHERE event_id = ?",
+		"saveEventTeam":           "INSERT INTO event_teams (event_id, team_id) VALUES (?, ?) ON DUPLICATE KEY UPDATE event_id = event_id",
+		"getEventsByTeam":         "SELECT DISTINCT event_id FROM event_teams WHERE team_id = ? ORDER BY event_id",
 		"getAllAdvancements":      "SELECT event_id, team_id FROM event_advancements ORDER BY event_id, team_id",
 		"getRegionCodes":          "SELECT DISTINCT region_code FROM events WHERE region_code IS NOT NULL AND region_code != '' ORDER BY region_code",
 		"getEventCodesByRegion":   "SELECT DISTINCT event_code FROM events WHERE region_code = ? ORDER BY event_code",
@@ -349,6 +352,64 @@ func (db *sqldb) SaveEventAdvancement(ea *EventAdvancement) error {
 	}
 	_, err := stmt.Exec(ea.EventID, ea.TeamID)
 	return err
+}
+
+// GetEventTeams retrieves all teams for a specific event.
+func (db *sqldb) GetEventTeams(eventID string) []*EventTeam {
+	stmt := db.getStatement("getEventTeams")
+	if stmt == nil {
+		return nil
+	}
+	rows, err := stmt.Query(eventID)
+	if err != nil {
+		return nil
+	}
+	defer rows.Close()
+
+	var teams []*EventTeam
+	for rows.Next() {
+		var et EventTeam
+		err := rows.Scan(&et.EventID, &et.TeamID)
+		if err != nil {
+			continue
+		}
+		teams = append(teams, &et)
+	}
+	return teams
+}
+
+// SaveEventTeam saves or updates an event team in the database.
+func (db *sqldb) SaveEventTeam(et *EventTeam) error {
+	stmt := db.getStatement("saveEventTeam")
+	if stmt == nil {
+		return fmt.Errorf("prepared statement not found")
+	}
+	_, err := stmt.Exec(et.EventID, et.TeamID)
+	return err
+}
+
+// GetEventsByTeam retrieves all event IDs that a team has or will participate in, sorted alphabetically.
+func (db *sqldb) GetEventsByTeam(teamID int) []string {
+	stmt := db.getStatement("getEventsByTeam")
+	if stmt == nil {
+		return nil
+	}
+	rows, err := stmt.Query(teamID)
+	if err != nil {
+		return nil
+	}
+	defer rows.Close()
+
+	var eventIDs []string
+	for rows.Next() {
+		var eventID string
+		err := rows.Scan(&eventID)
+		if err != nil {
+			continue
+		}
+		eventIDs = append(eventIDs, eventID)
+	}
+	return eventIDs
 }
 
 // GetRegionCodes retrieves all unique region codes from events, sorted alphabetically.
