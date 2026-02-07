@@ -26,6 +26,7 @@ func main() {
 
 	request.Init(db)
 	query.Init(db)
+	cli.Init(db)
 
 	// filter := database.TeamFilter{
 	// 	HomeRegions: []string{"USNC"},

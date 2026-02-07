@@ -19,7 +19,7 @@ type MatchDetails struct {
 type MatchAllianceDetails struct {
 	Alliance string
 	Score    *database.MatchAllianceScore
-	Teams    []*database.MatchTeam
+	Teams    []*database.Team
 }
 
 // MatchesByEventQuery retrieves all matches for an event, including alliance scores and all participating teams.
@@ -66,12 +66,13 @@ func MatchesByEventQuery(eventCode string, year int) []*MatchDetails {
 		blueScore := db.GetMatchAllianceScore(match.MatchID, database.AllianceBlue)
 
 		// Separate teams by alliance
-		var redTeams, blueTeams []*database.MatchTeam
+		var redTeams, blueTeams []*database.Team
 		for _, team := range matchTeams {
+			t := db.GetTeam(team.TeamID)
 			if team.Alliance == database.AllianceRed {
-				redTeams = append(redTeams, team)
+				redTeams = append(redTeams, t)
 			} else {
-				blueTeams = append(blueTeams, team)
+				blueTeams = append(blueTeams, t)
 			}
 		}
 
