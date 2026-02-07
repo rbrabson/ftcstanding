@@ -26,6 +26,7 @@ func RenderMatchDetails(details []*query.MatchDetails) string {
 				{FG: renderer.Colors{color.FgBlue}},    // Blue for column 3 (Blue Teams)
 				{FG: renderer.Colors{color.FgHiRed}},   // High-intensity red for column 4 (Red Score)
 				{FG: renderer.Colors{color.FgHiBlue}},  // High-intensity blue for column 5 (Blue Score)
+				{FG: renderer.Colors{color.FgHiCyan}},  // High-intensity cyan for column 7 (Winning Alliance)
 			},
 		},
 		Border:    renderer.Tint{FG: renderer.Colors{color.FgWhite}}, // White borders
@@ -34,7 +35,7 @@ func RenderMatchDetails(details []*query.MatchDetails) string {
 
 	var sb strings.Builder
 	table := tablewriter.NewTable(&sb, tablewriter.WithRenderer(renderer.NewColorized(colorCfg)))
-	table.Header([]string{"Type", "Match #", "Red Teams", "Blue Teams", "Red Score", "Blue Score"})
+	table.Header([]string{"Type", "Match #", "Red Teams", "Blue Teams", "Red Score", "Blue Score", "Winner"})
 
 	for _, detail := range details {
 		// Get red alliance teams
@@ -52,14 +53,27 @@ func RenderMatchDetails(details []*query.MatchDetails) string {
 		blueTeamsStr := strings.Join(blueTeams, ", ")
 
 		// Get scores
+		var redPoints, bluePoints int
 		redScore := "-"
 		if detail.RedAlliance.Score != nil {
 			redScore = strconv.Itoa(detail.RedAlliance.Score.TotalPoints)
+			redPoints = detail.RedAlliance.Score.TotalPoints
 		}
 
 		blueScore := "-"
 		if detail.BlueAlliance.Score != nil {
 			blueScore = strconv.Itoa(detail.BlueAlliance.Score.TotalPoints)
+			bluePoints = detail.BlueAlliance.Score.TotalPoints
+		}
+
+		var winner string
+		switch {
+		case redPoints > bluePoints:
+			winner = "Red"
+		case bluePoints > redPoints:
+			winner = "Blue"
+		default:
+			winner = "Tie"
 		}
 
 		table.Append([]string{
@@ -69,6 +83,7 @@ func RenderMatchDetails(details []*query.MatchDetails) string {
 			blueTeamsStr,
 			redScore,
 			blueScore,
+			winner,
 		})
 	}
 

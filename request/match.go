@@ -61,9 +61,16 @@ func RequestMatchesByType(event *database.Event, matchType ftc.MatchType) []*dat
 		match := getMatch(event, ftcMatch)
 		matches = append(matches, match)
 
+		// TODO: this is wrong
 		var ftcScore *ftc.MatchScores
 		for _, score := range ftcScores {
-			if score.MatchNumber == ftcMatch.MatchNumber {
+			var matchNumber int
+			if strings.EqualFold(string(ftc.PLAYOFF), ftcMatch.TournamentLevel) {
+				matchNumber = ftcMatch.Series
+			} else {
+				matchNumber = ftcMatch.MatchNumber
+			}
+			if score.MatchNumber == matchNumber {
 				ftcScore = score
 				break
 			}
@@ -122,6 +129,7 @@ func getMatchScores(match *database.Match, ftcMatch *ftc.Match, ftcScore *ftc.Ma
 		AutoPoints:          ftcMatch.ScoreRedAuto,
 		TeleopPoints:        ftcMatch.ScoreRedFinal - ftcMatch.ScoreRedAuto,
 		FoulPointsCommitted: ftcMatch.ScoreRedFoul,
+		TotalPoints:         ftcMatch.ScoreRedFinal,
 	}
 	blueScore = &database.MatchAllianceScore{
 		MatchID:             match.MatchID,
@@ -129,18 +137,19 @@ func getMatchScores(match *database.Match, ftcMatch *ftc.Match, ftcScore *ftc.Ma
 		AutoPoints:          ftcMatch.ScoreBlueAuto,
 		TeleopPoints:        ftcMatch.ScoreBlueFinal - ftcMatch.ScoreBlueAuto,
 		FoulPointsCommitted: ftcMatch.ScoreBlueFoul,
+		TotalPoints:         ftcMatch.ScoreBlueFinal,
 	}
 
 	if ftcScore != nil {
 		for _, allianceScore := range ftcScore.Alliances {
-			if allianceScore.Alliance == database.AllianceRed {
+			if strings.EqualFold(allianceScore.Alliance, database.AllianceRed) {
 				redScore.AutoPoints = allianceScore.AutoPoints
 				redScore.TeleopPoints = allianceScore.TeleopPoints
 				redScore.FoulPointsCommitted = allianceScore.FoulPointsCommitted
 				redScore.MinorFouls = allianceScore.MinorFouls
 				redScore.MajorFouls = allianceScore.MajorFouls
 				redScore.PreFoulTotal = allianceScore.PreFoulTotal
-				redScore.TotalPoints = allianceScore.TotalPoints
+				fmt.Println("Red Alliance Score:", redScore.TotalPoints, "allianceScore:", allianceScore.TotalPoints)
 			} else {
 				blueScore.AutoPoints = allianceScore.AutoPoints
 				blueScore.TeleopPoints = allianceScore.TeleopPoints
@@ -148,7 +157,6 @@ func getMatchScores(match *database.Match, ftcMatch *ftc.Match, ftcScore *ftc.Ma
 				blueScore.MinorFouls = allianceScore.MinorFouls
 				blueScore.MajorFouls = allianceScore.MajorFouls
 				blueScore.PreFoulTotal = allianceScore.PreFoulTotal
-				blueScore.TotalPoints = allianceScore.TotalPoints
 			}
 		}
 	}
