@@ -64,7 +64,7 @@ func main() {
 	// output := cli.RenderTeamMatchDetails(matchResults)
 	// fmt.Println(output)
 
-	matchresults := query.MatchesByEventQuery("USNCROQ", 2025)
+	matchresults := query.MatchesByEventQuery("USNCSHQ", 2025)
 	output := cli.RenderMatchDetails(matchresults)
 	fmt.Println(output)
 

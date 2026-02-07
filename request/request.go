@@ -18,9 +18,15 @@ func Init(database database.DB) {
 
 // RequestAndSaveAll requests and saves all data for a given season.
 func RequestAndSaveAll(season string, refresh bool) {
-	RequestAndSaveAwards(season)
-	RequestAndSaveTeams(season)
-	events := RequestAndSaveEvents(season)
+	var events []*database.Event
+	if refresh {
+		RequestAndSaveAwards(season)
+		RequestAndSaveTeams(season)
+		events = RequestAndSaveEvents(season)
+	} else {
+		events = db.GetAllEvents()
+	}
+
 	for i, event := range events {
 		slog.Info("Processing event", "eventNumber", i+1, "totalEvents", len(events), "event", event.EventCode)
 		if event.DateEnd.After(time.Now()) {
