@@ -64,11 +64,15 @@ func main() {
 	// output := cli.RenderTeamMatchDetails(matchResults)
 	// fmt.Println(output)
 
-	matchresults := query.MatchesByEventQuery("USNCSHQ", 2025)
-	output := cli.RenderMatchDetails(matchresults)
-	fmt.Println(output)
+	// matchresults := query.MatchesByEventQuery("USNCSHQ", 2025)
+	// output := cli.RenderMatchDetails(matchresults)
+	// fmt.Println(output)
 
 	// eventTeams := query.TeamsByEventQuery("USNCROQ", 2025)
 	// output := cli.RenderTeamsByEvent(eventTeams)
 	// fmt.Println(output)
+
+	rankings := query.EventTeamRankingQuery("USNCROQ", 2025)
+	output := cli.RenderTeamRankings(rankings)
+	fmt.Println(output)
 }
