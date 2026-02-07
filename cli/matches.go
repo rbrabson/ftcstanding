@@ -56,8 +56,17 @@ func RenderMatchDetails(details []*query.MatchDetails) string {
 		tablewriter.WithRenderer(renderer.NewColorized(colorCfg)),
 		tablewriter.WithConfig(tablewriter.Config{
 			Header: tw.CellConfig{
-				Merging:   tw.CellMerging{Mode: tw.MergeHorizontal},
-				Alignment: tw.CellAlignment{Global: tw.AlignCenter},
+				Merging: tw.CellMerging{Mode: tw.MergeHorizontal},
+				Alignment: tw.CellAlignment{PerColumn: []tw.Align{
+					tw.AlignLeft,   // Type - left aligned
+					tw.AlignCenter, // Match #
+					tw.AlignCenter, // Red Alliance
+					tw.AlignCenter, // Red Alliance
+					tw.AlignCenter, // Blue Alliance
+					tw.AlignCenter, // Blue Alliance
+					tw.AlignCenter, // Scores
+					tw.AlignCenter, // Winner
+				}},
 			},
 			Row: tw.CellConfig{
 				Merging: tw.CellMerging{Mode: tw.MergeHierarchical},
