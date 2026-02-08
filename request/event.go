@@ -6,6 +6,7 @@ package request
 import (
 	"log/slog"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/rbrabson/ftc"
@@ -158,6 +159,7 @@ func RequestEventAdvancements(event *database.Event) []*database.EventAdvancemen
 		eventAdvancement := database.EventAdvancement{
 			EventID: event.EventID,
 			TeamID:  ftcEventAdvancement.Team,
+			Status:  strings.ToLower(ftcEventAdvancement.Status),
 		}
 		eventAdvancements = append(eventAdvancements, &eventAdvancement)
 	}

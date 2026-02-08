@@ -63,18 +63,20 @@ func RenderAdvancementReport(report *query.AdvancementReport) string {
 	if len(report.TeamAdvancements) == 0 {
 		sb.WriteString("\nNo teams found for this event.\n")
 	} else {
-		for i, ta := range report.TeamAdvancements {
+		var advancementRank int
+		for _, ta := range report.TeamAdvancements {
 			// Format team with advancement status
 			teamName := fmt.Sprintf("%5d - %s", ta.Team.TeamID, ta.Team.Name)
-			// TODO: this is wrong; figure out where to get the correct advancement status
-			// if ta.Advances {
-			// 	teamName = fmt.Sprintf("%s (already advanced)", teamName)
-			// }
-
-			// Format advancement number
-			advNumber := ta.AdvancementNumber
-			if ta.Advances {
-				advNumber = strconv.Itoa(i + 1)
+			var advancementNumber string
+			switch {
+			case ta.Status == "already_advancing":
+				teamName = fmt.Sprintf("%s\n        (already advanced)", teamName)
+				advancementNumber = "-"
+			case ta.AdvancementNumber != "-":
+				advancementRank++
+				advancementNumber = strconv.Itoa(advancementRank)
+			default:
+				advancementNumber = "-"
 			}
 
 			table.Append([]string{
@@ -85,7 +87,7 @@ func RenderAdvancementReport(report *query.AdvancementReport) string {
 				fmt.Sprintf("%d", ta.PlayoffPoints),
 				fmt.Sprintf("%d", ta.SelectionPoints),
 				fmt.Sprintf("%d", ta.QualificationPoints),
-				advNumber,
+				advancementNumber,
 			})
 		}
 

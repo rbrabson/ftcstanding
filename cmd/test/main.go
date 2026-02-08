@@ -80,7 +80,7 @@ func main() {
 	// output := cli.RenderAwardsByEvent(awardsResults)
 	// fmt.Println(output)
 
-	advancementReport := query.AdvancementReportQuery("USNCSHQ", 2025)
+	advancementReport := query.AdvancementReportQuery("USNCSAQ", 2025)
 	output := cli.RenderAdvancementReport(advancementReport)
 	fmt.Println(output)
 }

@@ -23,6 +23,7 @@ type TeamAdvancement struct {
 	QualificationPoints int
 	AdvancementNumber   string // Rank by total points for advancing teams, or "-"
 	Advances            bool
+	Status              string // Status from EventAdvancement (e.g., "already advanced")
 }
 
 // AdvancementReport represents an event with all team advancement information.
@@ -68,16 +69,16 @@ func AdvancementReportQuery(eventCode string, year int) *AdvancementReport {
 	// Get advancements for the event
 	advancements := db.GetEventAdvancements(event.EventID)
 	advancementMap := make(map[int]bool)
+	advancementStatusMap := make(map[int]string)
 	for _, adv := range advancements {
-		// TODP: don't set to true a team has already advanced (see USNCSAQ for examples). We probably need a boolean for this
-		//       so we can display it accurately in the advancement report.
 		advancementMap[adv.TeamID] = true
+		advancementStatusMap[adv.TeamID] = adv.Status
 	}
 
 	// Get awards for judging points calculation
 	awards := db.GetEventAwards(event.EventID)
 	judgingPointsMap := calculateJudgingPoints(awards)
-	playoffPointsMap := calculatePlayoffPoints(awards)
+	playoffPointsMap := calculatePlayoffPoints(event)
 	selectionPointsMap := calculateSelectionPoints(event)
 	qualificationPointsMap := calculateQualificationPoints(rankings)
 
@@ -114,6 +115,7 @@ func AdvancementReportQuery(eventCode string, year int) *AdvancementReport {
 			SelectionPoints:     selectionPoints,
 			QualificationPoints: qualificationPoints,
 			Advances:            advancementMap[ranking.TeamID],
+			Status:              advancementStatusMap[ranking.TeamID],
 		}
 
 		teamAdvancements = append(teamAdvancements, teamAdv)
@@ -139,8 +141,13 @@ func AdvancementReportQuery(eventCode string, year int) *AdvancementReport {
 
 		// Assign advancement number if team advances
 		if ta.Advances {
-			ta.AdvancementNumber = fmt.Sprintf("%d", advancementRank)
-			advancementRank++
+			// Skip teams that have "already advanced" status when assigning numbers
+			if ta.Status == "already advanced" {
+				ta.AdvancementNumber = "-"
+			} else {
+				ta.AdvancementNumber = fmt.Sprintf("%d", advancementRank)
+				advancementRank++
+			}
 		} else {
 			ta.AdvancementNumber = "-"
 		}
@@ -199,36 +206,129 @@ func calculateJudgingPoints(awards []*database.EventAward) map[int]int {
 	return pointsMap
 }
 
-// calculatePlayoffPoints calculates playoff points based on alliance awards.
+// calculatePlayoffPoints calculates playoff points based on how far teams progress in the playoff bracket.
 // Points are awarded as follows:
 // - Winning Alliance: 40 points
 // - Finalist Alliance: 20 points
-// - 3rd Place: 10 points (TODO: requires playoff bracket analysis)
-// - 4th Place: 5 points (TODO: requires playoff bracket analysis)
-func calculatePlayoffPoints(awards []*database.EventAward) map[int]int {
+// - 3rd Place: 10 points (semifinal loser with higher score)
+// - 4th Place: 5 points (semifinal loser with lower score)
+func calculatePlayoffPoints(event *database.Event) map[int]int {
 	pointsMap := make(map[int]int)
 
-	for _, award := range awards {
-		var points int
-		awardNameLower := award.Name
+	// Get all matches for the event
+	matches := db.GetMatchesByEvent(event.EventID)
 
-		// Assign points based on playoff finish
-		if containsIgnoreCase(awardNameLower, "winning alliance") {
-			points = 40
-		} else if containsIgnoreCase(awardNameLower, "finalist alliance") {
-			points = 20
+	// Filter for playoff matches only
+	var playoffMatches []*database.Match
+	for _, match := range matches {
+		if strings.EqualFold(match.TournamentLevel, string(ftc.PLAYOFF)) {
+			playoffMatches = append(playoffMatches, match)
 		}
-		// TODO: Add 3rd place (10 points) and 4th place (5 points) detection
-		//       This requires analyzing playoff bracket results from semifinal matches
-		//       We CAN do this by checking the entire playoff bracket for the event and checking
-		//       which teams win or lose in the playoffs and, based on that, get the teams on each
-		//       of those alliances. This is more reliable than looking at EventAward and making
-		//       a decision based on that.
-		//
-		//       The input would be the playoff matches for the event, and the output would have a map
-		//       for the teams that get whatever points they earn.
+	}
 
-		pointsMap[award.TeamID] += points
+	if len(playoffMatches) == 0 {
+		return pointsMap
+	}
+
+	// Sort playoff matches by match number to identify finals (highest number)
+	slices.SortFunc(playoffMatches, func(a, b *database.Match) int {
+		return b.MatchNumber - a.MatchNumber // Descending order
+	})
+
+	// The first match after sorting should be the finals
+	finalsMatch := playoffMatches[0]
+
+	// Get alliance scores for finals
+	redScore := db.GetMatchAllianceScore(finalsMatch.MatchID, database.AllianceRed)
+	blueScore := db.GetMatchAllianceScore(finalsMatch.MatchID, database.AllianceBlue)
+
+	if redScore != nil && blueScore != nil {
+		var winningAlliance, losingAlliance string
+
+		if redScore.TotalPoints > blueScore.TotalPoints {
+			winningAlliance = database.AllianceRed
+			losingAlliance = database.AllianceBlue
+		} else {
+			winningAlliance = database.AllianceBlue
+			losingAlliance = database.AllianceRed
+		}
+
+		// Assign 40 points to winning alliance teams
+		winningTeams := db.GetMatchTeams(finalsMatch.MatchID)
+		for _, mt := range winningTeams {
+			if mt.Alliance == winningAlliance {
+				pointsMap[mt.TeamID] = 40
+			}
+		}
+
+		// Assign 20 points to finalist alliance teams
+		finalistTeams := db.GetMatchTeams(finalsMatch.MatchID)
+		for _, mt := range finalistTeams {
+			if mt.Alliance == losingAlliance {
+				pointsMap[mt.TeamID] = 20
+			}
+		}
+	}
+
+	// Find semifinal matches (matches before finals)
+	// Semifinals are typically the matches that feed into finals
+	type SemifinalistAlliance struct {
+		alliance string
+		matchID  string
+		score    int
+	}
+	var semifinalLosers []SemifinalistAlliance
+
+	// Look at matches before the finals to find semifinals
+	// In a typical bracket, semifinals are the 2nd and 3rd highest match numbers
+	if len(playoffMatches) >= 3 {
+		// Check the two matches before finals
+		for i := 1; i <= 2 && i < len(playoffMatches); i++ {
+			semifinalMatch := playoffMatches[i]
+
+			redScore := db.GetMatchAllianceScore(semifinalMatch.MatchID, database.AllianceRed)
+			blueScore := db.GetMatchAllianceScore(semifinalMatch.MatchID, database.AllianceBlue)
+
+			if redScore != nil && blueScore != nil {
+				// The losing alliance from this semifinal
+				var losingAlliance string
+				var losingScore int
+
+				if redScore.TotalPoints < blueScore.TotalPoints {
+					losingAlliance = database.AllianceRed
+					losingScore = redScore.TotalPoints
+				} else {
+					losingAlliance = database.AllianceBlue
+					losingScore = blueScore.TotalPoints
+				}
+
+				semifinalLosers = append(semifinalLosers, SemifinalistAlliance{
+					alliance: losingAlliance,
+					matchID:  semifinalMatch.MatchID,
+					score:    losingScore,
+				})
+			}
+		}
+	}
+
+	// Sort semifinal losers by score to determine 3rd vs 4th place
+	slices.SortFunc(semifinalLosers, func(a, b SemifinalistAlliance) int {
+		return b.score - a.score // Higher score gets 3rd place
+	})
+
+	// Assign points to semifinal losers
+	for i, loser := range semifinalLosers {
+		points := 10 // 3rd place
+		if i > 0 {
+			points = 5 // 4th place
+		}
+
+		teams := db.GetMatchTeams(loser.matchID)
+		for _, mt := range teams {
+			if mt.Alliance == loser.alliance {
+				pointsMap[mt.TeamID] = points
+			}
+		}
 	}
 
 	return pointsMap

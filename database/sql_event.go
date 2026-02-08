@@ -16,15 +16,15 @@ func (db *sqldb) initEventStatements() error {
 		"getAllTeamAwards":        "SELECT event_id, team_id, award_id, name, series FROM event_awards WHERE team_id = ? ORDER BY event_id",
 		"getEventRankings":        "SELECT event_id, team_id, rank, sort_order1, sort_order2, sort_order3, sort_order4, sort_order5, sort_order6, wins, losses, ties, dq, matches_played, matches_counted FROM event_rankings WHERE event_id = ?",
 		"saveEventRanking":        "INSERT INTO event_rankings (event_id, team_id, rank, sort_order1, sort_order2, sort_order3, sort_order4, sort_order5, sort_order6, wins, losses, ties, dq, matches_played, matches_counted) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE rank = VALUES(rank), sort_order1 = VALUES(sort_order1), sort_order2 = VALUES(sort_order2), sort_order3 = VALUES(sort_order3), sort_order4 = VALUES(sort_order4), sort_order5 = VALUES(sort_order5), sort_order6 = VALUES(sort_order6), wins = VALUES(wins), losses = VALUES(losses), ties = VALUES(ties), dq = VALUES(dq), matches_played = VALUES(matches_played), matches_counted = VALUES(matches_counted)",
-		"getEventAdvancements":    "SELECT event_id, team_id FROM event_advancements WHERE event_id = ?",
-		"saveEventAdvancement":    "INSERT INTO event_advancements (event_id, team_id) VALUES (?, ?) ON DUPLICATE KEY UPDATE event_id = event_id",
+		"getEventAdvancements":    "SELECT event_id, team_id, status FROM event_advancements WHERE event_id = ?",
+		"saveEventAdvancement":    "INSERT INTO event_advancements (event_id, team_id, status) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE status = VALUES(status)",
 		"getEventTeams":           "SELECT event_id, team_id FROM event_teams WHERE event_id = ?",
 		"saveEventTeam":           "INSERT INTO event_teams (event_id, team_id) VALUES (?, ?) ON DUPLICATE KEY UPDATE event_id = event_id",
 		"getEventsByTeam":         "SELECT DISTINCT event_id FROM event_teams WHERE team_id = ? ORDER BY event_id",
-		"getAllAdvancements":      "SELECT event_id, team_id FROM event_advancements ORDER BY event_id, team_id",
+		"getAllAdvancements":      "SELECT event_id, team_id, status FROM event_advancements ORDER BY event_id, team_id",
 		"getRegionCodes":          "SELECT DISTINCT region_code FROM events WHERE region_code IS NOT NULL AND region_code != '' ORDER BY region_code",
 		"getEventCodesByRegion":   "SELECT DISTINCT event_code FROM events WHERE region_code = ? ORDER BY event_code",
-		"getAdvancementsByRegion": "SELECT ea.event_id, ea.team_id FROM event_advancements ea INNER JOIN events e ON ea.event_id = e.event_id WHERE e.region_code = ? ORDER BY ea.event_id, ea.team_id",
+		"getAdvancementsByRegion": "SELECT ea.event_id, ea.team_id, ea.status FROM event_advancements ea INNER JOIN events e ON ea.event_id = e.event_id WHERE e.region_code = ? ORDER BY ea.event_id, ea.team_id",
 	}
 
 	for name, query := range queries {
@@ -350,7 +350,7 @@ func (db *sqldb) SaveEventAdvancement(ea *EventAdvancement) error {
 	if stmt == nil {
 		return fmt.Errorf("prepared statement not found")
 	}
-	_, err := stmt.Exec(ea.EventID, ea.TeamID)
+	_, err := stmt.Exec(ea.EventID, ea.TeamID, ea.Status)
 	return err
 }
 
@@ -489,7 +489,7 @@ func (db *sqldb) GetAdvancementsByRegion(regionCode string) []*EventAdvancement 
 // Filters are combined with OR logic within each field and AND logic between fields.
 func (db *sqldb) GetAllAdvancements(filters ...AdvancementFilter) []*EventAdvancement {
 	// Build dynamic query
-	query := "SELECT ea.event_id, ea.team_id FROM event_advancements ea"
+	query := "SELECT ea.event_id, ea.team_id, ea.status FROM event_advancements ea"
 	args := []interface{}{}
 
 	if len(filters) > 0 {
@@ -538,7 +538,7 @@ func (db *sqldb) GetAllAdvancements(filters ...AdvancementFilter) []*EventAdvanc
 	var advancements []*EventAdvancement
 	for rows.Next() {
 		var ea EventAdvancement
-		err := rows.Scan(&ea.EventID, &ea.TeamID)
+		err := rows.Scan(&ea.EventID, &ea.TeamID, &ea.Status)
 		if err != nil {
 			continue
 		}

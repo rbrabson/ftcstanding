@@ -59,6 +59,7 @@ type EventRanking struct {
 type EventAdvancement struct {
 	EventID string `json:"event_id"`
 	TeamID  int    `json:"team_id"`
+	Status  string `json:"status"`
 }
 
 // EventTeam represents a team participating in an event. EventID and TeamID together form the primary key.
