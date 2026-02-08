@@ -10,6 +10,8 @@ build-windows: export GOPROXY=$(MOD_PROXY_URL)
 build-windows:
 	$(GO) build -v --ldflags="-w -X main.Version=$(VERSION) -X main.Revision=$(REVISION)" \
 		-o bin/windows/amd64/ftc cmd/ftc/main.go  # windows
+	$(GO) build -v --ldflags="-w -X main.Version=$(VERSION) -X main.Revision=$(REVISION)" \
+		-o bin/windows/amd64/cli cmd/cli/main.go  # windows
 
 build-linux: export GOOS=linux
 build-linux: export GOARCH=amd64
@@ -19,6 +21,8 @@ build-linux: export GOPROXY=$(MOD_PROXY_URL)
 build-linux:
 	$(GO) build -v --ldflags="-w -X main.Version=$(VERSION) -X main.Revision=$(REVISION)" \
 		-o bin/linux/amd64/ftc cmd/ftc/main.go  # linux
+	$(GO) build -v --ldflags="-w -X main.Version=$(VERSION) -X main.Revision=$(REVISION)" \
+		-o bin/linux/amd64/cli cmd/cli/main.go  # linux
 
 build-mac-amd: export GOOS=darwin
 build-mac-amd: export GOARCH=amd64
@@ -28,6 +32,8 @@ build-mac-amd: export GOPROXY=$(MOD_PROXY_URL)
 build-mac-amd:
 	$(GO) build -v --ldflags="-w -X main.Version=$(VERSION) -X main.Revision=$(REVISION)" \
 		-o bin/macos/amd64/ftc cmd/ftc/main.go  # mac osx intel chip
+	$(GO) build -v --ldflags="-w -X main.Version=$(VERSION) -X main.Revision=$(REVISION)" \
+		-o bin/macos/amd64/cli cmd/cli/main.go  # mac osx intel chip
 
 build-mac-arm: export GOOS=darwin
 build-mac-arm: export GOARCH=arm64
@@ -37,6 +43,8 @@ build-mac-arm: export GOPROXY=$(MOD_PROXY_URL)
 build-mac-arm:
 	$(GO) build -v --ldflags="-w -X main.Version=$(VERSION) -X main.Revision=$(REVISION)" \
 		-o bin/macos/arm64/ftc cmd/ftc/main.go  # mac osx arm chip
+	$(GO) build -v --ldflags="-w -X main.Version=$(VERSION) -X main.Revision=$(REVISION)" \
+		-o bin/macos/arm64/cli cmd/cli/main.go  # mac osx arm chip
 
 .PHONY: clean
 clean::
