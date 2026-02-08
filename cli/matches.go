@@ -72,7 +72,7 @@ func RenderMatchDetails(details []*query.MatchDetails) string {
 				Merging: tw.CellMerging{Mode: tw.MergeHierarchical},
 				Alignment: tw.CellAlignment{PerColumn: []tw.Align{
 					tw.AlignLeft,
-					tw.AlignLeft,
+					tw.AlignRight,
 					tw.AlignCenter,
 					tw.AlignCenter,
 					tw.AlignCenter,
