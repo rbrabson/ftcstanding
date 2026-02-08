@@ -109,6 +109,7 @@ type EventFilter struct {
 type AdvancementFilter struct {
 	Countries   []string
 	RegionCodes []string
+	EventCodes  []string
 }
 
 // GetEventID generates a unique ID for an event based on its FTC code and start date.

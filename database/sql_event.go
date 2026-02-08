@@ -495,8 +495,21 @@ func (db *sqldb) GetAllAdvancements(filters ...AdvancementFilter) []*EventAdvanc
 	if len(filters) > 0 {
 		filter := filters[0]
 		// Need to join with events table for filtering
-		if len(filter.Countries) > 0 || len(filter.RegionCodes) > 0 {
+		if len(filter.Countries) > 0 || len(filter.RegionCodes) > 0 || len(filter.EventCodes) > 0 {
 			query += " INNER JOIN events e ON ea.event_id = e.event_id WHERE 1=1"
+
+			// Add EventCode filter
+			if len(filter.EventCodes) > 0 {
+				query += " AND e.event_code IN ("
+				for i, code := range filter.EventCodes {
+					if i > 0 {
+						query += ","
+					}
+					query += "?"
+					args = append(args, code)
+				}
+				query += ")"
+			}
 
 			// Add Country filter
 			if len(filter.Countries) > 0 {

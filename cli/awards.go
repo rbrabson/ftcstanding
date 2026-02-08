@@ -70,7 +70,8 @@ func RenderAwardsByEvent(eventAwards *query.EventAwards) string {
 			awardName := teamAward.Award.Name
 
 			// Format winner as "TeamID - Team Name" with full name on line below
-			winner := fmt.Sprintf("%d - %s\n%s", teamAward.Team.TeamID, teamAward.Team.Name, teamAward.Team.FullName)
+			// winner := fmt.Sprintf("%d - %s\n%s", teamAward.Team.TeamID, teamAward.Team.Name, teamAward.Team.FullName)
+			winner := fmt.Sprintf("%d - %s", teamAward.Team.TeamID, teamAward.Team.Name)
 
 			table.Append([]string{
 				awardName,

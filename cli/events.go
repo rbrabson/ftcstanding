@@ -56,7 +56,21 @@ func RenderTeamsByEvent(eventTeams *query.EventTeams) string {
 		tablewriter.WithRenderer(renderer.NewColorized(colorCfg)),
 		tablewriter.WithConfig(tablewriter.Config{
 			Header: tw.CellConfig{
-				Alignment: tw.CellAlignment{Global: tw.AlignLeft},
+				Alignment: tw.CellAlignment{Global: tw.AlignRight},
+			},
+			Row: tw.CellConfig{
+				Merging: tw.CellMerging{Mode: tw.MergeHierarchical},
+				Alignment: tw.CellAlignment{PerColumn: []tw.Align{
+					tw.AlignRight,
+					tw.AlignLeft,
+					tw.AlignRight,
+					tw.AlignRight,
+					tw.AlignRight,
+					tw.AlignRight,
+					tw.AlignRight,
+					tw.AlignRight,
+					tw.AlignRight,
+				}},
 			},
 		}),
 	)
@@ -68,7 +82,7 @@ func RenderTeamsByEvent(eventTeams *query.EventTeams) string {
 		for _, team := range eventTeams.Teams {
 			location := fmt.Sprintf("%s, %s, %s", team.City, team.StateProv, team.Country)
 			table.Append([]string{
-				strconv.Itoa(team.TeamID),
+				fmt.Sprintf("%5d", team.TeamID),
 				team.Name,
 				location,
 				team.HomeRegion,
@@ -136,6 +150,20 @@ func RenderTeamRankings(eventRankings *query.EventTeamRankings) string {
 			Header: tw.CellConfig{
 				Alignment: tw.CellAlignment{Global: tw.AlignLeft},
 			},
+			Row: tw.CellConfig{
+				Merging: tw.CellMerging{Mode: tw.MergeHierarchical},
+				Alignment: tw.CellAlignment{PerColumn: []tw.Align{
+					tw.AlignRight,
+					tw.AlignLeft,
+					tw.AlignRight,
+					tw.AlignRight,
+					tw.AlignRight,
+					tw.AlignRight,
+					tw.AlignRight,
+					tw.AlignCenter,
+					tw.AlignCenter,
+				}},
+			},
 		}),
 	)
 	table.Header([]string{"Rank", "Team", "RS", "Match Pts", "Base Pts", "Auto Pts", "High Score", "W–L–T", "Matches"})
@@ -150,27 +178,27 @@ func RenderTeamRankings(eventRankings *query.EventTeamRankings) string {
 				strconv.Itoa(tr.Ranking.Rank),
 				team,
 				fmt.Sprintf("%.2f", tr.Ranking.SortOrder1),
-				fmt.Sprintf("%.2f", tr.Ranking.SortOrder2),
-				fmt.Sprintf("%.2f", tr.Ranking.SortOrder3),
-				fmt.Sprintf("%.2f", tr.Ranking.SortOrder4),
-				strconv.Itoa(tr.HighMatchScore),
+				fmt.Sprintf("%6.2f", tr.Ranking.SortOrder2),
+				fmt.Sprintf("%5.2f", tr.Ranking.SortOrder3),
+				fmt.Sprintf("%5.2f", tr.Ranking.SortOrder4),
+				fmt.Sprintf("%3d", tr.HighMatchScore),
 				wlt,
 				strconv.Itoa(tr.Ranking.MatchesPlayed),
 			})
 		}
 
 		// Add footer with team count
-		table.Footer([]string{
-			fmt.Sprintf("Total Teams: %d", len(eventRankings.TeamRankings)),
-			"",
-			"",
-			"",
-			"",
-			"",
-			"",
-			"",
-			"",
-		})
+		// table.Footer([]string{
+		// 	fmt.Sprintf("Total Teams: %d", len(eventRankings.TeamRankings)),
+		// 	"",
+		// 	"",
+		// 	"",
+		// 	"",
+		// 	"",
+		// 	"",
+		// 	"",
+		// 	"",
+		// })
 
 		table.Render()
 	}

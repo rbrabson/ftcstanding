@@ -379,8 +379,22 @@ func (db *filedb) GetAllAdvancements(filters ...AdvancementFilter) []*EventAdvan
 		// Apply filters with AND logic between different filter types
 		matchesFilter := true
 
+		// Check EventCode filter (OR within field)
+		if len(filter.EventCodes) > 0 {
+			found := false
+			for _, code := range filter.EventCodes {
+				if event.EventCode == code {
+					found = true
+					break
+				}
+			}
+			if !found {
+				matchesFilter = false
+			}
+		}
+
 		// Check Country filter (OR within field)
-		if len(filter.Countries) > 0 {
+		if matchesFilter && len(filter.Countries) > 0 {
 			found := false
 			for _, country := range filter.Countries {
 				if event.Country == country {

@@ -8,14 +8,15 @@ import (
 )
 
 // RequestAndSaveTeams retrieves the list of teams for a given season and stores them in the database.
-func RequestAndSaveTeams(season string) {
+func RequestAndSaveTeams(season string) []*database.Team {
 	teams := RequestTeams(season)
 	if teams == nil {
-		return
+		return nil
 	}
 	for _, team := range teams {
 		db.SaveTeam(team)
 	}
+	return teams
 }
 
 // RequestTeams retrieves the list of teams for a given season.

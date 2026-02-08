@@ -440,11 +440,11 @@ func calculateQualificationPoints(rankings []*database.EventRanking) map[int]int
 
 	// Assign points starting at 16, decreasing by 1 for each unique ranking score
 	currentPoints := 16
-	var previousScore *float64
+	var previousScore float64
 
 	for _, ranking := range sortedRankings {
 		// If this is a new (lower) score, decrement points
-		if previousScore != nil && ranking.SortOrder1 < *previousScore {
+		if previousScore != 0 && ranking.SortOrder1 < previousScore {
 			currentPoints--
 		}
 
@@ -452,8 +452,7 @@ func calculateQualificationPoints(rankings []*database.EventRanking) map[int]int
 		pointsMap[ranking.TeamID] = currentPoints
 
 		// Update previous score
-		score := ranking.SortOrder1
-		previousScore = &score
+		previousScore = ranking.SortOrder1
 	}
 
 	return pointsMap
