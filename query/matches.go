@@ -22,6 +22,16 @@ type MatchAllianceDetails struct {
 	Teams    []*database.Team
 }
 
+// TeamMatchResult represents a match from a specific team's perspective with match outcome.
+type TeamMatchResult struct {
+	Event            *database.Event
+	Match            *database.Match
+	Team             *database.Team
+	TeamAlliance     *MatchAllianceDetails
+	OpponentAlliance *MatchAllianceDetails
+	Result           string // "Won", "Lost", or "Tied"
+}
+
 // MatchesByEventQuery retrieves all matches for an event, including alliance scores and all participating teams.
 func MatchesByEventQuery(eventCode string, year int) []*MatchDetails {
 	// Get the event details
@@ -93,6 +103,154 @@ func MatchesByEventQuery(eventCode string, year int) []*MatchDetails {
 	}
 
 	slices.SortFunc(results, func(a, b *MatchDetails) int {
+		if b.Match.TournamentLevel < a.Match.TournamentLevel {
+			return -1
+		}
+		if b.Match.TournamentLevel > a.Match.TournamentLevel {
+			return 1
+		}
+		if a.Match.MatchNumber < b.Match.MatchNumber {
+			return -1
+		}
+		if a.Match.MatchNumber > b.Match.MatchNumber {
+			return 1
+		}
+		return 0
+	})
+
+	return results
+}
+
+// MatchesByEventAndTeamQuery retrieves all matches for a specific team at an event.
+// It shows the match from the team's perspective with their result (Won/Lost/Tied).
+func MatchesByEventAndTeamQuery(eventCode string, year int, teamID int) []*TeamMatchResult {
+	// Get the event details
+	filter := database.EventFilter{
+		EventCodes: []string{eventCode},
+	}
+	events := db.GetAllEvents(filter)
+	if len(events) == 0 {
+		return nil
+	}
+	var event *database.Event
+	for _, e := range events {
+		if e.Year == year {
+			event = e
+			break
+		}
+	}
+
+	if event == nil {
+		return nil
+	}
+
+	// Get all matches for the event
+	matches := db.GetMatchesByEvent(event.EventID)
+	if matches == nil {
+		return nil
+	}
+
+	// Get the team object
+	team := db.GetTeam(teamID)
+	if team == nil {
+		return nil
+	}
+
+	var results []*TeamMatchResult
+
+	// Process each match
+	for _, match := range matches {
+		// Get all teams in this match
+		matchTeams := db.GetMatchTeams(match.MatchID)
+		if matchTeams == nil {
+			continue
+		}
+
+		// Check if the specified team is in this match
+		var teamAlliance string
+		teamFound := false
+		for _, mt := range matchTeams {
+			if mt.TeamID == teamID {
+				teamAlliance = mt.Alliance
+				teamFound = true
+				break
+			}
+		}
+
+		// Skip this match if the team didn't participate
+		if !teamFound {
+			continue
+		}
+
+		// Get alliance scores
+		redScore := db.GetMatchAllianceScore(match.MatchID, database.AllianceRed)
+		blueScore := db.GetMatchAllianceScore(match.MatchID, database.AllianceBlue)
+
+		// Separate teams by alliance
+		var redTeams, blueTeams []*database.Team
+		for _, mt := range matchTeams {
+			t := db.GetTeam(mt.TeamID)
+			if mt.Alliance == database.AllianceRed {
+				redTeams = append(redTeams, t)
+			} else {
+				blueTeams = append(blueTeams, t)
+			}
+		}
+
+		// Determine team's alliance and opponent alliance
+		var teamAllianceDetails, opponentAllianceDetails *MatchAllianceDetails
+		var teamScore, opponentScore *database.MatchAllianceScore
+
+		if teamAlliance == database.AllianceRed {
+			teamAllianceDetails = &MatchAllianceDetails{
+				Alliance: database.AllianceRed,
+				Score:    redScore,
+				Teams:    redTeams,
+			}
+			opponentAllianceDetails = &MatchAllianceDetails{
+				Alliance: database.AllianceBlue,
+				Score:    blueScore,
+				Teams:    blueTeams,
+			}
+			teamScore = redScore
+			opponentScore = blueScore
+		} else {
+			teamAllianceDetails = &MatchAllianceDetails{
+				Alliance: database.AllianceBlue,
+				Score:    blueScore,
+				Teams:    blueTeams,
+			}
+			opponentAllianceDetails = &MatchAllianceDetails{
+				Alliance: database.AllianceRed,
+				Score:    redScore,
+				Teams:    redTeams,
+			}
+			teamScore = blueScore
+			opponentScore = redScore
+		}
+
+		// Determine the result
+		result := "Tied"
+		if teamScore != nil && opponentScore != nil {
+			if teamScore.TotalPoints > opponentScore.TotalPoints {
+				result = "Won"
+			} else if teamScore.TotalPoints < opponentScore.TotalPoints {
+				result = "Lost"
+			}
+		}
+
+		results = append(results, &TeamMatchResult{
+			Event:            event,
+			Match:            match,
+			Team:             team,
+			TeamAlliance:     teamAllianceDetails,
+			OpponentAlliance: opponentAllianceDetails,
+			Result:           result,
+		})
+	}
+
+	// Sort by tournament level and match number
+	slices.SortFunc(results, func(a, b *TeamMatchResult) int {
 		if b.Match.TournamentLevel < a.Match.TournamentLevel {
 			return -1
 		}
