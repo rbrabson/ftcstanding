@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log/slog"
 	"os"
 	"strings"
@@ -75,15 +76,18 @@ func main() {
 	// awardResultsOutput := cli.RenderAwardsByEvent(awardsResults)
 	// fmt.Println(awardResultsOutput)
 
+	// // Advancement report for a specific event
 	// advancementReport := query.AdvancementReportQuery("USNCSHQ2", 2025)
-	// output := cli.RenderAdvancementReport(advancementReport)
-	// fmt.Println(output)
+	// advancementReportOutput := cli.RenderAdvancementReport(advancementReport)
+	// fmt.Println(advancementReportOutput)
 
-	// matchresults := query.MatchesByEventQuery("USNCSHQ2", 2025)
-	// output := cli.RenderMatchDetails(matchresults)
-	// fmt.Println(output)
+	// Match results for a specific event
+	matchresults := query.MatchesByEventQuery("USNCSHQ2", 2025)
+	matchResultsOutput := cli.RenderMatchDetails(matchresults)
+	fmt.Println(matchResultsOutput)
 
-	// matchresults := query.MatchesByEventAndTeamQuery("USNCSHQ2", 24260, 2025)
-	// output := cli.RenderMatchesByEventAndTeam(matchresults)
-	// fmt.Println(output)
+	// // Match results for a specific team at a specific event
+	// matchTeamResults := query.MatchesByEventAndTeamQuery("USNCSHQ2", 24260, 2025)
+	// matchTeamResultsOutput := cli.RenderMatchesByEventAndTeam(matchTeamResults)
+	// fmt.Println(matchTeamResultsOutput)
 }
