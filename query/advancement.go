@@ -271,7 +271,7 @@ func calculatePlayoffPoints(event *database.Event) map[int]int {
 	}
 
 	// Find semifinal matches (matches before finals)
-	// Semifinals are typically the matches that feed into finals
+	// Collect the team IDs that played in the finals
 	type SemifinalistAlliance struct {
 		alliance string
 		matchID  string
@@ -279,41 +279,69 @@ func calculatePlayoffPoints(event *database.Event) map[int]int {
 	}
 	var semifinalLosers []SemifinalistAlliance
 
-	// Look at matches before the finals to find semifinals
-	// In a typical bracket, semifinals are the 2nd and 3rd highest match numbers
-	if len(playoffMatches) >= 3 {
-		// Check the two matches before finals
-		for i := 1; i <= 2 && i < len(playoffMatches); i++ {
-			semifinalMatch := playoffMatches[i]
+	// Get the teams that played in finals
+	finalsTeamIDs := make(map[int]bool)
+	finalsTeams := db.GetMatchTeams(finalsMatch.MatchID)
+	for _, mt := range finalsTeams {
+		finalsTeamIDs[mt.TeamID] = true
+	}
 
-			redScore := db.GetMatchAllianceScore(semifinalMatch.MatchID, database.AllianceRed)
-			blueScore := db.GetMatchAllianceScore(semifinalMatch.MatchID, database.AllianceBlue)
+	// Look through playoff matches to find semifinals
+	// Semifinals are matches where at least one team didn't make it to finals
+	if len(playoffMatches) > 1 {
+		for i := 1; i < len(playoffMatches); i++ {
+			match := playoffMatches[i]
 
-			if redScore != nil && blueScore != nil {
-				// The losing alliance from this semifinal
-				var losingAlliance string
-				var losingScore int
+			// Get teams in this match
+			matchTeams := db.GetMatchTeams(match.MatchID)
 
-				if redScore.TotalPoints < blueScore.TotalPoints {
-					losingAlliance = database.AllianceRed
-					losingScore = redScore.TotalPoints
-				} else {
-					losingAlliance = database.AllianceBlue
-					losingScore = blueScore.TotalPoints
+			// Check if all teams in this match also played in finals
+			allTeamsInFinals := true
+			for _, mt := range matchTeams {
+				if !finalsTeamIDs[mt.TeamID] {
+					allTeamsInFinals = false
+					break
 				}
+			}
 
-				semifinalLosers = append(semifinalLosers, SemifinalistAlliance{
-					alliance: losingAlliance,
-					matchID:  semifinalMatch.MatchID,
-					score:    losingScore,
-				})
+			// If not all teams are in finals, this is a semifinal match
+			if !allTeamsInFinals && len(semifinalLosers) < 2 {
+				redScore := db.GetMatchAllianceScore(match.MatchID, database.AllianceRed)
+				blueScore := db.GetMatchAllianceScore(match.MatchID, database.AllianceBlue)
+
+				if redScore != nil && blueScore != nil {
+					var losingAlliance string
+					var losingScore int
+
+					if redScore.TotalPoints < blueScore.TotalPoints {
+						losingAlliance = database.AllianceRed
+						losingScore = redScore.TotalPoints
+					} else {
+						losingAlliance = database.AllianceBlue
+						losingScore = blueScore.TotalPoints
+					}
+
+					semifinalLosers = append(semifinalLosers, SemifinalistAlliance{
+						alliance: losingAlliance,
+						matchID:  match.MatchID,
+						score:    losingScore,
+					})
+				}
 			}
 		}
 	}
 
 	// Sort semifinal losers by score to determine 3rd vs 4th place
+	// Higher score gets 3rd place (10 points), lower score gets 4th place (5 points)
 	slices.SortFunc(semifinalLosers, func(a, b SemifinalistAlliance) int {
-		return b.score - a.score // Higher score gets 3rd place
+		// Descending order: higher scores first
+		if a.score > b.score {
+			return -1
+		}
+		if a.score < b.score {
+			return 1
+		}
+		return 0
 	})
 
 	// Assign points to semifinal losers
@@ -326,9 +354,8 @@ func calculatePlayoffPoints(event *database.Event) map[int]int {
 		teams := db.GetMatchTeams(loser.matchID)
 		for _, mt := range teams {
 			if mt.Alliance == loser.alliance {
-				// Only assign points if team doesn't have points yet, or if new points are higher
-				// This prevents overwriting 40 points (finals winner) with 10 points (3rd place)
-				if existing, exists := pointsMap[mt.TeamID]; !exists || points > existing {
+				// Only assign points if team doesn't already have playoff points from finals
+				if _, exists := pointsMap[mt.TeamID]; !exists {
 					pointsMap[mt.TeamID] = points
 				}
 			}
