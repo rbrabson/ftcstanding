@@ -27,7 +27,7 @@ func RequestAndSaveAll(season string, refresh bool) {
 	if refresh || len(teams) == 0 {
 		teams = RequestAndSaveTeams(season)
 	}
-	events := db.GetAllEvents(database.EventFilter{EventCodes: []string{"USNCSHQ2"}})
+	events := db.GetAllEvents(database.EventFilter{EventCodes: []string{"USNCSHQ"}})
 	// events := db.GetAllEvents()
 	if refresh || len(events) == 0 {
 		events = RequestAndSaveEvents(season)
@@ -35,18 +35,18 @@ func RequestAndSaveAll(season string, refresh bool) {
 
 	for i, event := range events {
 		slog.Info("Processing event", "eventNumber", i+1, "totalEvents", len(events), "event", event.EventCode)
-		if event.DateEnd.After(time.Now()) {
-			slog.Info("Skipping event details for future event", "event", event.EventCode, "dateEnd", event.DateEnd)
-			continue
-		}
+		// if event.DateEnd.After(time.Now()) {
+		// 	slog.Info("Skipping event details for future event", "event", event.EventCode, "dateEnd", event.DateEnd)
+		// 	continue
+		// }
 		advancementFilter := database.AdvancementFilter{
 			EventCodes: []string{event.EventCode},
 		}
 		advancements := db.GetAllAdvancements(advancementFilter)
-		if !refresh && len(advancements) > 0 && event.DateEnd.Before(time.Now().Add(-24*time.Hour)) {
-			slog.Info("Skipping event details for already processed event", "event", event.EventCode, "advancements", len(advancements), "dateEnd", event.DateEnd)
-			continue
-		}
+		// if !refresh && len(advancements) > 0 && event.DateEnd.Before(time.Now().Add(-24*time.Hour)) {
+		// 	slog.Info("Skipping event details for already processed event", "event", event.EventCode, "advancements", len(advancements), "dateEnd", event.DateEnd)
+		// 	continue
+		// }
 		filter := database.MatchFilter{
 			EventIDs: []string{event.EventID},
 		}

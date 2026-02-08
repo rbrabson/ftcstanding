@@ -3,6 +3,7 @@ package query
 import (
 	"fmt"
 	"log/slog"
+	"math"
 	"slices"
 	"strconv"
 	"strings"
@@ -210,8 +211,10 @@ func calculateJudgingPoints(awards []*database.EventAward) map[int]int {
 // Points are awarded as follows:
 // - Winning Alliance: 40 points
 // - Finalist Alliance: 20 points
-// - 3rd Place: 10 points (semifinal loser with higher score)
-// - 4th Place: 5 points (semifinal loser with lower score)
+// - 3rd Place: 10 points (highest scoring losing semifinalist)
+// - 4th Place: 5 points (lowest scoring losing semifinalist)
+//
+// This handles both single-elimination and modified double-elimination (winners/losers bracket) formats.
 func calculatePlayoffPoints(event *database.Event) map[int]int {
 	pointsMap := make(map[int]int)
 
@@ -235,7 +238,7 @@ func calculatePlayoffPoints(event *database.Event) map[int]int {
 		return b.MatchNumber - a.MatchNumber // Descending order
 	})
 
-	// The first match after sorting should be the finals
+	// The first match after sorting should be the finals (championship)
 	finalsMatch := playoffMatches[0]
 
 	// Get alliance scores for finals
@@ -270,64 +273,77 @@ func calculatePlayoffPoints(event *database.Event) map[int]int {
 		}
 	}
 
-	// Find semifinal matches (matches before finals)
-	// Collect the team IDs that played in the finals
+	// Find the losing alliances from semifinal matches for 3rd and 4th place
+	// In a winners/losers bracket:
+	// - The finals teams already have their points
+	// - We need to find the losing alliances from earlier playoff rounds
+
 	type SemifinalistAlliance struct {
 		alliance string
 		matchID  string
 		score    int
+		teams    []int
 	}
 	var semifinalLosers []SemifinalistAlliance
 
-	// Get the teams that played in finals
+	// Get the team IDs that played in finals
 	finalsTeamIDs := make(map[int]bool)
 	finalsTeams := db.GetMatchTeams(finalsMatch.MatchID)
 	for _, mt := range finalsTeams {
 		finalsTeamIDs[mt.TeamID] = true
 	}
 
-	// Look through playoff matches to find semifinals
-	// Semifinals are matches where at least one team didn't make it to finals
-	if len(playoffMatches) > 1 {
-		for i := 1; i < len(playoffMatches); i++ {
-			match := playoffMatches[i]
+	// Look through all playoff matches (except finals) to find losing alliances
+	// that didn't make it to the championship finals
+	for i := 1; i < len(playoffMatches); i++ {
+		match := playoffMatches[i]
 
-			// Get teams in this match
-			matchTeams := db.GetMatchTeams(match.MatchID)
+		// Get teams and scores for this match
+		matchTeams := db.GetMatchTeams(match.MatchID)
+		redScore := db.GetMatchAllianceScore(match.MatchID, database.AllianceRed)
+		blueScore := db.GetMatchAllianceScore(match.MatchID, database.AllianceBlue)
 
-			// Check if all teams in this match also played in finals
-			allTeamsInFinals := true
-			for _, mt := range matchTeams {
-				if !finalsTeamIDs[mt.TeamID] {
-					allTeamsInFinals = false
-					break
-				}
+		if redScore == nil || blueScore == nil {
+			continue
+		}
+
+		// Determine winning and losing alliance
+		var losingAlliance string
+		var losingScore int
+
+		if redScore.TotalPoints < blueScore.TotalPoints {
+			losingAlliance = database.AllianceRed
+			losingScore = redScore.TotalPoints
+		} else {
+			losingAlliance = database.AllianceBlue
+			losingScore = blueScore.TotalPoints
+		}
+
+		// Get the team IDs from the losing alliance
+		var losingTeamIDs []int
+		for _, mt := range matchTeams {
+			if mt.Alliance == losingAlliance {
+				losingTeamIDs = append(losingTeamIDs, mt.TeamID)
 			}
+		}
 
-			// If not all teams are in finals, this is a semifinal match
-			if !allTeamsInFinals && len(semifinalLosers) < 2 {
-				redScore := db.GetMatchAllianceScore(match.MatchID, database.AllianceRed)
-				blueScore := db.GetMatchAllianceScore(match.MatchID, database.AllianceBlue)
-
-				if redScore != nil && blueScore != nil {
-					var losingAlliance string
-					var losingScore int
-
-					if redScore.TotalPoints < blueScore.TotalPoints {
-						losingAlliance = database.AllianceRed
-						losingScore = redScore.TotalPoints
-					} else {
-						losingAlliance = database.AllianceBlue
-						losingScore = blueScore.TotalPoints
-					}
-
-					semifinalLosers = append(semifinalLosers, SemifinalistAlliance{
-						alliance: losingAlliance,
-						matchID:  match.MatchID,
-						score:    losingScore,
-					})
-				}
+		// Check if any of the losing teams made it to finals
+		// If none of them made finals, this is a semifinal loser eligible for 3rd/4th place
+		madeItToFinals := false
+		for _, teamID := range losingTeamIDs {
+			if finalsTeamIDs[teamID] {
+				madeItToFinals = true
+				break
 			}
+		}
+
+		if !madeItToFinals && len(losingTeamIDs) > 0 {
+			semifinalLosers = append(semifinalLosers, SemifinalistAlliance{
+				alliance: losingAlliance,
+				matchID:  match.MatchID,
+				score:    losingScore,
+				teams:    losingTeamIDs,
+			})
 		}
 	}
 
@@ -344,20 +360,19 @@ func calculatePlayoffPoints(event *database.Event) map[int]int {
 		return 0
 	})
 
-	// Assign points to semifinal losers
-	for i, loser := range semifinalLosers {
+	// Assign points to the top 2 semifinal losers (3rd and 4th place)
+	for i := 0; i < len(semifinalLosers) && i < 2; i++ {
+		loser := semifinalLosers[i]
 		points := 10 // 3rd place
-		if i > 0 {
+		if i == 1 {
 			points = 5 // 4th place
 		}
 
-		teams := db.GetMatchTeams(loser.matchID)
-		for _, mt := range teams {
-			if mt.Alliance == loser.alliance {
-				// Only assign points if team doesn't already have playoff points from finals
-				if _, exists := pointsMap[mt.TeamID]; !exists {
-					pointsMap[mt.TeamID] = points
-				}
+		// Assign points to all teams in the losing alliance
+		for _, teamID := range loser.teams {
+			// Only assign points if team doesn't already have playoff points
+			if _, exists := pointsMap[teamID]; !exists {
+				pointsMap[teamID] = points
 			}
 		}
 	}
@@ -415,10 +430,10 @@ func calculateSelectionPoints(event *database.Event) map[int]int {
 // Points are awarded as follows:
 // - Highest ranking score: 16 points
 // - Each lower ranking score: 1 point less
+// - Lowest ranking score: minimum 2 points
 // - Teams with the same ranking score get the same points
 // - After multiple teams with the same score, the next lower score only loses 1 point (not skipping)
 func calculateQualificationPoints(rankings []*database.EventRanking) map[int]int {
-	// TODO: THere are bugs here, so take a good look
 	pointsMap := make(map[int]int)
 
 	if len(rankings) == 0 {
@@ -438,21 +453,47 @@ func calculateQualificationPoints(rankings []*database.EventRanking) map[int]int
 		return 0
 	})
 
-	// Assign points starting at 16, decreasing by 1 for each unique ranking score
-	currentPoints := 16
-	var previousScore float64
+	// Assign points starting at 16, decreasing by 1 for each unique ranking score, minimum 2
+	maxPoints := 16
+	minPoints := 2
+	var previousSortOrder1 float64
+	var previousScore int
+	numTeams := len(sortedRankings)
 
-	for _, ranking := range sortedRankings {
-		// If this is a new (lower) score, decrement points
-		if previousScore != 0 && ranking.SortOrder1 < previousScore {
-			currentPoints--
+	multiplier := float64(maxPoints-minPoints) / float64(numTeams)
+
+	for i, ranking := range sortedRankings {
+		rank := numTeams - i
+		score := int(math.Floor(multiplier*float64(rank))) + minPoints
+
+		if previousScore != 0 && ranking.SortOrder1 == previousSortOrder1 {
+			score = previousScore
+		} else {
+			previousScore = score
 		}
+		pointsMap[ranking.TeamID] = score
 
-		// Assign points to this team
-		pointsMap[ranking.TeamID] = currentPoints
+		previousScore = score
+		previousSortOrder1 = ranking.SortOrder1
+	}
 
-		// Update previous score
-		previousScore = ranking.SortOrder1
+	currentScure := maxPoints + 1
+	previousSortOrder1 = 0
+	for _, ranking := range sortedRankings {
+		var score int
+		if ranking.SortOrder1 == previousSortOrder1 {
+			score = previousScore
+		} else {
+			currentScure--
+			score = currentScure
+		}
+		if score < minPoints {
+			score = minPoints
+		}
+		pointsMap[ranking.TeamID] = score
+
+		previousScore = score
+		previousSortOrder1 = ranking.SortOrder1
 	}
 
 	return pointsMap
