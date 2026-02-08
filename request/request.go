@@ -27,7 +27,7 @@ func RequestAndSaveAll(season string, refresh bool) {
 	if refresh || len(teams) == 0 {
 		teams = RequestAndSaveTeams(season)
 	}
-	events := db.GetAllEvents(database.EventFilter{EventCodes: []string{"USNCSHQ"}})
+	events := db.GetAllEvents(database.EventFilter{EventCodes: []string{"USNCSHQ2"}})
 	// events := db.GetAllEvents()
 	if refresh || len(events) == 0 {
 		events = RequestAndSaveEvents(season)
