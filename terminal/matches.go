@@ -82,7 +82,16 @@ func RenderMatchDetails(details []*query.MatchDetails) string {
 				}},
 			},
 			Footer: tw.CellConfig{
-				Alignment: tw.CellAlignment{Global: tw.AlignLeft},
+				Alignment: tw.CellAlignment{PerColumn: []tw.Align{
+					tw.AlignLeft,  // Total Matches label
+					tw.AlignRight, // Match count number
+					tw.AlignLeft,
+					tw.AlignLeft,
+					tw.AlignLeft,
+					tw.AlignLeft,
+					tw.AlignLeft,
+					tw.AlignLeft,
+				}},
 			},
 		}),
 	)

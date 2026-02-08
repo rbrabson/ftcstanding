@@ -87,6 +87,7 @@ func matchResultsForTeamByEvent(event string, team int, year int) {
 	fmt.Println(matchResultsOutput)
 }
 
+// printUsage prints the usage information for the CLI.
 func printUsage() {
 	fmt.Println("Usage: ftc <command> [options]")
 	fmt.Println()
@@ -104,6 +105,7 @@ func printUsage() {
 	fmt.Println()
 }
 
+// run executes the CLI command.
 func run() int {
 	season := os.Getenv("FTC_SEASON")
 	if season == "" {
