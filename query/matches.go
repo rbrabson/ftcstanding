@@ -123,7 +123,7 @@ func MatchesByEventQuery(eventCode string, year int) []*MatchDetails {
 
 // MatchesByEventAndTeamQuery retrieves all matches for a specific team at an event.
 // It shows the match from the team's perspective with their result (Won/Lost/Tied).
-func MatchesByEventAndTeamQuery(eventCode string, year int, teamID int) []*TeamMatchResult {
+func MatchesByEventAndTeamQuery(eventCode string, teamID int, year int) []*TeamMatchResult {
 	// Get the event details
 	filter := database.EventFilter{
 		EventCodes: []string{eventCode},
