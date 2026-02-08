@@ -65,7 +65,7 @@ func RenderAdvancementReport(report *query.AdvancementReport) string {
 	} else {
 		for i, ta := range report.TeamAdvancements {
 			// Format team with advancement status
-			teamName := fmt.Sprintf("%d - %s", ta.Team.TeamID, ta.Team.Name)
+			teamName := fmt.Sprintf("%5d - %s", ta.Team.TeamID, ta.Team.Name)
 			// TODO: this is wrong; figure out where to get the correct advancement status
 			// if ta.Advances {
 			// 	teamName = fmt.Sprintf("%s (already advanced)", teamName)

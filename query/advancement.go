@@ -69,6 +69,8 @@ func AdvancementReportQuery(eventCode string, year int) *AdvancementReport {
 	advancements := db.GetEventAdvancements(event.EventID)
 	advancementMap := make(map[int]bool)
 	for _, adv := range advancements {
+		// TODP: don't set to true a team has already advanced (see USNCSAQ for examples). We probably need a boolean for this
+		//       so we can display it accurately in the advancement report.
 		advancementMap[adv.TeamID] = true
 	}
 
@@ -217,7 +219,14 @@ func calculatePlayoffPoints(awards []*database.EventAward) map[int]int {
 			points = 20
 		}
 		// TODO: Add 3rd place (10 points) and 4th place (5 points) detection
-		// This requires analyzing playoff bracket results from semifinal matches
+		//       This requires analyzing playoff bracket results from semifinal matches
+		//       We CAN do this by checking the entire playoff bracket for the event and checking
+		//       which teams win or lose in the playoffs and, based on that, get the teams on each
+		//       of those alliances. This is more reliable than looking at EventAward and making
+		//       a decision based on that.
+		//
+		//       The input would be the playoff matches for the event, and the output would have a map
+		//       for the teams that get whatever points they earn.
 
 		pointsMap[award.TeamID] += points
 	}
