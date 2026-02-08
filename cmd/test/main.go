@@ -64,9 +64,9 @@ func main() {
 	// output := cli.RenderTeamMatchDetails(matchResults)
 	// fmt.Println(output)
 
-	matchresults := query.MatchesByEventQuery("USNCSHQ", 2025)
-	output := cli.RenderMatchDetails(matchresults)
-	fmt.Println(output)
+	// matchresults := query.MatchesByEventQuery("USNCSHQ", 2025)
+	// output := cli.RenderMatchDetails(matchresults)
+	// fmt.Println(output)
 
 	// eventTeams := query.TeamsByEventQuery("USNCROQ", 2025)
 	// output := cli.RenderTeamsByEvent(eventTeams)
@@ -75,4 +75,8 @@ func main() {
 	// rankings := query.EventTeamRankingQuery("USNCSHQ", 2025)
 	// output := cli.RenderTeamRankings(rankings)
 	// fmt.Println(output)
+
+	awardsResults := query.AwardsByEventQuery("USNCSHQ", 2025)
+	output := cli.RenderAwardsByEvent(awardsResults)
+	fmt.Println(output)
 }
