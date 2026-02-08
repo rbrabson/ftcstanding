@@ -128,11 +128,11 @@ func (db *filedb) SaveEventAward(ea *EventAward) error {
 	db.eventAwardsMu.Lock()
 	defer db.eventAwardsMu.Unlock()
 
-	// Check if this award already exists for this event/team
+	// Check if this award already exists for this event/team/award combination
 	awards := db.eventAwards[ea.EventID]
 	found := false
 	for i, existing := range awards {
-		if existing.TeamID == ea.TeamID && existing.AwardID == ea.AwardID {
+		if existing.TeamID == ea.TeamID && existing.AwardID == ea.AwardID && existing.Series == ea.Series {
 			// Update existing
 			eaCopy := *ea
 			awards[i] = &eaCopy

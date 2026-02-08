@@ -27,11 +27,13 @@ type Event struct {
 	DateEnd      time.Time `json:"date_end"`
 }
 
-// EventAward represents an award given to a team at an event. EventID, TeamID, and AwardID together form the primary key.
+// EventAward represents an award given to a team at an event. EventID, TeamID, AwardID, and Series together form the primary key.
 type EventAward struct {
 	EventID string `json:"event_id"`
 	TeamID  int    `json:"team_id"`
 	AwardID int    `json:"award_id"`
+	Name    string `json:"name"`   // Award name
+	Series  int    `json:"series"` // Award series number
 }
 
 // EventRanking represents a team's ranking in an event. EventID and TeamID together form the primary key.
@@ -73,8 +75,8 @@ func (e *Event) String() string {
 
 // String returns a string representation of the EventAward.
 func (ea *EventAward) String() string {
-	return fmt.Sprintf("EventAward{EventID: %q, TeamID: %d, AwardID: %d}",
-		ea.EventID, ea.TeamID, ea.AwardID)
+	return fmt.Sprintf("EventAward{EventID: %q, TeamID: %d, AwardID: %d, Name: %q, Series: %d}",
+		ea.EventID, ea.TeamID, ea.AwardID, ea.Name, ea.Series)
 }
 
 // String returns a string representation of the EventRanking.

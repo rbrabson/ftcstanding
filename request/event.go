@@ -87,6 +87,8 @@ func RequestEventAwards(event *database.Event) []*database.EventAward {
 			EventID: event.EventID,
 			AwardID: ftcEventAward.AwardID,
 			TeamID:  ftcEventAward.TeamNumber,
+			Name:    ftcEventAward.Name,
+			Series:  ftcEventAward.Series,
 		}
 		eventAwards = append(eventAwards, &eventAward)
 	}

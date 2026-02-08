@@ -10,10 +10,10 @@ func (db *sqldb) initEventStatements() error {
 	queries := map[string]string{
 		"getEvent":                "SELECT event_id, event_code, year, name, type, division_code, region_code, league_code, venue, address, city, state_prov, country, timezone, date_start, date_end FROM events WHERE event_id = ?",
 		"saveEvent":               "INSERT INTO events (event_id, event_code, year, name, type, division_code, region_code, league_code, venue, address, city, state_prov, country, timezone, date_start, date_end) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE event_code = VALUES(event_code), year = VALUES(year), name = VALUES(name), type = VALUES(type), division_code = VALUES(division_code), region_code = VALUES(region_code), league_code = VALUES(league_code), venue = VALUES(venue), address = VALUES(address), city = VALUES(city), state_prov = VALUES(state_prov), country = VALUES(country), timezone = VALUES(timezone), date_start = VALUES(date_start), date_end = VALUES(date_end)",
-		"getEventAwards":          "SELECT event_id, team_id, award_id FROM event_awards WHERE event_id = ?",
-		"saveEventAward":          "INSERT INTO event_awards (event_id, team_id, award_id) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE event_id = event_id",
-		"getTeamAwardsByEvent":    "SELECT event_id, team_id, award_id FROM event_awards WHERE event_id = ? AND team_id = ?",
-		"getAllTeamAwards":        "SELECT event_id, team_id, award_id FROM event_awards WHERE team_id = ? ORDER BY event_id",
+		"getEventAwards":          "SELECT event_id, team_id, award_id, name, series FROM event_awards WHERE event_id = ?",
+		"saveEventAward":          "INSERT INTO event_awards (event_id, team_id, award_id, name, series) VALUES (?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE name = VALUES(name), series = VALUES(series)",
+		"getTeamAwardsByEvent":    "SELECT event_id, team_id, award_id, name, series FROM event_awards WHERE event_id = ? AND team_id = ?",
+		"getAllTeamAwards":        "SELECT event_id, team_id, award_id, name, series FROM event_awards WHERE team_id = ? ORDER BY event_id",
 		"getEventRankings":        "SELECT event_id, team_id, rank, sort_order1, sort_order2, sort_order3, sort_order4, sort_order5, sort_order6, wins, losses, ties, dq, matches_played, matches_counted FROM event_rankings WHERE event_id = ?",
 		"saveEventRanking":        "INSERT INTO event_rankings (event_id, team_id, rank, sort_order1, sort_order2, sort_order3, sort_order4, sort_order5, sort_order6, wins, losses, ties, dq, matches_played, matches_counted) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE rank = VALUES(rank), sort_order1 = VALUES(sort_order1), sort_order2 = VALUES(sort_order2), sort_order3 = VALUES(sort_order3), sort_order4 = VALUES(sort_order4), sort_order5 = VALUES(sort_order5), sort_order6 = VALUES(sort_order6), wins = VALUES(wins), losses = VALUES(losses), ties = VALUES(ties), dq = VALUES(dq), matches_played = VALUES(matches_played), matches_counted = VALUES(matches_counted)",
 		"getEventAdvancements":    "SELECT event_id, team_id FROM event_advancements WHERE event_id = ?",
@@ -203,7 +203,7 @@ func (db *sqldb) GetEventAwards(eventID string) []*EventAward {
 	var awards []*EventAward
 	for rows.Next() {
 		var ea EventAward
-		err := rows.Scan(&ea.EventID, &ea.TeamID, &ea.AwardID)
+		err := rows.Scan(&ea.EventID, &ea.TeamID, &ea.AwardID, &ea.Name, &ea.Series)
 		if err != nil {
 			continue
 		}
@@ -218,7 +218,7 @@ func (db *sqldb) SaveEventAward(ea *EventAward) error {
 	if stmt == nil {
 		return fmt.Errorf("prepared statement not found")
 	}
-	_, err := stmt.Exec(ea.EventID, ea.TeamID, ea.AwardID)
+	_, err := stmt.Exec(ea.EventID, ea.TeamID, ea.AwardID, ea.Name, ea.Series)
 	return err
 }
 
@@ -237,7 +237,7 @@ func (db *sqldb) GetTeamAwardsByEvent(eventID string, teamID int) []*EventAward 
 	var awards []*EventAward
 	for rows.Next() {
 		var ea EventAward
-		err := rows.Scan(&ea.EventID, &ea.TeamID, &ea.AwardID)
+		err := rows.Scan(&ea.EventID, &ea.TeamID, &ea.AwardID, &ea.Name, &ea.Series)
 		if err != nil {
 			continue
 		}
@@ -261,7 +261,7 @@ func (db *sqldb) GetAllTeamAwards(teamID int) []*EventAward {
 	var awards []*EventAward
 	for rows.Next() {
 		var ea EventAward
-		err := rows.Scan(&ea.EventID, &ea.TeamID, &ea.AwardID)
+		err := rows.Scan(&ea.EventID, &ea.TeamID, &ea.AwardID, &ea.Name, &ea.Series)
 		if err != nil {
 			continue
 		}
