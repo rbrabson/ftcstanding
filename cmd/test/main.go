@@ -33,6 +33,58 @@ func setLogLevelFromEnv() slog.Level {
 	return logLevel
 }
 
+// teamsInRegion lists all teams in a given region.
+func teamsByRegion(region string) {
+	teamsFilter := database.TeamFilter{
+		HomeRegions: []string{region},
+	}
+	teams := query.TeamsQuery(teamsFilter)
+	teamsOutput := terminal.RenderTeams(teams)
+	fmt.Println(teamsOutput)
+}
+
+// teamsByEvent lists all teams at a specific event.
+func teamsByEvent(event string, year int) {
+	eventTeams := query.TeamsByEventQuery(event, year)
+	eventTeamsOutput := terminal.RenderTeamsByEvent(eventTeams)
+	fmt.Println(eventTeamsOutput)
+}
+
+// teamRankingsByEvent lists the team rankings at a specific event.
+func teamRankingsByEvent(event string, year int) {
+	rankings := query.EventTeamRankingQuery(event, year)
+	teamRankingsOutput := terminal.RenderTeamRankings(rankings)
+	fmt.Println(teamRankingsOutput)
+}
+
+// awardWinnersByEvent lists the award winners at a specific event.
+func awardWinnersByEvent(event string, year int) {
+	awardsResults := query.AwardsByEventQuery(event, year)
+	awardResultsOutput := terminal.RenderAwardsByEvent(awardsResults)
+	fmt.Println(awardResultsOutput)
+}
+
+// advancementReportByEvent lists the advancement report at a specific event.
+func advancementReportByEvent(event string, year int) {
+	advancementReport := query.AdvancementReportQuery(event, year)
+	advancementReportOutput := terminal.RenderAdvancementReport(advancementReport)
+	fmt.Println(advancementReportOutput)
+}
+
+// matchResultsByEvent lists the match results at a specific event.
+func matchResultsByEvent(event string, year int) {
+	matchResults := query.MatchesByEventQuery(event, year)
+	matchResultsOutput := terminal.RenderMatchDetails(matchResults)
+	fmt.Println(matchResultsOutput)
+}
+
+// matchResultsForTeamByEvent lists the match results for a specific team at a specific event.
+func matchResultsForTeamByEvent(event string, team int, year int) {
+	matchResults := query.MatchesByEventAndTeamQuery(event, team, year)
+	matchResultsOutput := terminal.RenderMatchesByEventAndTeam(matchResults)
+	fmt.Println(matchResultsOutput)
+}
+
 func main() {
 	godotenv.Load()
 
@@ -53,41 +105,11 @@ func main() {
 	query.Init(db)
 	terminal.Init(db)
 
-	// // Team Listing in NC
-	// teamsFilter := database.TeamFilter{
-	// 	HomeRegions: []string{"USNC"},
-	// }
-	// teams := query.TeamsQuery(teamsFilter)
-	// teamsOutput := terminal.RenderTeams(teams)
-	// fmt.Println(teamsOutput)
-
-	// // Teams at a specific event
-	// eventTeams := query.TeamsByEventQuery("USNCSHQ2", 2025)
-	// eventTeamsOutput := terminal.RenderTeamsByEvent(eventTeams)
-	// fmt.Println(eventTeamsOutput)
-
-	// // Team rankings at a specific event
-	// rankings := query.EventTeamRankingQuery("USNCSHQ2", 2025)
-	// teamRankingsOutput := terminal.RenderTeamRankings(rankings)
-	// fmt.Println(teamRankingsOutput)
-
-	// // Award winners at a specific event
-	// awardsResults := query.AwardsByEventQuery("USNCSHQ", 2025)
-	// awardResultsOutput := terminal.RenderAwardsByEvent(awardsResults)
-	// fmt.Println(awardResultsOutput)
-
-	// // Advancement report for a specific event
-	// advancementReport := query.AdvancementReportQuery("USNCSHQ2", 2025)
-	// advancementReportOutput := terminal.RenderAdvancementReport(advancementReport)
-	// fmt.Println(advancementReportOutput)
-
-	// Match results for a specific event
-	matchresults := query.MatchesByEventQuery("USNCSHQ2", 2025)
-	matchResultsOutput := terminal.RenderMatchDetails(matchresults)
-	fmt.Println(matchResultsOutput)
-
-	// // Match results for a specific team at a specific event
-	// matchTeamResults := query.MatchesByEventAndTeamQuery("USNCSHQ2", 24260, 2025)
-	// matchTeamResultsOutput := terminal.RenderMatchesByEventAndTeam(matchTeamResults)
-	// fmt.Println(matchTeamResultsOutput)
+	// teamsByRegion("USNC")
+	// teamsByEvent("USNCSHQ2", 2025)
+	teamRankingsByEvent("USNCSHQ2", 2025)
+	// awardWinnersByEvent("USNCSHQ2", 2025)
+	// advancementReportByEvent("USNCSHQ2", 2025)
+	// matchResultsByEvent("USNCSHQ2", 2025)
+	// matchResultsForTeamByEvent("USNCSHQ2", 7083, 2025)
 }

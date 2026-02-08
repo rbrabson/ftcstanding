@@ -50,6 +50,7 @@ func RenderTeamsByEvent(eventTeams *query.EventTeams) string {
 		},
 		Border:    renderer.Tint{FG: renderer.Colors{color.FgWhite}}, // White borders
 		Separator: renderer.Tint{FG: renderer.Colors{color.FgWhite}}, // White separators
+		Settings:  tw.Settings{Separators: tw.Separators{BetweenRows: tw.On}},
 	}
 
 	table := tablewriter.NewTable(&sb,
@@ -138,6 +139,7 @@ func RenderTeamRankings(eventRankings *query.EventTeamRankings) string {
 		},
 		Border:    renderer.Tint{FG: renderer.Colors{color.FgWhite}}, // White borders
 		Separator: renderer.Tint{FG: renderer.Colors{color.FgWhite}}, // White separators
+		Settings:  tw.Settings{Separators: tw.Separators{BetweenRows: tw.Off}},
 	}
 
 	table := tablewriter.NewTable(&sb,
