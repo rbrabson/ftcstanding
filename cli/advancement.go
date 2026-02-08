@@ -64,6 +64,7 @@ func RenderAdvancementReport(report *query.AdvancementReport) string {
 		sb.WriteString("\nNo teams found for this event.\n")
 	} else {
 		var advancementRank int
+		greenColor := color.New(color.FgGreen)
 		for _, ta := range report.TeamAdvancements {
 			// Format team with advancement status
 			teamName := fmt.Sprintf("%5d - %s", ta.Team.TeamID, ta.Team.Name)
@@ -79,16 +80,30 @@ func RenderAdvancementReport(report *query.AdvancementReport) string {
 				advancementNumber = "-"
 			}
 
-			table.Append([]string{
-				fmt.Sprintf("%d", ta.Rank),
-				teamName,
-				fmt.Sprintf("%d", ta.TotalPoints),
-				fmt.Sprintf("%d", ta.JudgingPoints),
-				fmt.Sprintf("%d", ta.PlayoffPoints),
-				fmt.Sprintf("%d", ta.SelectionPoints),
-				fmt.Sprintf("%d", ta.QualificationPoints),
-				advancementNumber,
-			})
+			// Color advancing teams in green
+			if ta.Advances {
+				table.Append([]string{
+					greenColor.Sprint(fmt.Sprintf("%d", ta.Rank)),
+					greenColor.Sprint(teamName),
+					fmt.Sprintf("%d", ta.TotalPoints),
+					fmt.Sprintf("%d", ta.JudgingPoints),
+					fmt.Sprintf("%d", ta.PlayoffPoints),
+					fmt.Sprintf("%d", ta.SelectionPoints),
+					fmt.Sprintf("%d", ta.QualificationPoints),
+					advancementNumber,
+				})
+			} else {
+				table.Append([]string{
+					fmt.Sprintf("%d", ta.Rank),
+					teamName,
+					fmt.Sprintf("%d", ta.TotalPoints),
+					fmt.Sprintf("%d", ta.JudgingPoints),
+					fmt.Sprintf("%d", ta.PlayoffPoints),
+					fmt.Sprintf("%d", ta.SelectionPoints),
+					fmt.Sprintf("%d", ta.QualificationPoints),
+					advancementNumber,
+				})
+			}
 		}
 
 		// Add footer with team count
