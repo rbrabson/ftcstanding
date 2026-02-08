@@ -76,7 +76,11 @@ func main() {
 	// output := cli.RenderTeamRankings(rankings)
 	// fmt.Println(output)
 
-	awardsResults := query.AwardsByEventQuery("USNCSHQ", 2025)
-	output := cli.RenderAwardsByEvent(awardsResults)
+	// awardsResults := query.AwardsByEventQuery("USNCSHQ", 2025)
+	// output := cli.RenderAwardsByEvent(awardsResults)
+	// fmt.Println(output)
+
+	advancementReport := query.AdvancementReportQuery("USNCSHQ", 2025)
+	output := cli.RenderAdvancementReport(advancementReport)
 	fmt.Println(output)
 }
