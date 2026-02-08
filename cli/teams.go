@@ -8,7 +8,6 @@ import (
 	"github.com/olekukonko/tablewriter"
 	"github.com/olekukonko/tablewriter/renderer"
 	"github.com/rbrabson/ftcstanding/database"
-	"github.com/rbrabson/ftcstanding/query"
 )
 
 // RenderTeams renders a list of teams in a table format.
@@ -51,29 +50,6 @@ func RenderTeams(teams []*database.Team) string {
 			team.HomeRegion,
 			strconv.Itoa(team.RookieYear),
 		})
-	}
-
-	table.Render()
-	return sb.String()
-}
-
-// RenderTeamMatchDetails renders the details of team matches in a table format.
-func RenderTeamMatchDetails(details []*query.TeamMatchDetails) string {
-	var sb strings.Builder
-	table := tablewriter.NewTable(&sb)
-	table.Header([]string{"Event", "Type", "Match", "Alliance", "Total Points", "Teams"})
-
-	for _, detail := range details {
-		for _, mt := range detail.Teams {
-			table.Append([]string{
-				detail.Event.EventCode,
-				detail.Match.MatchType,
-				strconv.Itoa(detail.Match.MatchNumber),
-				detail.AllianceScore.Alliance,
-				strconv.Itoa(detail.AllianceScore.TotalPoints),
-				strconv.Itoa(mt.TeamID),
-			})
-		}
 	}
 
 	table.Render()

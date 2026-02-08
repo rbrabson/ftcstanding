@@ -81,6 +81,9 @@ func RenderMatchDetails(details []*query.MatchDetails) string {
 					tw.AlignCenter,
 				}},
 			},
+			Footer: tw.CellConfig{
+				Alignment: tw.CellAlignment{Global: tw.AlignLeft},
+			},
 		}),
 	)
 
@@ -167,12 +170,12 @@ func RenderMatchesByEventAndTeam(results []*query.TeamMatchResult) string {
 		event := results[0].Event
 		team := results[0].Team
 		sb.WriteString(color.New(color.FgGreen, color.Bold).Sprint("Event Information\n"))
+		sb.WriteString(color.New(color.FgCyan).Sprintf("Team: %d - %s\n", team.TeamID, team.Name))
 		sb.WriteString(color.New(color.FgCyan).Sprintf("Code: %s\n", event.EventCode))
 		sb.WriteString(color.New(color.FgCyan).Sprintf("Name: %s\n", event.Name))
-		sb.WriteString(color.New(color.FgCyan).Sprintf("Team: %d - %s\n", team.TeamID, team.Name))
-		sb.WriteString(color.New(color.FgCyan).Sprintf("Year: %d\n", event.Year))
 		sb.WriteString(color.New(color.FgCyan).Sprintf("Location: %s, %s, %s\n",
 			event.City, event.StateProv, event.Country))
+		sb.WriteString(color.New(color.FgCyan).Sprintf("Year: %d\n", event.Year))
 		sb.WriteString(color.New(color.FgCyan).Sprintf("Dates: %s to %s\n\n",
 			event.DateStart.Format("Jan 2, 2006"),
 			event.DateEnd.Format("Jan 2, 2006")))
@@ -206,7 +209,7 @@ func RenderMatchesByEventAndTeam(results []*query.TeamMatchResult) string {
 			Header: tw.CellConfig{
 				Merging: tw.CellMerging{Mode: tw.MergeHorizontal},
 				Alignment: tw.CellAlignment{PerColumn: []tw.Align{
-					tw.AlignLeft,   // Type - left aligned
+					tw.AlignLeft,   // Type
 					tw.AlignCenter, // Match #
 					tw.AlignCenter, // Team Alliance
 					tw.AlignCenter, // Team Alliance
@@ -219,15 +222,18 @@ func RenderMatchesByEventAndTeam(results []*query.TeamMatchResult) string {
 			Row: tw.CellConfig{
 				Merging: tw.CellMerging{Mode: tw.MergeHierarchical},
 				Alignment: tw.CellAlignment{PerColumn: []tw.Align{
-					tw.AlignLeft,
-					tw.AlignRight,
-					tw.AlignCenter,
-					tw.AlignCenter,
-					tw.AlignCenter,
-					tw.AlignCenter,
-					tw.AlignCenter,
-					tw.AlignCenter,
+					tw.AlignLeft,   // Type
+					tw.AlignRight,  // Match #
+					tw.AlignCenter, // Team Alliance
+					tw.AlignCenter, // Team Alliance
+					tw.AlignCenter, // Opponent Alliance
+					tw.AlignCenter, // Opponent Alliance
+					tw.AlignCenter, // Scores
+					tw.AlignCenter, // Result
 				}},
+			},
+			Footer: tw.CellConfig{
+				Alignment: tw.CellAlignment{Global: tw.AlignLeft},
 			},
 		}),
 	)

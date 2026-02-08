@@ -56,19 +56,15 @@ func RenderTeamsByEvent(eventTeams *query.EventTeams) string {
 		tablewriter.WithRenderer(renderer.NewColorized(colorCfg)),
 		tablewriter.WithConfig(tablewriter.Config{
 			Header: tw.CellConfig{
-				Alignment: tw.CellAlignment{Global: tw.AlignRight},
+				Alignment: tw.CellAlignment{Global: tw.AlignLeft},
 			},
 			Row: tw.CellConfig{
 				Merging: tw.CellMerging{Mode: tw.MergeHierarchical},
 				Alignment: tw.CellAlignment{PerColumn: []tw.Align{
-					tw.AlignRight,
 					tw.AlignLeft,
-					tw.AlignRight,
-					tw.AlignRight,
-					tw.AlignRight,
-					tw.AlignRight,
-					tw.AlignRight,
-					tw.AlignRight,
+					tw.AlignLeft,
+					tw.AlignLeft,
+					tw.AlignLeft,
 					tw.AlignRight,
 				}},
 			},

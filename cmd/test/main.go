@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log/slog"
 	"os"
 	"strings"
@@ -53,28 +52,28 @@ func main() {
 	query.Init(db)
 	cli.Init(db)
 
-	// filter := database.TeamFilter{
+	// // Team Listing in NC
+	// teamsFilter := database.TeamFilter{
 	// 	HomeRegions: []string{"USNC"},
 	// }
-	// teams := query.TeamsQuery(filter)
-	// output := cli.RenderTeams(teams)
-	// fmt.Println(output)
+	// teams := query.TeamsQuery(teamsFilter)
+	// teamsOutput := cli.RenderTeams(teams)
+	// fmt.Println(teamsOutput)
 
-	// matchResults := query.TeamMatchesByEventQuery(23532, "USNCSHQ", 2025)
-	// output := cli.RenderTeamMatchDetails(matchResults)
-	// fmt.Println(output)
-
+	// // Teams at a specific event
 	// eventTeams := query.TeamsByEventQuery("USNCSHQ2", 2025)
-	// output := cli.RenderTeamsByEvent(eventTeams)
-	// fmt.Println(output)
+	// eventTeamsOutput := cli.RenderTeamsByEvent(eventTeams)
+	// fmt.Println(eventTeamsOutput)
 
-	// rankings := query.EventTeamRankingQuery("USNCSHQ", 2025)
-	// output := cli.RenderTeamRankings(rankings)
-	// fmt.Println(output)
+	// // Team rankings at a specific event
+	// rankings := query.EventTeamRankingQuery("USNCSHQ2", 2025)
+	// teamRankingsOutput := cli.RenderTeamRankings(rankings)
+	// fmt.Println(teamRankingsOutput)
 
+	// // Award winners at a specific event
 	// awardsResults := query.AwardsByEventQuery("USNCSHQ", 2025)
-	// output := cli.RenderAwardsByEvent(awardsResults)
-	// fmt.Println(output)
+	// awardResultsOutput := cli.RenderAwardsByEvent(awardsResults)
+	// fmt.Println(awardResultsOutput)
 
 	// advancementReport := query.AdvancementReportQuery("USNCSHQ2", 2025)
 	// output := cli.RenderAdvancementReport(advancementReport)
@@ -84,7 +83,7 @@ func main() {
 	// output := cli.RenderMatchDetails(matchresults)
 	// fmt.Println(output)
 
-	matchresults := query.MatchesByEventAndTeamQuery("USNCSHQ2", 24260, 2025)
-	output := cli.RenderMatchesByEventAndTeam(matchresults)
-	fmt.Println(output)
+	// matchresults := query.MatchesByEventAndTeamQuery("USNCSHQ2", 24260, 2025)
+	// output := cli.RenderMatchesByEventAndTeam(matchresults)
+	// fmt.Println(output)
 }
