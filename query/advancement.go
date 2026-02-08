@@ -3,7 +3,6 @@ package query
 import (
 	"fmt"
 	"log/slog"
-	"math"
 	"slices"
 	"strconv"
 	"strings"
@@ -458,24 +457,24 @@ func calculateQualificationPoints(rankings []*database.EventRanking) map[int]int
 	minPoints := 2
 	var previousSortOrder1 float64
 	var previousScore int
-	numTeams := len(sortedRankings)
+	// numTeams := len(sortedRankings)
 
-	multiplier := float64(maxPoints-minPoints) / float64(numTeams)
+	// multiplier := float64(maxPoints-minPoints) / float64(numTeams)
 
-	for i, ranking := range sortedRankings {
-		rank := numTeams - i
-		score := int(math.Floor(multiplier*float64(rank))) + minPoints
+	// for i, ranking := range sortedRankings {
+	// 	rank := numTeams - i
+	// 	score := int(math.Floor(multiplier*float64(rank))) + minPoints
 
-		if previousScore != 0 && ranking.SortOrder1 == previousSortOrder1 {
-			score = previousScore
-		} else {
-			previousScore = score
-		}
-		pointsMap[ranking.TeamID] = score
+	// 	if previousScore != 0 && ranking.SortOrder1 == previousSortOrder1 {
+	// 		score = previousScore
+	// 	} else {
+	// 		previousScore = score
+	// 	}
+	// 	pointsMap[ranking.TeamID] = score
 
-		previousScore = score
-		previousSortOrder1 = ranking.SortOrder1
-	}
+	// 	previousScore = score
+	// 	previousSortOrder1 = ranking.SortOrder1
+	// }
 
 	currentScure := maxPoints + 1
 	previousSortOrder1 = 0
