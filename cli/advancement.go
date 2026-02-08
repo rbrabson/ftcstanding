@@ -71,7 +71,7 @@ func RenderAdvancementReport(report *query.AdvancementReport) string {
 			var advancementNumber string
 			switch {
 			case ta.Status == "already_advancing":
-				teamName = fmt.Sprintf("%s\n        (already advanced)", teamName)
+				teamName = fmt.Sprintf("%s\n        %s", teamName, greenColor.Sprint("(already advanced)"))
 				advancementNumber = "-"
 			case ta.AdvancementNumber != "-":
 				advancementRank++
