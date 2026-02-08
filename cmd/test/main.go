@@ -7,10 +7,10 @@ import (
 	"strings"
 
 	"github.com/joho/godotenv"
-	"github.com/rbrabson/ftcstanding/cli"
 	"github.com/rbrabson/ftcstanding/database"
 	"github.com/rbrabson/ftcstanding/query"
 	"github.com/rbrabson/ftcstanding/request"
+	"github.com/rbrabson/ftcstanding/terminal"
 )
 
 // setLogLevelFromEnv sets the log level from the LOG_LEVEL environment variable.
@@ -51,43 +51,43 @@ func main() {
 
 	request.Init(db)
 	query.Init(db)
-	cli.Init(db)
+	terminal.Init(db)
 
 	// // Team Listing in NC
 	// teamsFilter := database.TeamFilter{
 	// 	HomeRegions: []string{"USNC"},
 	// }
 	// teams := query.TeamsQuery(teamsFilter)
-	// teamsOutput := cli.RenderTeams(teams)
+	// teamsOutput := terminal.RenderTeams(teams)
 	// fmt.Println(teamsOutput)
 
 	// // Teams at a specific event
 	// eventTeams := query.TeamsByEventQuery("USNCSHQ2", 2025)
-	// eventTeamsOutput := cli.RenderTeamsByEvent(eventTeams)
+	// eventTeamsOutput := terminal.RenderTeamsByEvent(eventTeams)
 	// fmt.Println(eventTeamsOutput)
 
 	// // Team rankings at a specific event
 	// rankings := query.EventTeamRankingQuery("USNCSHQ2", 2025)
-	// teamRankingsOutput := cli.RenderTeamRankings(rankings)
+	// teamRankingsOutput := terminal.RenderTeamRankings(rankings)
 	// fmt.Println(teamRankingsOutput)
 
 	// // Award winners at a specific event
 	// awardsResults := query.AwardsByEventQuery("USNCSHQ", 2025)
-	// awardResultsOutput := cli.RenderAwardsByEvent(awardsResults)
+	// awardResultsOutput := terminal.RenderAwardsByEvent(awardsResults)
 	// fmt.Println(awardResultsOutput)
 
 	// // Advancement report for a specific event
 	// advancementReport := query.AdvancementReportQuery("USNCSHQ2", 2025)
-	// advancementReportOutput := cli.RenderAdvancementReport(advancementReport)
+	// advancementReportOutput := terminal.RenderAdvancementReport(advancementReport)
 	// fmt.Println(advancementReportOutput)
 
 	// Match results for a specific event
 	matchresults := query.MatchesByEventQuery("USNCSHQ2", 2025)
-	matchResultsOutput := cli.RenderMatchDetails(matchresults)
+	matchResultsOutput := terminal.RenderMatchDetails(matchresults)
 	fmt.Println(matchResultsOutput)
 
 	// // Match results for a specific team at a specific event
 	// matchTeamResults := query.MatchesByEventAndTeamQuery("USNCSHQ2", 24260, 2025)
-	// matchTeamResultsOutput := cli.RenderMatchesByEventAndTeam(matchTeamResults)
+	// matchTeamResultsOutput := terminal.RenderMatchesByEventAndTeam(matchTeamResults)
 	// fmt.Println(matchTeamResultsOutput)
 }
