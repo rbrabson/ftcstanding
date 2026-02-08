@@ -1,7 +1,6 @@
 package query
 
 import (
-	"fmt"
 	"slices"
 
 	"github.com/rbrabson/ftcstanding/database"
@@ -126,7 +125,6 @@ func EventTeamRankingQuery(eventCode string, year int) *EventTeamRankings {
 				totalPoints := allianceScore.TotalPoints - opposingAllianceScore.FoulPointsCommitted
 				if totalPoints > teamHighScores[mt.TeamID] {
 					teamHighScores[mt.TeamID] = totalPoints
-					fmt.Println(mt.TeamID, allianceScore)
 				}
 			}
 		}
