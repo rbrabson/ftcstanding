@@ -326,7 +326,11 @@ func calculatePlayoffPoints(event *database.Event) map[int]int {
 		teams := db.GetMatchTeams(loser.matchID)
 		for _, mt := range teams {
 			if mt.Alliance == loser.alliance {
-				pointsMap[mt.TeamID] = points
+				// Only assign points if team doesn't have points yet, or if new points are higher
+				// This prevents overwriting 40 points (finals winner) with 10 points (3rd place)
+				if existing, exists := pointsMap[mt.TeamID]; !exists || points > existing {
+					pointsMap[mt.TeamID] = points
+				}
 			}
 		}
 	}
