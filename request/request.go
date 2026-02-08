@@ -51,7 +51,7 @@ func RequestAndSaveAll(season string, refresh bool) {
 			EventIDs: []string{event.EventID},
 		}
 		matches := db.GetAllMatches(filter)
-		if !refresh && len(matches) > 0 && event.DateEnd.Before(time.Now().Add(-24*7*time.Hour)) {
+		if !refresh && len(matches) > 0 && event.DateEnd.Before(time.Now().Add(-24*6*time.Hour)) {
 			slog.Info("Skipping event details for already processed event without any advancements", "event", event.EventCode, "matches", len(matches), "dateEnd", event.DateEnd)
 			continue
 		}
