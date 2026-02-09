@@ -395,30 +395,6 @@ func containsIgnoreCase(s, substr string) bool {
 	return strings.Contains(strings.ToLower(s), strings.ToLower(substr))
 }
 
-// invErf computes the inverse error function using Newton-Raphson
-// func invErf(x float64) float64 {
-// 	if x <= -1 || x >= 1 {
-// 		panic("invErf input must be in (-1, 1)")
-// 	}
-
-// 	// Initial guess (Winitzki approximation)
-// 	a := 0.147
-// 	ln := math.Log(1 - x*x)
-// 	t := 2/(math.Pi*a) + ln/2
-// 	y := math.Copysign(
-// 		math.Sqrt(math.Sqrt(t*t-ln/a)-t),
-// 		x,
-// 	)
-
-// 	// Newton iterations
-// 	for i := 0; i < 5; i++ {
-// 		err := math.Erf(y) - x
-// 		y -= err / ((2 / math.Sqrt(math.Pi)) * math.Exp(-y*y))
-// 	}
-
-// 	return y
-// }
-
 // ftcQualificationPoints computes FTC Qualification Phase Performance points
 func ftcQualificationPoints(rank, teams int) int {
 	alpha := 1.07
@@ -430,9 +406,6 @@ func ftcQualificationPoints(rank, teams int) int {
 
 	scale := 7.0 / math.Erfinv(1.0/alpha)
 	points := math.Erfinv(x)*scale + 9.0
-
-	// scale := 7.0 / invErf(1.0/alpha)
-	// points := invErf(x)*scale + 9.0
 
 	return int(math.Ceil(points))
 }
