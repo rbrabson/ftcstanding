@@ -71,31 +71,41 @@ func main() {
 
 	lambda := GetLambda(len(teams)) // FTCScout-style regularization
 
-	opr := performance.CalculateOPR(matches, teams)
-	npopr := performance.CalculateNpOPR(matches, teams)
-	ccwm := performance.CalculateCCWM(matches, teams)
-	dpr := performance.CalculateDPR(matches, teams, lambda)
-	npdpr := performance.CalculateNpDPR(matches, teams, lambda)
+	calculator := performance.Calculator{
+		Matches: matches,
+		Teams:   teams,
+	}
+
+	opr := calculator.CalculateOPR()
+	npopr := calculator.CalculateNpOPR()
+	ccwm := calculator.CalculateCCWM()
+	dpr := calculator.CalculateDPR()
+	npdpr := calculator.CalculateNpDPR()
 
 	fmt.Println("Team | OPR   | npOPR | CCWM  | DPR  | npDPR | npAVG")
 	fmt.Println("----------------------------------------------------")
 	for _, t := range teams {
-		npavg := performance.CalculateNpAVG(matches, t)
+		npavg := calculator.CalculateNpAVG(matches, t)
 		fmt.Printf("%4d | %5.2f | %5.2f | %5.2f | %5.2f | %5.2f | %5.2f\n",
 			t, opr[t], npopr[t], ccwm[t], dpr[t], npdpr[t], npavg)
 	}
 
-	opr = performance.CalculateNpOPRWithRegularaization(matches, teams, lambda)
-	npopr = performance.CalculateNpOPRWithRegularization(matches, teams, lambda)
-	ccwm = performance.CalculateCCWMWithRegularization(matches, teams, lambda)
-	dpr = performance.CalculateDPRWithRegularization(matches, teams, lambda)
-	npdpr = performance.CalculateNpDPRWithRegularization(matches, teams, lambda)
+	calculator = performance.Calculator{
+		Matches: matches,
+		Teams:   teams,
+		Lambda:  lambda,
+	}
+	opr = calculator.CalculateNpOPR()
+	npopr = calculator.CalculateNpOPR()
+	ccwm = calculator.CalculateCCWM()
+	dpr = calculator.CalculateDPR()
+	npdpr = calculator.CalculateNpDPR()
 
 	fmt.Println()
 	fmt.Println("Team | OPR   | npOPR | CCWM  | DPR   | npDPR | npAVG")
 	fmt.Println("----------------------------------------------------")
 	for _, t := range teams {
-		npavg := performance.CalculateNpAVG(matches, t)
+		npavg := calculator.CalculateNpAVG(matches, t)
 		fmt.Printf("%4d | %5.2f | %5.2f | %5.2f | %5.2f | %5.2f | %5.2f\n",
 			t, opr[t], npopr[t], ccwm[t], dpr[t], npdpr[t], npavg)
 	}

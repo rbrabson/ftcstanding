@@ -1,7 +1,5 @@
 package matrix
 
-type Matrix [][]float64
-
 // MatrixMultiply multiplies two matrices a and b.
 func Multiply(a, b [][]float64) [][]float64 {
 	out := make([][]float64, len(a))

@@ -2,48 +2,63 @@ package performance
 
 import "github.com/rbrabson/ftcstanding/matrix"
 
+type Calculator struct {
+	Matches []Match
+	Teams   []int
+	Lambda  float64
+}
+
 // CalculateCCWM calculates the Calculated Contribution to Winning Margin (CCWM) for each team.
-func CalculateCCWM(matches []Match, teams []int) map[int]float64 {
-	A, b := buildMatchMatrices(matches, teams, func(m Match, isRed bool) float64 {
+func (p *Calculator) CalculateCCWM() map[int]float64 {
+	A, b := buildMatchMatrices(p.Matches, p.Teams, func(m Match, isRed bool) float64 {
 		if isRed {
 			return (m.RedScore - m.BlueScore)
 		}
 		return (m.BlueScore - m.RedScore)
 	})
 
-	x := matrix.SolveLeastSquares(A, b)
+	var x []float64
+	if p.Lambda == 0 {
+		x = matrix.SolveLeastSquares(A, b)
+	} else {
+		x = matrix.SolveLeastSquaresRegularized(A, b, p.Lambda)
+	}
 
 	out := map[int]float64{}
-	for i, t := range teams {
+	for i, t := range p.Teams {
 		out[t] = x[i]
 	}
 	return out
 }
 
-// CalculateDPR calculates a team's Defensive Power Rating (DPR) using ridge regression with regularization.
-func CalculateDPR(matches []Match, teams []int, lambda float64) map[int]float64 {
-	A, b := buildMatchMatrices(matches, teams, func(m Match, isRed bool) float64 {
+// CalculateDPR calculates the Defensive Power Rating (DPR) for each team.
+func (p *Calculator) CalculateDPR() map[int]float64 {
+	A, b := buildMatchMatrices(p.Matches, p.Teams, func(m Match, isRed bool) float64 {
 		if isRed {
 			return m.BlueScore
 		}
 		return m.RedScore
 	})
-
-	x := matrix.SolveLeastSquaresRegularized(A, b, lambda)
+	var x []float64
+	if p.Lambda == 0 {
+		x = matrix.SolveLeastSquares(A, b)
+	} else {
+		x = matrix.SolveLeastSquaresRegularized(A, b, p.Lambda)
+	}
 
 	out := map[int]float64{}
-	for i, t := range teams {
+	for i, t := range p.Teams {
 		out[t] = x[i]
 	}
 	return out
 }
 
-// CalculateNpAVG calculates the average non-penalized score for a given team across all matches.
-func CalculateNpAVG(matches []Match, team int) float64 {
+// CalculateNpAVG calculates the non-penalized average score for a given team.
+func (p *Calculator) CalculateNpAVG(matches []Match, team int) float64 {
 	var total float64
 	var count float64
 
-	for _, m := range matches {
+	for _, m := range p.Matches {
 		for _, t := range m.RedTeams {
 			if t == team {
 				total += m.RedScore - m.RedPenalties
@@ -64,55 +79,71 @@ func CalculateNpAVG(matches []Match, team int) float64 {
 	return total / count
 }
 
-// CalculateNpDPR calculates a team's non-penalized Defensive Power Rating (DPR) using ridge regression with regularization.
-func CalculateNpDPR(matches []Match, teams []int, lambda float64) map[int]float64 {
-	A, b := buildMatchMatrices(matches, teams, func(m Match, isRed bool) float64 {
+// CalculateNpDPR calculates the non-penalized Defensive Power Rating (DPR) for each team.
+func (p *Calculator) CalculateNpDPR() map[int]float64 {
+	A, b := buildMatchMatrices(p.Matches, p.Teams, func(m Match, isRed bool) float64 {
 		if isRed {
 			return m.BlueScore - m.BluePenalties
 		}
 		return m.RedScore - m.RedPenalties
 	})
 
-	x := matrix.SolveLeastSquaresRegularized(A, b, lambda)
+	var x []float64
+	if p.Lambda == 0 {
+		x = matrix.SolveLeastSquares(A, b)
+	} else {
+		x = matrix.SolveLeastSquaresRegularized(A, b, p.Lambda)
+	}
 
 	out := map[int]float64{}
-	for i, t := range teams {
+	for i, t := range p.Teams {
 		out[t] = x[i]
 	}
 	return out
+
 }
 
-// CalculateNpOPR calculates a team's non-penalized Offensive Power Rating (OPR).
-func CalculateNpOPR(matches []Match, teams []int) map[int]float64 {
-	A, b := buildMatchMatrices(matches, teams, func(m Match, isRed bool) float64 {
+// CalculateNpOPR calculates the non-penalized Offensive Power Rating (OPR) for each team.
+func (p *Calculator) CalculateNpOPR() map[int]float64 {
+	A, b := buildMatchMatrices(p.Matches, p.Teams, func(m Match, isRed bool) float64 {
 		if isRed {
 			return m.RedScore - m.RedPenalties
 		}
 		return m.BlueScore - m.BluePenalties
 	})
 
-	x := matrix.SolveLeastSquares(A, b)
+	var x []float64
+	if p.Lambda == 0 {
+		x = matrix.SolveLeastSquares(A, b)
+	} else {
+		x = matrix.SolveLeastSquaresRegularized(A, b, p.Lambda)
+	}
 
 	out := map[int]float64{}
-	for i, t := range teams {
+	for i, t := range p.Teams {
 		out[t] = x[i]
 	}
 	return out
 }
 
-// CalculateOPR calculates a team's Offensive Power Rating (OPR).
-func CalculateOPR(matches []Match, teams []int) map[int]float64 {
-	A, b := buildMatchMatrices(matches, teams, func(m Match, isRed bool) float64 {
+// CalculateOPR calculates the Offensive Power Rating (OPR) for each team.
+func (p *Calculator) CalculateOPR() map[int]float64 {
+	A, b := buildMatchMatrices(p.Matches, p.Teams, func(m Match, isRed bool) float64 {
 		if isRed {
 			return m.RedScore
 		}
 		return m.BlueScore
 	})
 
-	x := matrix.SolveLeastSquares(A, b)
+	var x []float64
+	if p.Lambda == 0 {
+		x = matrix.SolveLeastSquares(A, b)
+	} else {
+		x = matrix.SolveLeastSquaresRegularized(A, b, p.Lambda)
+	}
 
 	out := map[int]float64{}
-	for i, t := range teams {
+	for i, t := range p.Teams {
 		out[t] = x[i]
 	}
 	return out
