@@ -7,6 +7,7 @@ import (
 	"github.com/fatih/color"
 	"github.com/olekukonko/tablewriter"
 	"github.com/olekukonko/tablewriter/renderer"
+	"github.com/olekukonko/tablewriter/tw"
 	"github.com/rbrabson/ftcstanding/database"
 )
 
@@ -15,7 +16,7 @@ func RenderTeams(teams []*database.Team) string {
 	colorCfg := renderer.ColorizedConfig{
 		Header: renderer.Tint{
 			FG: renderer.Colors{color.FgGreen, color.Bold}, // Green bold headers
-			BG: renderer.Colors{color.BgHiWhite},           // White background
+			BG: renderer.Colors{color.BgBlack},             // White background
 		},
 		Column: renderer.Tint{
 			FG: renderer.Colors{color.FgCyan}, // Default cyan for rows
@@ -39,18 +40,39 @@ func RenderTeams(teams []*database.Team) string {
 	}
 
 	var sb strings.Builder
-	table := tablewriter.NewTable(&sb, tablewriter.WithRenderer(renderer.NewColorized(colorCfg)))
-	table.Header([]string{"ID", "Name", "Country", "Region", "Rookie Year"})
+	table := tablewriter.NewTable(&sb,
+		tablewriter.WithRenderer(renderer.NewColorized(colorCfg)),
+		tablewriter.WithConfig(tablewriter.Config{
+			Header: tw.CellConfig{
+				Alignment: tw.CellAlignment{PerColumn: []tw.Align{
+					tw.AlignLeft,
+					tw.AlignLeft,
+					tw.AlignLeft,
+					tw.AlignLeft,
+				}},
+			},
+			Footer: tw.CellConfig{
+				Alignment: tw.CellAlignment{PerColumn: []tw.Align{
+					tw.AlignLeft,
+					tw.AlignLeft,
+					tw.AlignLeft,
+					tw.AlignLeft,
+				}},
+			},
+		}),
+	)
+	table.Header([]string{"Team", "Country", "Region", "Rookie Year"})
 
 	for _, team := range teams {
 		table.Append([]string{
-			strconv.Itoa(team.TeamID),
-			team.Name,
+			strconv.Itoa(team.TeamID) + " - " + team.Name,
 			team.Country,
 			team.HomeRegion,
 			strconv.Itoa(team.RookieYear),
 		})
 	}
+
+	table.Footer([]string{"Total Teams: " + strconv.Itoa(len(teams)), "", "", ""})
 
 	table.Render()
 	return sb.String()
