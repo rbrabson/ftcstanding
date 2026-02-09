@@ -42,9 +42,6 @@ func RenderAdvancementReport(report *query.AdvancementReport) string {
 				{}, // Default for remaining columns
 			},
 		},
-		Footer: renderer.Tint{
-			FG: renderer.Colors{color.FgYellow, color.Bold}, // Yellow bold footer
-		},
 		Border:    renderer.Tint{FG: renderer.Colors{color.FgWhite}}, // White borders
 		Separator: renderer.Tint{FG: renderer.Colors{color.FgWhite}}, // White separators
 		Settings:  tw.Settings{Separators: tw.Separators{BetweenRows: tw.On}},
@@ -105,18 +102,6 @@ func RenderAdvancementReport(report *query.AdvancementReport) string {
 				})
 			}
 		}
-
-		// Add footer with team count
-		table.Footer([]string{
-			fmt.Sprintf("Total Teams: %d", len(report.TeamAdvancements)),
-			"",
-			"",
-			"",
-			"",
-			"",
-			"",
-			"",
-		})
 	}
 
 	table.Render()
