@@ -28,6 +28,7 @@ type EventDetails struct {
 type TeamDetails struct {
 	TeamID        int
 	Name          string
+	FullName      string
 	City          string
 	StateProv     string
 	Country       string
@@ -55,6 +56,7 @@ func TeamDetailsQuery(teamID int) *TeamDetails {
 	details := &TeamDetails{
 		TeamID:    team.TeamID,
 		Name:      team.Name,
+		FullName:  team.FullName,
 		City:      team.City,
 		StateProv: team.StateProv,
 		Country:   team.Country,

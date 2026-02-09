@@ -97,6 +97,9 @@ func RenderTeamDetails(details *query.TeamDetails) string {
 	sb.WriteString(color.HiCyanString("═══════════════════════════════════════════════════════════════\n"))
 	sb.WriteString(color.HiGreenString("Team %d - %s\n", details.TeamID, details.Name))
 	sb.WriteString(color.HiCyanString("═══════════════════════════════════════════════════════════════\n"))
+	if details.FullName != "" {
+		sb.WriteString(color.WhiteString("Details:  %s\n", details.FullName))
+	}
 	sb.WriteString(color.WhiteString("Location: %s, %s, %s\n", details.City, details.StateProv, details.Country))
 	sb.WriteString(color.WhiteString("Region:   %s\n", details.Region))
 	sb.WriteString("\n")
