@@ -409,3 +409,194 @@ func ftcQualificationPoints(rank, teams int) int {
 
 	return int(math.Ceil(points))
 }
+
+// EventParticipation represents a team's participation at an event including awards.
+type EventParticipation struct {
+	Event  *database.Event
+	Awards []*database.EventAward
+}
+
+// RegionTeamAdvancement represents a team's advancement information across all events in a region.
+type RegionTeamAdvancement struct {
+	Team                     *database.Team
+	AdvancingEvent           *database.Event        // The event from which the team advanced
+	AdvancingEventAwards     []*database.EventAward // Awards from the advancing event
+	OtherEventParticipations []*EventParticipation  // Other events the team participated in
+}
+
+// RegionAdvancementReport represents all teams advancing from events in a region.
+type RegionAdvancementReport struct {
+	RegionCode       string
+	Year             int
+	TeamAdvancements []*RegionTeamAdvancement
+}
+
+// RegionAdvancementQuery retrieves advancement information for all teams advancing in a region.
+// It returns a RegionAdvancementReport with teams sorted by team number.
+func RegionAdvancementQuery(regionCode string, year int) *RegionAdvancementReport {
+	// Get all events in the region for the given year
+	filter := database.EventFilter{
+		RegionCodes: []string{regionCode},
+	}
+	allEvents := db.GetAllEvents(filter)
+
+	// Filter events by year
+	var events []*database.Event
+	for _, e := range allEvents {
+		if e.Year == year {
+			events = append(events, e)
+		}
+	}
+
+	if len(events) == 0 {
+		return &RegionAdvancementReport{
+			RegionCode:       regionCode,
+			Year:             year,
+			TeamAdvancements: []*RegionTeamAdvancement{},
+		}
+	}
+
+	// Sort events by date to ensure we process them chronologically
+	slices.SortFunc(events, func(a, b *database.Event) int {
+		return a.DateStart.Compare(b.DateStart)
+	})
+
+	// Track all advancement records for each team
+	type teamAdvancementRecord struct {
+		event  *database.Event
+		status string
+	}
+	teamAdvancementRecords := make(map[int][]teamAdvancementRecord)
+
+	// Track all events each team participated in
+	teamEventParticipationMap := make(map[int][]*database.Event)
+
+	// Track awards for each team at each event
+	teamEventAwardsMap := make(map[int]map[string][]*database.EventAward) // teamID -> eventID -> awards
+
+	// First pass: collect all advancements, participations, and awards
+	for _, event := range events {
+		// Get advancements for this event
+		advancements := db.GetEventAdvancements(event.EventID)
+		for _, adv := range advancements {
+			// Track all advancement records for this team
+			teamAdvancementRecords[adv.TeamID] = append(teamAdvancementRecords[adv.TeamID], teamAdvancementRecord{
+				event:  event,
+				status: adv.Status,
+			})
+		}
+
+		// Get all teams that participated in this event
+		eventTeams := db.GetEventTeams(event.EventID)
+		for _, et := range eventTeams {
+			teamEventParticipationMap[et.TeamID] = append(teamEventParticipationMap[et.TeamID], event)
+		}
+
+		// Get awards for this event
+		awards := db.GetEventAwards(event.EventID)
+		for _, award := range awards {
+			if teamEventAwardsMap[award.TeamID] == nil {
+				teamEventAwardsMap[award.TeamID] = make(map[string][]*database.EventAward)
+			}
+			teamEventAwardsMap[award.TeamID][event.EventID] = append(teamEventAwardsMap[award.TeamID][event.EventID], award)
+		}
+	}
+
+	// Determine the advancing event for each team
+	teamAdvancingEventMap := make(map[int]*database.Event)
+	for teamID, records := range teamAdvancementRecords {
+		// Find ALL events where status is NOT "already_advancing"
+		var advancingEvents []*database.Event
+		for _, record := range records {
+			if record.status != "already_advancing" {
+				advancingEvents = append(advancingEvents, record.event)
+			}
+		}
+
+		// If we found advancing events, use the earliest one
+		if len(advancingEvents) > 0 {
+			// Sort by date to find the earliest
+			slices.SortFunc(advancingEvents, func(a, b *database.Event) int {
+				return a.DateStart.Compare(b.DateStart)
+			})
+			teamAdvancingEventMap[teamID] = advancingEvents[0]
+		} else if len(records) > 0 {
+			// If no non-"already_advancing" event found, use the earliest event overall
+			var allEvents []*database.Event
+			for _, record := range records {
+				allEvents = append(allEvents, record.event)
+			}
+			slices.SortFunc(allEvents, func(a, b *database.Event) int {
+				return a.DateStart.Compare(b.DateStart)
+			})
+			teamAdvancingEventMap[teamID] = allEvents[0]
+		}
+	}
+
+	// Build RegionTeamAdvancement records for advancing teams
+	var teamAdvancements []*RegionTeamAdvancement
+	for teamID, advancingEvent := range teamAdvancingEventMap {
+		team := db.GetTeam(teamID)
+		if team == nil {
+			continue
+		}
+
+		// Get awards from the advancing event
+		var advancingEventAwards []*database.EventAward
+		if teamEventAwardsMap[teamID] != nil {
+			advancingEventAwards = teamEventAwardsMap[teamID][advancingEvent.EventID]
+			// Sort awards alphabetically by name
+			slices.SortFunc(advancingEventAwards, func(a, b *database.EventAward) int {
+				return strings.Compare(a.Name, b.Name)
+			})
+		}
+
+		// Get all other events this team participated in
+		var otherParticipations []*EventParticipation
+		allParticipations := teamEventParticipationMap[teamID]
+		for _, event := range allParticipations {
+			// Skip the advancing event
+			if event.EventID == advancingEvent.EventID {
+				continue
+			}
+
+			// Get awards from this event
+			var eventAwards []*database.EventAward
+			if teamEventAwardsMap[teamID] != nil {
+				eventAwards = teamEventAwardsMap[teamID][event.EventID]
+				// Sort awards alphabetically by name
+				slices.SortFunc(eventAwards, func(a, b *database.EventAward) int {
+					return strings.Compare(a.Name, b.Name)
+				})
+			}
+
+			otherParticipations = append(otherParticipations, &EventParticipation{
+				Event:  event,
+				Awards: eventAwards,
+			})
+		}
+
+		// Sort other participations by event date
+		slices.SortFunc(otherParticipations, func(a, b *EventParticipation) int {
+			return a.Event.DateStart.Compare(b.Event.DateStart)
+		})
+
+		teamAdvancements = append(teamAdvancements, &RegionTeamAdvancement{
+			Team:                     team,
+			AdvancingEvent:           advancingEvent,
+			AdvancingEventAwards:     advancingEventAwards,
+			OtherEventParticipations: otherParticipations,
+		})
+	}
+
+	// Sort by team number
+	slices.SortFunc(teamAdvancements, func(a, b *RegionTeamAdvancement) int {
+		return a.Team.TeamID - b.Team.TeamID
+	})
+
+	return &RegionAdvancementReport{
+		RegionCode:       regionCode,
+		Year:             year,
+		TeamAdvancements: teamAdvancements,
+	}
+}

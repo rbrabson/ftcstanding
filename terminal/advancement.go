@@ -107,3 +107,106 @@ func RenderAdvancementReport(report *query.AdvancementReport) string {
 	table.Render()
 	return sb.String()
 }
+
+// RenderRegionAdvancementReport renders region-wide advancement information for all advancing teams.
+// It shows each team's advancing event, awards from that event, and other events they participated in.
+func RenderRegionAdvancementReport(report *query.RegionAdvancementReport) string {
+	if report == nil {
+		return "No region data available\n"
+	}
+
+	var sb strings.Builder
+
+	// Render header
+	sb.WriteString(color.New(color.FgGreen, color.Bold).Sprint("Region Advancement Report\n"))
+	sb.WriteString(color.New(color.FgCyan).Sprintf("Region: %s\n", report.RegionCode))
+	sb.WriteString(color.New(color.FgCyan).Sprintf("Year: %d\n", report.Year))
+	sb.WriteString(color.New(color.FgCyan).Sprintf("Advancing Teams: %d\n\n", len(report.TeamAdvancements)))
+
+	if len(report.TeamAdvancements) == 0 {
+		sb.WriteString("No advancing teams found for this region.\n")
+		return sb.String()
+	}
+
+	// Main table configuration
+	colorCfg := renderer.ColorizedConfig{
+		Header: renderer.Tint{
+			FG: renderer.Colors{color.FgGreen, color.Bold}, // Green bold headers
+		},
+		Column: renderer.Tint{
+			FG: renderer.Colors{color.FgCyan}, // Default cyan for rows
+			Columns: []renderer.Tint{
+				{FG: renderer.Colors{color.FgHiMagenta, color.Bold}}, // Yellow bold for team
+				{FG: renderer.Colors{color.FgGreen}},                 // Green for advancing event
+				{FG: renderer.Colors{color.FgCyan}},                  // Cyan for other events
+			},
+		},
+		Footer:    renderer.Tint{FG: renderer.Colors{color.FgYellow, color.Bold}}, // Yellow bold footer
+		Border:    renderer.Tint{FG: renderer.Colors{color.FgWhite}},              // White borders
+		Separator: renderer.Tint{FG: renderer.Colors{color.FgWhite}},              // White separators
+		Settings:  tw.Settings{Separators: tw.Separators{BetweenRows: tw.On}},
+	}
+
+	table := tablewriter.NewTable(&sb,
+		tablewriter.WithRenderer(renderer.NewColorized(colorCfg)),
+		tablewriter.WithConfig(tablewriter.Config{
+			Header: tw.CellConfig{
+				Alignment: tw.CellAlignment{Global: tw.AlignLeft},
+			},
+			Footer: tw.CellConfig{
+				Alignment: tw.CellAlignment{Global: tw.AlignLeft},
+			},
+		}),
+	)
+	table.Header([]string{"Team", "Advancing Event", "Other Events"})
+
+	// Populate table rows
+	for _, ta := range report.TeamAdvancements {
+		// Format team
+		teamName := fmt.Sprintf("%d - %s", ta.Team.TeamID, ta.Team.Name)
+
+		// Format advancing event with awards
+		advancingEvent := fmt.Sprintf("• %s - %s", ta.AdvancingEvent.EventCode, ta.AdvancingEvent.Name)
+		if len(ta.AdvancingEventAwards) > 0 {
+			var awardsList []string
+			for _, award := range ta.AdvancingEventAwards {
+				awardsList = append(awardsList, fmt.Sprintf("  ◦ %s", award.Name))
+			}
+			advancingEvent += "\n" + strings.Join(awardsList, "\n")
+		}
+
+		// Format other events
+		var otherEventsStr string
+		if len(ta.OtherEventParticipations) > 0 {
+			var eventsList []string
+			for _, ep := range ta.OtherEventParticipations {
+				eventLine := fmt.Sprintf("• %s - %s", ep.Event.EventCode, ep.Event.Name)
+
+				// Add awards from this event
+				if len(ep.Awards) > 0 {
+					var awardsList []string
+					for _, award := range ep.Awards {
+						awardsList = append(awardsList, fmt.Sprintf("  ◦ %s", award.Name))
+					}
+					eventLine += "\n" + strings.Join(awardsList, "\n")
+				}
+				eventsList = append(eventsList, eventLine)
+			}
+			otherEventsStr = strings.Join(eventsList, "\n")
+		} else {
+			otherEventsStr = "None"
+		}
+
+		table.Append([]string{
+			teamName,
+			advancingEvent,
+			otherEventsStr,
+		})
+	}
+
+	// Add footer with team count
+	table.Footer([]string{fmt.Sprintf("Teams Advancing: %d", len(report.TeamAdvancements)), "", ""})
+
+	table.Render()
+	return sb.String()
+}

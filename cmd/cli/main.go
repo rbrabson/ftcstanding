@@ -87,6 +87,13 @@ func matchResultsForTeamByEvent(event string, team int, year int) {
 	fmt.Println(matchResultsOutput)
 }
 
+// regionAdvancementReport lists all teams advancing in a region.
+func regionAdvancementReport(region string, year int) {
+	report := query.RegionAdvancementQuery(region, year)
+	output := terminal.RenderRegionAdvancementReport(report)
+	fmt.Println(output)
+}
+
 // printUsage prints the usage information for the CLI.
 func printUsage() {
 	fmt.Println("Usage: ftc <command> [options]")
@@ -98,6 +105,8 @@ func printUsage() {
 	fmt.Println("  awards <eventCode> [-year]          List award winners at an event")
 	fmt.Println("  advancement <eventCode> [-year]     Show advancement report for an event")
 	fmt.Println("  matches <eventCode> [-year]         Show match results at an event")
+	fmt.Println("  team-matches <eventCode> <teamID> [-year]  Show match results for a team at an event")
+	fmt.Println("  region-advancement <region> [-year] Show all advancing teams in a region")
 	fmt.Println("  team-matches <eventCode> <teamID> [-year]  Show match results for a team at an event")
 	fmt.Println()
 	fmt.Println("Options:")
@@ -229,6 +238,19 @@ func run() int {
 			return 1
 		}
 		matchResultsForTeamByEvent(eventCode, teamID, *year)
+
+	case "region-advancement":
+		fs := flag.NewFlagSet("region-advancement", flag.ExitOnError)
+		year := fs.Int("year", defaultYear, "Year")
+		fs.Parse(os.Args[2:])
+
+		if fs.NArg() < 1 {
+			fmt.Println("Error: region-advancement command requires a region argument")
+			fmt.Println("Usage: ftc region-advancement <region> [-year <year>]")
+			return 1
+		}
+		region := fs.Arg(0)
+		regionAdvancementReport(region, *year)
 
 	default:
 		fmt.Printf("Error: unknown command '%s'\n\n", command)
