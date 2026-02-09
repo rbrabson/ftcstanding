@@ -111,20 +111,12 @@ func TeamDetailsQuery(teamID int) *TeamDetails {
 				continue
 			}
 
-			// Determine if this team won, lost, or tied
-			var win, loss, tie bool
-			if teamScore.TotalPoints > opponentScore.TotalPoints {
-				win = true
-			} else if teamScore.TotalPoints < opponentScore.TotalPoints {
-				loss = true
-			} else {
-				tie = true
-			}
-
 			// Update records based on tournament level
 			isPlayoff := strings.EqualFold(match.TournamentLevel, "playoff")
 
-			if win {
+			// Determine if this team won, lost, or tied and update records
+			switch {
+			case teamScore.TotalPoints > opponentScore.TotalPoints:
 				eventDetail.TotalRecord.Wins++
 				details.TotalRecord.Wins++
 				if isPlayoff {
@@ -134,7 +126,7 @@ func TeamDetailsQuery(teamID int) *TeamDetails {
 					eventDetail.QualRecord.Wins++
 					details.QualRecord.Wins++
 				}
-			} else if loss {
+			case teamScore.TotalPoints < opponentScore.TotalPoints:
 				eventDetail.TotalRecord.Losses++
 				details.TotalRecord.Losses++
 				if isPlayoff {
@@ -144,7 +136,7 @@ func TeamDetailsQuery(teamID int) *TeamDetails {
 					eventDetail.QualRecord.Losses++
 					details.QualRecord.Losses++
 				}
-			} else if tie {
+			default:
 				eventDetail.TotalRecord.Ties++
 				details.TotalRecord.Ties++
 				if isPlayoff {

@@ -103,7 +103,7 @@ func RenderTeamDetails(details *query.TeamDetails) string {
 
 	// Overall Records
 	sb.WriteString(color.YellowString("Overall Record:\n"))
-	sb.WriteString(color.WhiteString("  Total:        %s\n", formatRecord(details.TotalRecord)))
+	sb.WriteString(color.WhiteString("  Total:         %s\n", formatRecord(details.TotalRecord)))
 	sb.WriteString(color.WhiteString("  Qualification: %s\n", formatRecord(details.QualRecord)))
 	sb.WriteString(color.WhiteString("  Playoff:       %s\n", formatRecord(details.PlayoffRecord)))
 	sb.WriteString("\n")
