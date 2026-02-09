@@ -1,7 +1,9 @@
 package query
 
 import (
+	"sort"
 	"strings"
+	"time"
 
 	"github.com/rbrabson/ftcstanding/database"
 )
@@ -17,6 +19,7 @@ type Record struct {
 type EventDetails struct {
 	EventCode     string
 	EventName     string
+	DateStart     time.Time
 	QualRank      int
 	TotalRecord   Record
 	QualRecord    Record
@@ -80,6 +83,7 @@ func TeamDetailsQuery(teamID int) *TeamDetails {
 		eventDetail := EventDetails{
 			EventCode: event.EventCode,
 			EventName: event.Name,
+			DateStart: event.DateStart,
 		}
 
 		// Get qualification ranking for this team at this event
@@ -181,6 +185,11 @@ func TeamDetailsQuery(teamID int) *TeamDetails {
 
 		details.Events = append(details.Events, eventDetail)
 	}
+
+	// Sort events by date
+	sort.Slice(details.Events, func(i, j int) bool {
+		return details.Events[i].DateStart.Before(details.Events[j].DateStart)
+	})
 
 	return details
 }
