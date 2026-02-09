@@ -2,229 +2,19 @@ package main
 
 import (
 	"encoding/csv"
+	"fmt"
+	"log"
 	"os"
 	"strconv"
 
-	"github.com/roybrabson/ftcstanding/ftcmath"
+	"github.com/rbrabson/ftcstanding/performance"
 )
 
-type Match struct {
-	RedTeams  []int
-	BlueTeams []int
-
-	RedScore  float64
-	BlueScore float64
-
-	RedPenalties  float64
-	BluePenalties float64
+func GetLambda(numTeams int) float64 {
+	return 1.0 / float64(numTeams)
 }
 
-func buildMatrices(
-	matches []Match,
-	teams []int,
-	scoreFunc func(m Match, isRed bool) float64,
-) ([][]float64, []float64) {
-
-	teamIndex := map[int]int{}
-	for i, t := range teams {
-		teamIndex[t] = i
-	}
-
-	var A [][]float64
-	var b []float64
-
-	for _, m := range matches {
-		rowRed := make([]float64, len(teams))
-		rowBlue := make([]float64, len(teams))
-
-		for _, t := range m.RedTeams {
-			rowRed[teamIndex[t]] = 1
-		}
-		for _, t := range m.BlueTeams {
-			rowBlue[teamIndex[t]] = 1
-		}
-
-		A = append(A, rowRed)
-		b = append(b, scoreFunc(m, true))
-
-		A = append(A, rowBlue)
-		b = append(b, scoreFunc(m, false))
-	}
-
-	return A, b
-}
-
-func CalculateNpOPR(matches []Match, teams []int) map[int]float64 {
-	A, b := buildMatrices(matches, teams, func(m Match, isRed bool) float64 {
-		if isRed {
-			return m.RedScore - m.RedPenalties
-		}
-		return m.BlueScore - m.BluePenalties
-	})
-
-	x := ftcmath.SolveLeastSquares(A, b)
-
-	out := map[int]float64{}
-	for i, t := range teams {
-		out[t] = x[i]
-	}
-	return out
-}
-
-func CalculateCCWM(matches []Match, teams []int) map[int]float64 {
-	A, b := buildMatrices(matches, teams, func(m Match, isRed bool) float64 {
-		if isRed {
-			return (m.RedScore - m.BlueScore)
-		}
-		return (m.BlueScore - m.RedScore)
-	})
-
-	x := ftcmath.SolveLeastSquares(A, b)
-
-	out := map[int]float64{}
-	for i, t := range teams {
-		out[t] = x[i]
-	}
-	return out
-}
-
-func CalculateNpAVG(matches []Match, team int) float64 {
-	var total float64
-	var count float64
-
-	for _, m := range matches {
-		for _, t := range m.RedTeams {
-			if t == team {
-				total += m.RedScore - m.RedPenalties
-				count++
-			}
-		}
-		for _, t := range m.BlueTeams {
-			if t == team {
-				total += m.BlueScore - m.BluePenalties
-				count++
-			}
-		}
-	}
-
-	if count == 0 {
-		return 0
-	}
-	return total / count
-}
-
-func CalculateOPRWithReqularization(matches []Match, teams []int, lambda float64) map[int]float64 {
-	A, b := buildMatrices(matches, teams, func(m Match, isRed bool) float64 {
-		if isRed {
-			return m.RedScore
-		}
-		return m.BlueScore
-	})
-
-	x := ftcmath.SolveLeastSquaresRegularized(A, b, lambda)
-
-	out := map[int]float64{}
-	for i, t := range teams {
-		out[t] = x[i]
-	}
-	return out
-}
-
-func CalculateNpOPRWithRegularization(matches []Match, teams []int, lambda float64) map[int]float64 {
-	A, b := buildMatrices(matches, teams, func(m Match, isRed bool) float64 {
-		if isRed {
-			return m.RedScore - m.RedPenalties
-		}
-		return m.BlueScore - m.BluePenalties
-	})
-
-	x := ftcmath.SolveLeastSquaresRegularized(A, b, lambda)
-
-	out := map[int]float64{}
-	for i, t := range teams {
-		out[t] = x[i]
-	}
-	return out
-}
-
-func CalculateCCWMWithRegularization(matches []Match, teams []int, lambda float64) map[int]float64 {
-	A, b := buildMatrices(matches, teams, func(m Match, isRed bool) float64 {
-		if isRed {
-			return m.RedScore - m.BlueScore
-		}
-		return m.BlueScore - m.RedScore
-	})
-
-	x := ftcmath.SolveLeastSquaresRegularized(A, b, lambda)
-
-	out := map[int]float64{}
-	for i, t := range teams {
-		out[t] = x[i]
-	}
-	return out
-}
-
-func CalculateDPR(matches []Match, teams []int, lambda float64) map[int]float64 {
-	A, b := buildMatrices(matches, teams, func(m Match, isRed bool) float64 {
-		if isRed {
-			// Red alliance row, opponent is Blue
-			return m.BlueScore
-		}
-		// Blue alliance row, opponent is Red
-		return m.RedScore
-	})
-
-	x := ftcmath.SolveLeastSquaresRegularized(A, b, lambda)
-
-	out := map[int]float64{}
-	for i, t := range teams {
-		out[t] = x[i]
-	}
-	return out
-}
-
-func CalculateNpDPR(matches []Match, teams []int, lambda float64) map[int]float64 {
-	A, b := buildMatrices(matches, teams, func(m Match, isRed bool) float64 {
-		if isRed {
-			return m.BlueScore - m.BluePenalties
-		}
-		return m.RedScore - m.RedPenalties
-	})
-
-	x := ftcmath.SolveLeastSquaresRegularized(A, b, lambda)
-
-	out := map[int]float64{}
-	for i, t := range teams {
-		out[t] = x[i]
-	}
-	return out
-}
-
-func CalculateFTCScoutDPR(matches []Match, teams []int, lambda float64, usePenalties bool) map[int]float64 {
-	A, b := buildMatrices(matches, teams, func(m Match, isRed bool) float64 {
-		if isRed {
-			if usePenalties {
-				return m.BlueScore - m.BluePenalties // npDPR
-			}
-			return m.BlueScore // DPR
-		} else {
-			if usePenalties {
-				return m.RedScore - m.RedPenalties
-			}
-			return m.RedScore
-		}
-	})
-
-	x := ftcmath.SolveLeastSquaresRegularized(A, b, lambda)
-
-	out := map[int]float64{}
-	for i, t := range teams {
-		out[t] = x[i]
-	}
-	return out
-}
-
-func LoadMatchesCSV(filename string) ([]Match, []int, error) {
+func LoadMatchesCSV(filename string) ([]performance.Match, []int, error) {
 	file, err := os.Open(filename)
 	if err != nil {
 		return nil, nil, err
@@ -238,7 +28,7 @@ func LoadMatchesCSV(filename string) ([]Match, []int, error) {
 	}
 
 	teamSet := map[int]struct{}{}
-	matches := []Match{}
+	matches := []performance.Match{}
 
 	for _, row := range records[1:] { // skip header
 		red1, _ := strconv.Atoi(row[0])
@@ -250,7 +40,7 @@ func LoadMatchesCSV(filename string) ([]Match, []int, error) {
 		redPen, _ := strconv.ParseFloat(row[6], 64)
 		bluePen, _ := strconv.ParseFloat(row[7], 64)
 
-		matches = append(matches, Match{
+		matches = append(matches, performance.Match{
 			RedTeams:      []int{red1, red2},
 			BlueTeams:     []int{blue1, blue2},
 			RedScore:      redScore,
@@ -273,64 +63,40 @@ func LoadMatchesCSV(filename string) ([]Match, []int, error) {
 	return matches, teams, nil
 }
 
-func CalculateOPR(matches []Match, teams []int) map[int]float64 {
-	A, b := buildMatrices(matches, teams, func(m Match, isRed bool) float64 {
-		if isRed {
-			return m.RedScore
-		}
-		return m.BlueScore
-	})
-
-	x := ftcmath.SolveLeastSquares(A, b)
-
-	out := map[int]float64{}
-	for i, t := range teams {
-		out[t] = x[i]
+func main() {
+	matches, teams, err := LoadMatchesCSV("matches.csv")
+	if err != nil {
+		log.Fatal(err)
 	}
-	return out
-}
 
-func CalculateOPRRegularized(matches []Match, teams []int, lambda float64) map[int]float64 {
-	A, b := buildMatrices(matches, teams, func(m Match, isRed bool) float64 {
-		if isRed {
-			return m.RedScore
-		}
-		return m.BlueScore
-	})
-	x := ftcmath.SolveLeastSquaresRegularized(A, b, lambda)
-	out := map[int]float64{}
-	for i, t := range teams {
-		out[t] = x[i]
-	}
-	return out
-}
+	lambda := GetLambda(len(teams)) // FTCScout-style regularization
 
-func CalculateNpOPRRegularized(matches []Match, teams []int, lambda float64) map[int]float64 {
-	A, b := buildMatrices(matches, teams, func(m Match, isRed bool) float64 {
-		if isRed {
-			return m.RedScore - m.RedPenalties
-		}
-		return m.BlueScore - m.BluePenalties
-	})
-	x := ftcmath.SolveLeastSquaresRegularized(A, b, lambda)
-	out := map[int]float64{}
-	for i, t := range teams {
-		out[t] = x[i]
-	}
-	return out
-}
+	opr := performance.CalculateOPR(matches, teams)
+	npopr := performance.CalculateNpOPR(matches, teams)
+	ccwm := performance.CalculateCCWM(matches, teams)
+	dpr := performance.CalculateDPR(matches, teams, lambda)
+	npdpr := performance.CalculateNpDPR(matches, teams, lambda)
 
-func CalculateCCWMRegularized(matches []Match, teams []int, lambda float64) map[int]float64 {
-	A, b := buildMatrices(matches, teams, func(m Match, isRed bool) float64 {
-		if isRed {
-			return m.RedScore - m.BlueScore
-		}
-		return m.BlueScore - m.RedScore
-	})
-	x := ftcmath.SolveLeastSquaresRegularized(A, b, lambda)
-	out := map[int]float64{}
-	for i, t := range teams {
-		out[t] = x[i]
+	fmt.Println("Team | OPR   | npOPR | CCWM  | DPR  | npDPR | npAVG")
+	fmt.Println("----------------------------------------------------")
+	for _, t := range teams {
+		npavg := performance.CalculateNpAVG(matches, t)
+		fmt.Printf("%4d | %5.2f | %5.2f | %5.2f | %5.2f | %5.2f | %5.2f\n",
+			t, opr[t], npopr[t], ccwm[t], dpr[t], npdpr[t], npavg)
 	}
-	return out
+
+	opr = performance.CalculateNpOPRWithRegularaization(matches, teams, lambda)
+	npopr = performance.CalculateNpOPRWithRegularization(matches, teams, lambda)
+	ccwm = performance.CalculateCCWMWithRegularization(matches, teams, lambda)
+	dpr = performance.CalculateDPRWithRegularization(matches, teams, lambda)
+	npdpr = performance.CalculateNpDPRWithRegularization(matches, teams, lambda)
+
+	fmt.Println()
+	fmt.Println("Team | OPR   | npOPR | CCWM  | DPR   | npDPR | npAVG")
+	fmt.Println("----------------------------------------------------")
+	for _, t := range teams {
+		npavg := performance.CalculateNpAVG(matches, t)
+		fmt.Printf("%4d | %5.2f | %5.2f | %5.2f | %5.2f | %5.2f | %5.2f\n",
+			t, opr[t], npopr[t], ccwm[t], dpr[t], npdpr[t], npavg)
+	}
 }

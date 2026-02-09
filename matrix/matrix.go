@@ -1,9 +1,9 @@
-package ftcmath
+package matrix
 
 type Matrix [][]float64
 
 // MatrixMultiply multiplies two matrices a and b.
-func MatrixMultiply(a, b [][]float64) [][]float64 {
+func Multiply(a, b [][]float64) [][]float64 {
 	out := make([][]float64, len(a))
 	for i := range a {
 		out[i] = make([]float64, len(b[0]))
@@ -17,7 +17,7 @@ func MatrixMultiply(a, b [][]float64) [][]float64 {
 }
 
 // MatrixTranspose returns the transpose of a matrix m.
-func MatrixTranspose(m [][]float64) [][]float64 {
+func Transpose(m [][]float64) [][]float64 {
 	r, c := len(m), len(m[0])
 	out := make([][]float64, c)
 	for i := range out {
@@ -55,6 +55,21 @@ func GaussianElimination(a [][]float64, b []float64) []float64 {
 	return b
 }
 
+// SolveLeastSquares solves the least squares problem Ax = b.
+func SolveLeastSquares(a [][]float64, b []float64) []float64 {
+	AT := Transpose(a)
+	ATA := Multiply(AT, a)
+
+	ATb := make([]float64, len(AT))
+	for i := range AT {
+		for j := range b {
+			ATb[i] += AT[i][j] * b[j]
+		}
+	}
+
+	return GaussianElimination(ATA, ATb)
+}
+
 // AddRegularization adds λI to the matrix a.
 func AddRegularization(a [][]float64, lambda float64) {
 	for i := range a {
@@ -64,8 +79,8 @@ func AddRegularization(a [][]float64, lambda float64) {
 
 // SolveLeastSquaresRegularized solves the regularized least squares problem (A^T A + λI)x = A^T b.
 func SolveLeastSquaresRegularized(a [][]float64, b []float64, lambda float64) []float64 {
-	AT := MatrixTranspose(a)
-	ATA := MatrixMultiply(AT, a)
+	AT := Transpose(a)
+	ATA := Multiply(AT, a)
 
 	// Add λI
 	AddRegularization(ATA, lambda)
