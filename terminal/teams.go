@@ -101,6 +101,9 @@ func RenderTeamDetails(details *query.TeamDetails) string {
 		sb.WriteString(color.WhiteString("Details:  %s\n", details.FullName))
 	}
 	sb.WriteString(color.WhiteString("Location: %s, %s, %s\n", details.City, details.StateProv, details.Country))
+	if details.RookieYear > 0 {
+		sb.WriteString(color.WhiteString("Rookie:   %d\n", details.RookieYear))
+	}
 	sb.WriteString(color.WhiteString("Region:   %s\n", details.Region))
 	sb.WriteString("\n")
 
@@ -124,8 +127,7 @@ func RenderTeamDetails(details *query.TeamDetails) string {
 				FG: renderer.Colors{color.FgCyan},
 				Columns: []renderer.Tint{
 					{FG: renderer.Colors{color.FgMagenta}}, // Event Code
-					{FG: renderer.Colors{color.FgWhite}},   // Event Name
-					{},                                     // Total Record
+					{FG: renderer.Colors{color.FgWhite}},   // Event Name				{},                                     // Qual Rank					{},                                     // Total Record
 					{},                                     // Qual Record
 					{},                                     // Playoff Record
 					{FG: renderer.Colors{color.FgHiGreen}}, // Advanced
@@ -143,8 +145,7 @@ func RenderTeamDetails(details *query.TeamDetails) string {
 				Header: tw.CellConfig{
 					Alignment: tw.CellAlignment{PerColumn: []tw.Align{
 						tw.AlignLeft,   // Event Code
-						tw.AlignLeft,   // Event Name
-						tw.AlignCenter, // Total Record
+						tw.AlignLeft,   // Event Name					tw.AlignCenter, // Qual Rank						tw.AlignCenter, // Total Record
 						tw.AlignCenter, // Qual Record
 						tw.AlignCenter, // Playoff Record
 						tw.AlignCenter, // Advanced
@@ -154,7 +155,7 @@ func RenderTeamDetails(details *query.TeamDetails) string {
 			}),
 		)
 
-		table.Header([]string{"Event Code", "Event Name", "Total", "Qual", "Playoff", "Advanced", "Awards"})
+		table.Header([]string{"Event Code", "Event Name", "Rank", "Total", "Qual", "Playoff", "Advanced", "Awards"})
 
 		for _, event := range details.Events {
 			advancedStr := ""
@@ -167,9 +168,15 @@ func RenderTeamDetails(details *query.TeamDetails) string {
 				awardsStr = strings.Join(event.Awards, ", ")
 			}
 
+			rankStr := ""
+			if event.QualRank > 0 {
+				rankStr = strconv.Itoa(event.QualRank)
+			}
+
 			table.Append([]string{
 				event.EventCode,
 				event.EventName,
+				rankStr,
 				formatRecord(event.TotalRecord),
 				formatRecord(event.QualRecord),
 				formatRecord(event.PlayoffRecord),

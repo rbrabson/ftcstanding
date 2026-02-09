@@ -17,6 +17,7 @@ type Record struct {
 type EventDetails struct {
 	EventCode     string
 	EventName     string
+	QualRank      int
 	TotalRecord   Record
 	QualRecord    Record
 	PlayoffRecord Record
@@ -33,6 +34,7 @@ type TeamDetails struct {
 	StateProv     string
 	Country       string
 	Region        string
+	RookieYear    int
 	TotalRecord   Record
 	QualRecord    Record
 	PlayoffRecord Record
@@ -54,14 +56,15 @@ func TeamDetailsQuery(teamID int) *TeamDetails {
 
 	// Initialize team details
 	details := &TeamDetails{
-		TeamID:    team.TeamID,
-		Name:      team.Name,
-		FullName:  team.FullName,
-		City:      team.City,
-		StateProv: team.StateProv,
-		Country:   team.Country,
-		Region:    team.HomeRegion,
-		Events:    []EventDetails{},
+		TeamID:     team.TeamID,
+		Name:       team.Name,
+		FullName:   team.FullName,
+		City:       team.City,
+		StateProv:  team.StateProv,
+		Country:    team.Country,
+		Region:     team.HomeRegion,
+		RookieYear: team.RookieYear,
+		Events:     []EventDetails{},
 	}
 
 	// Get all events for this team
@@ -77,6 +80,15 @@ func TeamDetailsQuery(teamID int) *TeamDetails {
 		eventDetail := EventDetails{
 			EventCode: event.EventCode,
 			EventName: event.Name,
+		}
+
+		// Get qualification ranking for this team at this event
+		rankings := db.GetEventRankings(eventID)
+		for _, ranking := range rankings {
+			if ranking.TeamID == teamID {
+				eventDetail.QualRank = ranking.Rank
+				break
+			}
 		}
 
 		// Get matches for this event
