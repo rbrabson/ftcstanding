@@ -27,18 +27,18 @@ func RequestAndSaveAll(season string, refresh bool) {
 	if refresh || len(teams) == 0 {
 		teams = RequestAndSaveTeams(season)
 	}
-	events := db.GetAllEvents(database.EventFilter{EventCodes: []string{"USNCSHQ2"}})
-	// events := db.GetAllEvents()
+	// events := db.GetAllEvents(database.EventFilter{EventCodes: []string{"USNCSHQ2"}})
+	events := db.GetAllEvents()
 	if refresh || len(events) == 0 {
 		events = RequestAndSaveEvents(season)
 	}
 
 	for i, event := range events {
 		slog.Info("Processing event", "eventNumber", i+1, "totalEvents", len(events), "event", event.EventCode)
-		// if event.DateEnd.After(time.Now()) {
-		// 	slog.Info("Skipping event details for future event", "event", event.EventCode, "dateEnd", event.DateEnd)
-		// 	continue
-		// }
+		if event.DateEnd.After(time.Now()) {
+			slog.Info("Skipping event details for future event", "event", event.EventCode, "dateEnd", event.DateEnd)
+			continue
+		}
 		advancementFilter := database.AdvancementFilter{
 			EventCodes: []string{event.EventCode},
 		}

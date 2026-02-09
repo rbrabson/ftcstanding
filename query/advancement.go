@@ -3,6 +3,7 @@ package query
 import (
 	"fmt"
 	"log/slog"
+	"math"
 	"slices"
 	"strconv"
 	"strings"
@@ -237,141 +238,42 @@ func calculatePlayoffPoints(event *database.Event) map[int]int {
 		return b.MatchNumber - a.MatchNumber // Descending order
 	})
 
-	// The first match after sorting should be the finals (championship)
-	finalsMatch := playoffMatches[0]
-
-	// Get alliance scores for finals
-	redScore := db.GetMatchAllianceScore(finalsMatch.MatchID, database.AllianceRed)
-	blueScore := db.GetMatchAllianceScore(finalsMatch.MatchID, database.AllianceBlue)
-
-	if redScore != nil && blueScore != nil {
-		var winningAlliance, losingAlliance string
-
-		if redScore.TotalPoints > blueScore.TotalPoints {
-			winningAlliance = database.AllianceRed
-			losingAlliance = database.AllianceBlue
-		} else {
-			winningAlliance = database.AllianceBlue
-			losingAlliance = database.AllianceRed
-		}
-
-		// Assign 40 points to winning alliance teams
-		winningTeams := db.GetMatchTeams(finalsMatch.MatchID)
-		for _, mt := range winningTeams {
-			if mt.Alliance == winningAlliance {
-				pointsMap[mt.TeamID] = 40
-			}
-		}
-
-		// Assign 20 points to finalist alliance teams
-		finalistTeams := db.GetMatchTeams(finalsMatch.MatchID)
-		for _, mt := range finalistTeams {
-			if mt.Alliance == losingAlliance {
-				pointsMap[mt.TeamID] = 20
-			}
-		}
-	}
-
-	// Find the losing alliances from semifinal matches for 3rd and 4th place
-	// In a winners/losers bracket:
-	// - The finals teams already have their points
-	// - We need to find the losing alliances from earlier playoff rounds
-
-	type SemifinalistAlliance struct {
-		alliance string
-		matchID  string
-		score    int
-		teams    []int
-	}
-	var semifinalLosers []SemifinalistAlliance
-
-	// Get the team IDs that played in finals
-	finalsTeamIDs := make(map[int]bool)
-	finalsTeams := db.GetMatchTeams(finalsMatch.MatchID)
-	for _, mt := range finalsTeams {
-		finalsTeamIDs[mt.TeamID] = true
-	}
-
-	// Look through all playoff matches (except finals) to find losing alliances
-	// that didn't make it to the championship finals
-	for i := 1; i < len(playoffMatches); i++ {
-		match := playoffMatches[i]
-
-		// Get teams and scores for this match
-		matchTeams := db.GetMatchTeams(match.MatchID)
+	for _, match := range playoffMatches {
+		// Get alliance scores for finals
 		redScore := db.GetMatchAllianceScore(match.MatchID, database.AllianceRed)
 		blueScore := db.GetMatchAllianceScore(match.MatchID, database.AllianceBlue)
 
-		if redScore == nil || blueScore == nil {
-			continue
-		}
-
-		// Determine winning and losing alliance
-		var losingAlliance string
-		var losingScore int
-
-		if redScore.TotalPoints < blueScore.TotalPoints {
-			losingAlliance = database.AllianceRed
-			losingScore = redScore.TotalPoints
-		} else {
-			losingAlliance = database.AllianceBlue
-			losingScore = blueScore.TotalPoints
-		}
-
-		// Get the team IDs from the losing alliance
-		var losingTeamIDs []int
-		for _, mt := range matchTeams {
-			if mt.Alliance == losingAlliance {
-				losingTeamIDs = append(losingTeamIDs, mt.TeamID)
+		if redScore != nil && blueScore != nil {
+			var winningAlliance string
+			if redScore.TotalPoints > blueScore.TotalPoints {
+				winningAlliance = database.AllianceRed
+			} else {
+				winningAlliance = database.AllianceBlue
 			}
-		}
 
-		// Check if any of the losing teams made it to finals
-		// If none of them made finals, this is a semifinal loser eligible for 3rd/4th place
-		madeItToFinals := false
-		for _, teamID := range losingTeamIDs {
-			if finalsTeamIDs[teamID] {
-				madeItToFinals = true
+			var winningPoints, losingPoints int
+			switch len(pointsMap) {
+			case 0:
+				winningPoints = 40
+				losingPoints = 20
+			case 4:
+				losingPoints = 10
+			case 6:
+				losingPoints = 5
+			default:
 				break
 			}
-		}
 
-		if !madeItToFinals && len(losingTeamIDs) > 0 {
-			semifinalLosers = append(semifinalLosers, SemifinalistAlliance{
-				alliance: losingAlliance,
-				matchID:  match.MatchID,
-				score:    losingScore,
-				teams:    losingTeamIDs,
-			})
-		}
-	}
-
-	// Sort semifinal losers by score to determine 3rd vs 4th place
-	// Higher score gets 3rd place (10 points), lower score gets 4th place (5 points)
-	slices.SortFunc(semifinalLosers, func(a, b SemifinalistAlliance) int {
-		// Descending order: higher scores first
-		if a.score > b.score {
-			return -1
-		}
-		if a.score < b.score {
-			return 1
-		}
-		return 0
-	})
-
-	// Assign points to the top 2 semifinal losers (3rd and 4th place)
-	for i := 0; i < len(semifinalLosers) && i < 2; i++ {
-		loser := semifinalLosers[i]
-		points := 10 // 3rd place
-		if i == 1 {
-			points = 5 // 4th place
-		}
-
-		// Assign points to all teams in the losing alliance
-		for _, teamID := range loser.teams {
-			// Only assign points if team doesn't already have playoff points
-			if _, exists := pointsMap[teamID]; !exists {
-				pointsMap[teamID] = points
+			// Assign 40 points to winning alliance teams
+			teams := db.GetMatchTeams(match.MatchID)
+			for _, mt := range teams {
+				if pointsMap[mt.TeamID] == 0 {
+					if mt.Alliance == winningAlliance {
+						pointsMap[mt.TeamID] = winningPoints
+					} else {
+						pointsMap[mt.TeamID] = losingPoints
+					}
+				}
 			}
 		}
 	}
@@ -452,47 +354,10 @@ func calculateQualificationPoints(rankings []*database.EventRanking) map[int]int
 		return 0
 	})
 
-	// Assign points starting at 16, decreasing by 1 for each unique ranking score, minimum 2
-	maxPoints := 16
-	minPoints := 2
-	var previousSortOrder1 float64
-	var previousScore int
-	// numTeams := len(sortedRankings)
-
-	// multiplier := float64(maxPoints-minPoints) / float64(numTeams)
-
-	// for i, ranking := range sortedRankings {
-	// 	rank := numTeams - i
-	// 	score := int(math.Floor(multiplier*float64(rank))) + minPoints
-
-	// 	if previousScore != 0 && ranking.SortOrder1 == previousSortOrder1 {
-	// 		score = previousScore
-	// 	} else {
-	// 		previousScore = score
-	// 	}
-	// 	pointsMap[ranking.TeamID] = score
-
-	// 	previousScore = score
-	// 	previousSortOrder1 = ranking.SortOrder1
-	// }
-
-	currentScure := maxPoints + 1
-	previousSortOrder1 = 0
-	for _, ranking := range sortedRankings {
-		var score int
-		if ranking.SortOrder1 == previousSortOrder1 {
-			score = previousScore
-		} else {
-			currentScure--
-			score = currentScure
-		}
-		if score < minPoints {
-			score = minPoints
-		}
-		pointsMap[ranking.TeamID] = score
-
-		previousScore = score
-		previousSortOrder1 = ranking.SortOrder1
+	N := len(sortedRankings)
+	for i, ranking := range sortedRankings {
+		R := i + 1
+		pointsMap[ranking.TeamID] = ftcQualificationPoints(R, N)
 	}
 
 	return pointsMap
@@ -528,4 +393,46 @@ func isJudgedAward(awardName string) bool {
 // containsIgnoreCase checks if a string contains a substring (case-insensitive).
 func containsIgnoreCase(s, substr string) bool {
 	return strings.Contains(strings.ToLower(s), strings.ToLower(substr))
+}
+
+// invErf computes the inverse error function using Newton-Raphson
+// func invErf(x float64) float64 {
+// 	if x <= -1 || x >= 1 {
+// 		panic("invErf input must be in (-1, 1)")
+// 	}
+
+// 	// Initial guess (Winitzki approximation)
+// 	a := 0.147
+// 	ln := math.Log(1 - x*x)
+// 	t := 2/(math.Pi*a) + ln/2
+// 	y := math.Copysign(
+// 		math.Sqrt(math.Sqrt(t*t-ln/a)-t),
+// 		x,
+// 	)
+
+// 	// Newton iterations
+// 	for i := 0; i < 5; i++ {
+// 		err := math.Erf(y) - x
+// 		y -= err / ((2 / math.Sqrt(math.Pi)) * math.Exp(-y*y))
+// 	}
+
+// 	return y
+// }
+
+// ftcQualificationPoints computes FTC Qualification Phase Performance points
+func ftcQualificationPoints(rank, teams int) int {
+	alpha := 1.07
+
+	r := float64(rank)
+	n := float64(teams)
+
+	x := (n - 2*r + 2) / (alpha * n)
+
+	scale := 7.0 / math.Erfinv(1.0/alpha)
+	points := math.Erfinv(x)*scale + 9.0
+
+	// scale := 7.0 / invErf(1.0/alpha)
+	// points := invErf(x)*scale + 9.0
+
+	return int(math.Ceil(points))
 }
