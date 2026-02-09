@@ -98,7 +98,17 @@ func RenderTeamDetails(details *query.TeamDetails) string {
 	sb.WriteString(color.HiGreenString("Team %d - %s\n", details.TeamID, details.Name))
 	sb.WriteString(color.HiCyanString("═══════════════════════════════════════════════════════════════\n"))
 	if details.FullName != "" {
-		sb.WriteString(color.WhiteString("Details:  %s\n", details.FullName))
+		parts := strings.Split(details.FullName, "&")
+		for i := range parts {
+			index := len(parts) - i - 1
+			part := parts[index]
+			part = strings.ReplaceAll(parts[index], "/", ", ")
+			if i == 0 {
+				sb.WriteString(color.WhiteString("Details:  %s\n", part))
+			} else {
+				sb.WriteString(color.WhiteString("          %s\n", part))
+			}
+		}
 	}
 	sb.WriteString(color.WhiteString("Location: %s, %s, %s\n", details.City, details.StateProv, details.Country))
 	if details.RookieYear > 0 {
