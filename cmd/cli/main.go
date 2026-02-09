@@ -45,6 +45,17 @@ func teamsByRegion(region string) {
 	fmt.Println(teamsOutput)
 }
 
+// teamDetails displays detailed information about a specific team.
+func teamDetails(teamID int) {
+	details := query.TeamDetailsQuery(teamID)
+	if details == nil {
+		fmt.Printf("Error: Team %d not found\n", teamID)
+		return
+	}
+	output := terminal.RenderTeamDetails(details)
+	fmt.Println(output)
+}
+
 // teamsByEvent lists all teams at a specific event.
 func teamsByEvent(event string, year int) {
 	eventTeams := query.TeamsByEventQuery(event, year)
@@ -105,6 +116,7 @@ func printUsage() {
 	fmt.Println("  matches <eventCode> [-year]         Show match results at an event")
 	fmt.Println("  rankings <eventCode> [-year]        List team rankings at an event")
 	fmt.Println("  region-advancement <region> [-year] Show all advancing teams in a region")
+	fmt.Println("  team <teamID>                       Show detailed information about a team")
 	fmt.Println("  team-matches <eventCode> <teamID> [-year]  Show match results for a team at an event")
 	fmt.Println("  teams <region>                      List teams in a region")
 	fmt.Println()
@@ -146,6 +158,19 @@ func run() int {
 	command := os.Args[1]
 
 	switch command {
+	case "team":
+		if len(os.Args) < 3 {
+			fmt.Println("Error: team command requires a teamID argument")
+			fmt.Println("Usage: ftc team <teamID>")
+			return 1
+		}
+		teamID, err := strconv.Atoi(os.Args[2])
+		if err != nil {
+			fmt.Printf("Error: invalid teamID '%s', must be a number\n", os.Args[2])
+			return 1
+		}
+		teamDetails(teamID)
+
 	case "teams":
 		if len(os.Args) < 3 {
 			fmt.Println("Error: teams command requires a region argument")
