@@ -154,8 +154,6 @@ func AdvancementReportQuery(eventCode string, year int) *AdvancementReport {
 		}
 	}
 
-	// Teams remain sorted by total points (descending) for display
-
 	return &AdvancementReport{
 		Event:            event,
 		TeamAdvancements: teamAdvancements,

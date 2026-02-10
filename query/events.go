@@ -122,7 +122,12 @@ func EventTeamRankingQuery(eventCode string, year int) *EventTeamRankings {
 				opposingAllianceScore = db.GetMatchAllianceScore(match.MatchID, "red")
 			}
 			if allianceScore != nil {
-				totalPoints := allianceScore.TotalPoints - opposingAllianceScore.FoulPointsCommitted
+				var totalPoints int
+				if opposingAllianceScore != nil {
+					totalPoints = allianceScore.TotalPoints - opposingAllianceScore.FoulPointsCommitted
+				} else {
+					totalPoints = allianceScore.TotalPoints
+				}
 				if totalPoints > teamHighScores[mt.TeamID] {
 					teamHighScores[mt.TeamID] = totalPoints
 				}
