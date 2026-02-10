@@ -316,15 +316,15 @@ func RenderTeamPerformance(performances []query.TeamPerformance, eventCode strin
 		tablewriter.WithConfig(tablewriter.Config{
 			Header: tw.CellConfig{
 				Alignment: tw.CellAlignment{PerColumn: []tw.Align{
-					tw.AlignLeft, // Rank
-					tw.AlignLeft, // Team
-					tw.AlignLeft, // Matches
-					tw.AlignLeft, // OPR
-					tw.AlignLeft, // npOPR
-					tw.AlignLeft, // CCWM
-					tw.AlignLeft, // DPR
-					tw.AlignLeft, // npDPR
-					tw.AlignLeft, // npAVG
+					tw.AlignLeft,   // Rank
+					tw.AlignLeft,   // Team
+					tw.AlignCenter, // Matches
+					tw.AlignCenter, // CCWM
+					tw.AlignCenter, // OPR
+					tw.AlignCenter, // npOPR
+					tw.AlignCenter, // DPR
+					tw.AlignCenter, // npDPR
+					tw.AlignCenter, // npAVG
 				}},
 			},
 			Row: tw.CellConfig{
@@ -332,9 +332,9 @@ func RenderTeamPerformance(performances []query.TeamPerformance, eventCode strin
 					tw.AlignLeft,  // Rank
 					tw.AlignLeft,  // Team
 					tw.AlignRight, // Matches
+					tw.AlignRight, // CCWM
 					tw.AlignRight, // OPR
 					tw.AlignRight, // npOPR
-					tw.AlignRight, // CCWM
 					tw.AlignRight, // DPR
 					tw.AlignRight, // npDPR
 					tw.AlignRight, // npAVG
@@ -343,16 +343,16 @@ func RenderTeamPerformance(performances []query.TeamPerformance, eventCode strin
 		}),
 	)
 
-	table.Header([]string{"Rank", "Team", "Matches", "OPR", "npOPR", "CCWM", "DPR", "npDPR", "npAVG"})
+	table.Header([]string{"Rank", "Team", "Matches", "CCWM", "OPR", "npOPR", "DPR", "npDPR", "npAVG"})
 
 	for i, perf := range performances {
 		table.Append([]string{
 			strconv.Itoa(i + 1),
 			fmt.Sprintf("%5d - %s", perf.TeamID, perf.TeamName),
 			strconv.Itoa(perf.Matches),
+			fmt.Sprintf("%.2f", perf.CCWM),
 			fmt.Sprintf("%.2f", perf.OPR),
 			fmt.Sprintf("%.2f", perf.NpOPR),
-			fmt.Sprintf("%.2f", perf.CCWM),
 			fmt.Sprintf("%.2f", perf.DPR),
 			fmt.Sprintf("%.2f", perf.NpDPR),
 			fmt.Sprintf("%.2f", perf.NpAVG),
