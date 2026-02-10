@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"sort"
 	"strconv"
 
 	"github.com/rbrabson/ftcstanding/performance"
@@ -59,6 +60,7 @@ func LoadMatchesCSV(filename string) ([]performance.Match, []int, error) {
 	for t := range teamSet {
 		teams = append(teams, t)
 	}
+	sort.Ints(teams)
 
 	return matches, teams, nil
 }
