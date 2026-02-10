@@ -316,7 +316,7 @@ func run() int {
 	case "region-rankings":
 		fs := flag.NewFlagSet("region-rankings", flag.ExitOnError)
 		year := fs.Int("year", defaultYear, "Year")
-		sortBy := fs.String("sort", "opr", "Sort by: opr, npopr, ccwm, dpr, npdpr, npavg, matches, team")
+		sortBy := fs.String("sort", "npopr", "Sort by: opr, npopr, ccwm, dpr, npdpr, npavg, matches, team")
 		fs.Parse(os.Args[2:])
 
 		if fs.NArg() < 1 {
