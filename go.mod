@@ -9,6 +9,7 @@ require (
 	github.com/olekukonko/tablewriter v1.1.3
 	github.com/rbrabson/ftc v0.0.0-20260207015405-64bcff6358ef
 	golang.org/x/text v0.33.0
+	gonum.org/v1/gonum v0.17.0
 )
 
 require (

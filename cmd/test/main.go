@@ -11,13 +11,9 @@ import (
 	"github.com/joho/godotenv"
 	"github.com/olekukonko/tablewriter"
 	"github.com/rbrabson/ftcstanding/database"
+	"github.com/rbrabson/ftcstanding/lambda"
 	"github.com/rbrabson/ftcstanding/performance"
 )
-
-func getLambda(numTeams int) float64 {
-	return 1.0 / float64(numTeams)
-	// return 0.01 // Decent default value if you don't know the number of teams
-}
 
 func LoadMatchesFromDatabase(db database.DB, eventCode string, year int) ([]performance.Match, []int, error) {
 	// Generate eventID from eventCode and year
@@ -148,17 +144,18 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to initialize database: %v", err)
 	}
-	defer db.Close()
 
 	// Load matches from database
 	matches, teams, err := LoadMatchesFromDatabase(db, *eventCode, *year)
 	if err != nil {
+		db.Close()
 		log.Fatal(err)
 	}
+	defer db.Close()
 
 	fmt.Printf("Loaded %d matches with %d teams from event %s (%d)\n\n", len(matches), len(teams), *eventCode, *year)
 
-	lambda := getLambda(len(teams)) // FTCScout-style regularization
+	lambdaValue := lambda.GetLambda(len(matches))
 
 	calculator := performance.Calculator{
 		Matches: matches,
@@ -193,8 +190,12 @@ func main() {
 	calculator = performance.Calculator{
 		Matches: matches,
 		Teams:   teams,
-		Lambda:  lambda,
+		Lambda:  lambdaValue,
 	}
+	// TODO: add all the values to a struct, and add the ability to sort them on any field captured.
+	//       the teamID needs to be the key into the table, with the values that follow.
+	//       to do this, add a "calculator.Calculate()" method to calculate all fields, and return a
+	//       map with the team as the key, and the values as the team-specific output.
 	opr = calculator.CalculateOPR()
 	npopr = calculator.CalculateNpOPR()
 	ccwm = calculator.CalculateCCWM()
@@ -202,7 +203,7 @@ func main() {
 	npdpr = calculator.CalculateNpDPR()
 
 	fmt.Println()
-	fmt.Println("With Regularization (Lambda = 1/numTeams):")
+	fmt.Printf("With Regularization (Lambda = %.6f):\n", lambdaValue)
 	table = tablewriter.NewTable(os.Stdout)
 	table.Header([]string{"Team", "OPR", "npOPR", "CCWM", "DPR", "npDPR", "npAVG"})
 
