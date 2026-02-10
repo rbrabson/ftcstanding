@@ -266,6 +266,12 @@ func RenderTeamPerformance(performances []query.TeamPerformance, eventCode strin
 	// Metric definitions
 	sb.WriteString(color.HiWhiteString("\nMetric Definitions:\n\n"))
 
+	sb.WriteString(color.HiYellowString("CCWM — Calculated Contribution to Winning Margin\n"))
+	sb.WriteString(color.WhiteString("  Estimates how much a team affects the margin of victory or loss.\n"))
+	sb.WriteString(color.WhiteString("  Positive CCWM → team usually helps alliances win by more\n"))
+	sb.WriteString(color.WhiteString("  Negative CCWM → alliances with this team often lose by more\n"))
+	sb.WriteString(color.HiCyanString("  👉 This blends offense, defense, and penalties into one \"do they help us win?\" number.\n\n"))
+
 	sb.WriteString(color.HiYellowString("OPR — Offensive Power Rating\n"))
 	sb.WriteString(color.WhiteString("  An estimate of how many points a team contributes per match to their alliance.\n"))
 	sb.WriteString(color.WhiteString("  Calculated using math across all matches, factoring in partners and opponents.\n"))
@@ -278,17 +284,11 @@ func RenderTeamPerformance(performances []query.TeamPerformance, eventCode strin
 	sb.WriteString(color.HiCyanString("  👉 Useful when you want to see true scoring ability, not \"we won because the other\n"))
 	sb.WriteString(color.HiCyanString("     alliance kept getting penalties.\"\n\n"))
 
-	sb.WriteString(color.HiYellowString("CCWM — Calculated Contribution to Winning Margin\n"))
-	sb.WriteString(color.WhiteString("  Estimates how much a team affects the margin of victory or loss.\n"))
-	sb.WriteString(color.WhiteString("  Positive CCWM → team usually helps alliances win by more\n"))
-	sb.WriteString(color.WhiteString("  Negative CCWM → alliances with this team often lose by more\n"))
-	sb.WriteString(color.HiCyanString("  👉 This blends offense, defense, and penalties into one \"do they help us win?\" number.\n\n"))
-
 	sb.WriteString(color.HiYellowString("DPR — Defensive Power Rating\n"))
 	sb.WriteString(color.WhiteString("  Estimates how many points a team allows opponents to score.\n"))
 	sb.WriteString(color.WhiteString("  Lower DPR = better defense.\n"))
 	sb.WriteString(color.WhiteString("  A strong defensive robot often has a noticeably low DPR even if OPR isn't huge.\n"))
-	sb.WriteString(color.HiCyanString("  👉 Great for identifying effective defense.\n\n"))
+	sb.WriteString(color.HiCyanString("  👉 Think of it as: \"If this team plays, how well do they keep the opponents from scoring?\"\n\n"))
 
 	sb.WriteString(color.HiYellowString("NP DPR — Non-Penalty Defensive Power Rating\n"))
 	sb.WriteString(color.WhiteString("  Same as DPR, but ignores penalty points.\n"))
@@ -310,7 +310,7 @@ func RenderTeamPerformance(performances []query.TeamPerformance, eventCode strin
 			FG: renderer.Colors{color.FgCyan},
 			Columns: []renderer.Tint{
 				{FG: renderer.Colors{color.FgMagenta}},   // Rank
-				{FG: renderer.Colors{color.FgWhite}},     // Team
+				{FG: renderer.Colors{color.FgHiWhite}},   // Team
 				{FG: renderer.Colors{color.FgHiRed}},     // Matches
 				{FG: renderer.Colors{color.FgHiMagenta}}, // CCWM
 				{FG: renderer.Colors{color.FgHiGreen}},   // OPR
