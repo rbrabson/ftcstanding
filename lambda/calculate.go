@@ -9,9 +9,7 @@ import (
 
 // GetLambda computes the recommended lambda value for regularization based on the match data.
 func GetLambda(matches []performance.Match) float64 {
-	a := buildConditionMatrixFromEvent(matches)
-	lambda := autoTuneLambda(a, len(matches))
-
+	_, _, lambda := analyzeEventCondition(matches)
 	return lambda
 }
 
