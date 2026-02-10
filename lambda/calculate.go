@@ -101,15 +101,14 @@ func analyzeEventCondition(matches []performance.Match) (a *mat.Dense, condNum f
 
 // BaseLambda computes the base lambda value based on the number of matches.
 func baseLambda(matchCount int) float64 {
-	lambda := 0.5 / math.Sqrt(float64(matchCount))
-
-	if lambda < 0.001 {
+	switch {
+	case matchCount < 20:
+		return 0.1
+	case matchCount <= 60:
+		return 0.01
+	default:
 		return 0.001
 	}
-	if lambda > 0.3 {
-		return 0.3
-	}
-	return lambda
 }
 
 // ConditionNumber computes the condition number of a matrix using its singular values.
