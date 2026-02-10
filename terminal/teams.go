@@ -297,6 +297,7 @@ func RenderTeamPerformance(performances []query.TeamPerformance, eventCode strin
 
 	sb.WriteString(color.HiYellowString("NP AVG — Non-Penalty Average Score\n"))
 	sb.WriteString(color.WhiteString("  The average number of non-penalty points a team's alliance scores in matches involving them.\n"))
+	sb.WriteString(color.WhiteString("  Subtracts the penalties commited by the team's alliance to determine the true scoring contribution.\n"))
 	sb.WriteString(color.WhiteString("  Less math-heavy than OPR, more literal.\n"))
 	sb.WriteString(color.WhiteString("  Still partner-dependent, but easier to interpret.\n"))
 	sb.WriteString(color.HiCyanString("  👉 Think: \"On average, when this team plays, how many real points get scored?\"\n\n"))
