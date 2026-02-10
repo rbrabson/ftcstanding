@@ -1,11 +1,15 @@
 package query
 
 import (
+	"fmt"
+	"log/slog"
 	"sort"
 	"strings"
 	"time"
 
 	"github.com/rbrabson/ftcstanding/database"
+	"github.com/rbrabson/ftcstanding/lambda"
+	"github.com/rbrabson/ftcstanding/performance"
 )
 
 // Record represents a win-loss-tie record.
@@ -192,4 +196,197 @@ func TeamDetailsQuery(teamID int) *TeamDetails {
 	})
 
 	return details
+}
+
+// TeamPerformance represents performance metrics for a team across all their matches in a season.
+type TeamPerformance struct {
+	TeamID   int
+	TeamName string
+	Region   string
+	OPR      float64
+	NpOPR    float64
+	CCWM     float64
+	DPR      float64
+	NpDPR    float64
+	NpAVG    float64
+	Matches  int
+}
+
+// RegionalTeamRankingsQuery calculates performance metrics for all teams in a region for a given year.
+// If eventCode is provided (non-empty), only matches from that event are included.
+func RegionalTeamRankingsQuery(region string, eventCode string, year int) ([]TeamPerformance, error) {
+	// Get all teams in the region
+	teams := db.GetAllTeams(database.TeamFilter{HomeRegions: []string{region}})
+	if len(teams) == 0 {
+		return nil, fmt.Errorf("no teams found in region %s", region)
+	}
+
+	// Get all team IDs
+	teamIDs := make([]int, len(teams))
+	teamMap := make(map[int]*database.Team)
+	for i, t := range teams {
+		teamIDs[i] = t.TeamID
+		teamMap[t.TeamID] = t
+	}
+
+	// Get all events for the year
+	events := db.GetAllEvents()
+	if len(events) == 0 {
+		return nil, fmt.Errorf("no events found")
+	}
+
+	// Filter events by year and optionally by event code
+	var yearEvents []*database.Event
+	for _, e := range events {
+		if e.Year == year {
+			if eventCode == "" || e.EventCode == eventCode {
+				yearEvents = append(yearEvents, e)
+			}
+		}
+	}
+
+	if len(yearEvents) == 0 {
+		if eventCode != "" {
+			return nil, fmt.Errorf("no event found with code %s for year %d", eventCode, year)
+		}
+		return nil, fmt.Errorf("no events found for year %d", year)
+	}
+
+	// Collect all matches for teams in the region
+	matchMap := make(map[string]bool) // Track matches to avoid duplicates
+	var matches []performance.Match
+	teamSet := make(map[int]struct{})
+
+	for _, event := range yearEvents {
+		dbMatches := db.GetMatchesByEvent(event.EventID)
+
+		for _, dbMatch := range dbMatches {
+			// Get alliance scores
+			redScore := db.GetMatchAllianceScore(dbMatch.MatchID, database.AllianceRed)
+			blueScore := db.GetMatchAllianceScore(dbMatch.MatchID, database.AllianceBlue)
+
+			if redScore == nil || blueScore == nil {
+				continue
+			}
+
+			// Get teams in the match
+			matchTeams := db.GetMatchTeams(dbMatch.MatchID)
+
+			var redTeams []int
+			var blueTeams []int
+			hasRegionalTeam := false
+
+			for _, mt := range matchTeams {
+				if !mt.OnField || mt.Dq {
+					continue
+				}
+
+				// Check if this is a team from our region
+				if _, ok := teamMap[mt.TeamID]; ok {
+					hasRegionalTeam = true
+				}
+
+				if mt.Alliance == database.AllianceRed {
+					redTeams = append(redTeams, mt.TeamID)
+				} else {
+					blueTeams = append(blueTeams, mt.TeamID)
+				}
+
+				teamSet[mt.TeamID] = struct{}{}
+			}
+
+			// Only include matches with teams on both alliances and at least one regional team
+			if len(redTeams) == 0 || len(blueTeams) == 0 || !hasRegionalTeam {
+				continue
+			}
+
+			// Skip if we've already added this match
+			if matchMap[dbMatch.MatchID] {
+				continue
+			}
+			matchMap[dbMatch.MatchID] = true
+
+			matches = append(matches, performance.Match{
+				RedTeams:      redTeams,
+				BlueTeams:     blueTeams,
+				RedScore:      float64(redScore.TotalPoints),
+				BlueScore:     float64(blueScore.TotalPoints),
+				RedPenalties:  float64(redScore.FoulPointsCommitted),
+				BluePenalties: float64(blueScore.FoulPointsCommitted),
+			})
+		}
+	}
+
+	if len(matches) == 0 {
+		return nil, fmt.Errorf("no matches found for teams in region %s for year %d", region, year)
+	}
+
+	// Convert teamSet to sorted slice
+	allTeams := make([]int, 0, len(teamSet))
+	for t := range teamSet {
+		allTeams = append(allTeams, t)
+	}
+	sort.Ints(allTeams)
+
+	// Calculate lambda
+	lambdaValue := lambda.GetLambda(matches)
+
+	// Calculate performance metrics with regularization
+	calculator := performance.Calculator{
+		Matches: matches,
+		Teams:   allTeams,
+		Lambda:  lambdaValue,
+	}
+
+	slog.Info("processing matches", "region", region, "season", year, "matches", len(matches), "teams", len(allTeams), "lambda", lambdaValue)
+
+	opr := calculator.CalculateOPR()
+	npopr := calculator.CalculateNpOPR()
+	ccwm := calculator.CalculateCCWM()
+	dpr := calculator.CalculateDPR()
+	npdpr := calculator.CalculateNpDPR()
+
+	// Build results for teams in the region
+	results := make([]TeamPerformance, 0, len(teamIDs))
+	for _, teamID := range teamIDs {
+		// Skip teams that didn't play any matches
+		if _, ok := teamSet[teamID]; !ok {
+			continue
+		}
+
+		// Count matches for this team
+		matchCount := 0
+		for _, m := range matches {
+			for _, t := range m.RedTeams {
+				if t == teamID {
+					matchCount++
+					break
+				}
+			}
+			for _, t := range m.BlueTeams {
+				if t == teamID {
+					matchCount++
+					break
+				}
+			}
+		}
+
+		team := teamMap[teamID]
+		npavg := calculator.CalculateNpAVG(matches, teamID)
+
+		results = append(results, TeamPerformance{
+			TeamID:   teamID,
+			TeamName: team.Name,
+			Region:   team.HomeRegion,
+			OPR:      opr[teamID],
+			NpOPR:    npopr[teamID],
+			CCWM:     ccwm[teamID],
+			DPR:      dpr[teamID],
+			NpDPR:    npdpr[teamID],
+			NpAVG:    npavg,
+			Matches:  matchCount,
+		})
+	}
+
+	return results, nil
 }
