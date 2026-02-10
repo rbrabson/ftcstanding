@@ -106,8 +106,8 @@ func regionAdvancementReport(region string, year int) {
 }
 
 // regionalPerformanceRankings displays performance rankings for teams in a region.
-func regionalPerformanceRankings(region string, year int, sortBy string) {
-	performances, err := query.RegionalTeamRankingsQuery(region, year)
+func regionalPerformanceRankings(region string, eventCode string, year int, sortBy string) {
+	performances, err := query.RegionalTeamRankingsQuery(region, eventCode, year)
 	if err != nil {
 		fmt.Printf("Error: %v\n", err)
 		return
@@ -136,7 +136,7 @@ func regionalPerformanceRankings(region string, year int, sortBy string) {
 		sort = terminal.SortByOPR
 	}
 
-	output := terminal.RenderTeamPerformance(performances, sort, region, year)
+	output := terminal.RenderTeamPerformance(performances, eventCode, sort, region, year)
 	fmt.Println(output)
 }
 
@@ -158,7 +158,7 @@ func printUsage() {
 	fmt.Println()
 	fmt.Println("Options:")
 	fmt.Println("  -year int    Year (defaults to FTC_SEASON environment variable)")
-	fmt.Println("  -sort string Sort by: opr, npopr, ccwm, dpr, npdpr, npavg, matches, team (default: opr)")
+	fmt.Println("  -sort string Sort by: opr, npopr, ccwm, dpr, npdpr, npavg, matches, team (default: ccwm)")
 	fmt.Println()
 }
 
@@ -316,7 +316,8 @@ func run() int {
 	case "region-rankings":
 		fs := flag.NewFlagSet("region-rankings", flag.ExitOnError)
 		year := fs.Int("year", defaultYear, "Year")
-		sortBy := fs.String("sort", "npopr", "Sort by: opr, npopr, ccwm, dpr, npdpr, npavg, matches, team")
+		sortBy := fs.String("sort", "ccwm", "Sort by: opr, npopr, ccwm, dpr, npdpr, npavg, matches, team")
+		eventCode := fs.String("event", "", "Event code to filter matches (optional)")
 		fs.Parse(os.Args[2:])
 
 		if fs.NArg() < 1 {
@@ -325,7 +326,10 @@ func run() int {
 			return 1
 		}
 		region := fs.Arg(0)
-		regionalPerformanceRankings(region, *year, *sortBy)
+		if len(os.Args) > 3 {
+			fs.Parse(os.Args[3:])
+		}
+		regionalPerformanceRankings(region, *eventCode, *year, *sortBy)
 
 	default:
 		fmt.Printf("Error: unknown command '%s'\n\n", command)

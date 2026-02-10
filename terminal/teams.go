@@ -220,7 +220,7 @@ const (
 )
 
 // RenderTeamPerformance renders team performance metrics in a table format with sorting.
-func RenderTeamPerformance(performances []query.TeamPerformance, sortBy SortBy, region string, year int) string {
+func RenderTeamPerformance(performances []query.TeamPerformance, eventCode string, sortBy SortBy, region string, year int) string {
 	if len(performances) == 0 {
 		return color.YellowString("No performance data available for region %s in year %d\n", region, year)
 	}
@@ -253,9 +253,51 @@ func RenderTeamPerformance(performances []query.TeamPerformance, sortBy SortBy, 
 
 	// Header
 	sb.WriteString(color.HiCyanString("═══════════════════════════════════════════════════════════════\n"))
-	sb.WriteString(color.HiGreenString("Team Performance Rankings - %s (%d)\n", region, year))
+	if eventCode != "" {
+		sb.WriteString(color.HiGreenString("Team Performance Rankings - %s (%d) - Event: %s\n", region, year, eventCode))
+	} else {
+		sb.WriteString(color.HiGreenString("Team Performance Rankings - %s (%d)\n", region, year))
+	}
 	sb.WriteString(color.HiYellowString("Sorted by: %s\n", sortBy))
-	sb.WriteString(color.HiCyanString("═══════════════════════════════════════════════════════════════\n\n"))
+	sb.WriteString(color.HiCyanString("═══════════════════════════════════════════════════════════════\n"))
+
+	// Metric definitions
+	sb.WriteString(color.HiWhiteString("\nMetric Definitions:\n\n"))
+
+	sb.WriteString(color.HiYellowString("OPR — Offensive Power Rating\n"))
+	sb.WriteString(color.WhiteString("  An estimate of how many points a team contributes per match to their alliance.\n"))
+	sb.WriteString(color.WhiteString("  Calculated using math across all matches, factoring in partners and opponents.\n"))
+	sb.WriteString(color.WhiteString("  Higher OPR = stronger overall scoring impact.\n"))
+	sb.WriteString(color.HiCyanString("  👉 Think of it as: \"If this team plays, how many points do they add?\"\n\n"))
+
+	sb.WriteString(color.HiYellowString("NP OPR — Non-Penalty Offensive Power Rating\n"))
+	sb.WriteString(color.WhiteString("  Same idea as OPR, but penalties are removed.\n"))
+	sb.WriteString(color.WhiteString("  Only counts points scored through gameplay, not points gained because opponents messed up.\n"))
+	sb.WriteString(color.HiCyanString("  👉 Useful when you want to see true scoring ability, not \"we won because the other\n"))
+	sb.WriteString(color.HiCyanString("     alliance kept getting penalties.\"\n\n"))
+
+	sb.WriteString(color.HiYellowString("CCWM — Calculated Contribution to Winning Margin\n"))
+	sb.WriteString(color.WhiteString("  Estimates how much a team affects the margin of victory or loss.\n"))
+	sb.WriteString(color.WhiteString("  Positive CCWM → team usually helps alliances win by more\n"))
+	sb.WriteString(color.WhiteString("  Negative CCWM → alliances with this team often lose by more\n"))
+	sb.WriteString(color.HiCyanString("  👉 This blends offense, defense, and penalties into one \"do they help us win?\" number.\n\n"))
+
+	sb.WriteString(color.HiYellowString("DPR — Defensive Power Rating\n"))
+	sb.WriteString(color.WhiteString("  Estimates how many points a team allows opponents to score.\n"))
+	sb.WriteString(color.WhiteString("  Lower DPR = better defense.\n"))
+	sb.WriteString(color.WhiteString("  A strong defensive robot often has a noticeably low DPR even if OPR isn't huge.\n"))
+	sb.WriteString(color.HiCyanString("  👉 Great for identifying effective defense.\n\n"))
+
+	sb.WriteString(color.HiYellowString("NP DPR — Non-Penalty Defensive Power Rating\n"))
+	sb.WriteString(color.WhiteString("  Same as DPR, but ignores penalty points.\n"))
+	sb.WriteString(color.WhiteString("  Focuses only on how well a team limits actual scoring, not ref calls.\n"))
+	sb.WriteString(color.HiCyanString("  👉 Great for identifying clean, effective defense.\n\n"))
+
+	sb.WriteString(color.HiYellowString("NP AVG — Non-Penalty Average Score\n"))
+	sb.WriteString(color.WhiteString("  The average number of non-penalty points a team's alliance scores in matches involving them.\n"))
+	sb.WriteString(color.WhiteString("  Less math-heavy than OPR, more literal.\n"))
+	sb.WriteString(color.WhiteString("  Still partner-dependent, but easier to interpret.\n"))
+	sb.WriteString(color.HiCyanString("  👉 Think: \"On average, when this team plays, how many real points get scored?\"\n\n"))
 
 	colorCfg := renderer.ColorizedConfig{
 		Header: renderer.Tint{
@@ -274,7 +316,20 @@ func RenderTeamPerformance(performances []query.TeamPerformance, sortBy SortBy, 
 		tablewriter.WithConfig(tablewriter.Config{
 			Header: tw.CellConfig{
 				Alignment: tw.CellAlignment{PerColumn: []tw.Align{
-					tw.AlignRight, // Rank
+					tw.AlignLeft, // Rank
+					tw.AlignLeft, // Team
+					tw.AlignLeft, // Matches
+					tw.AlignLeft, // OPR
+					tw.AlignLeft, // npOPR
+					tw.AlignLeft, // CCWM
+					tw.AlignLeft, // DPR
+					tw.AlignLeft, // npDPR
+					tw.AlignLeft, // npAVG
+				}},
+			},
+			Row: tw.CellConfig{
+				Alignment: tw.CellAlignment{PerColumn: []tw.Align{
+					tw.AlignLeft,  // Rank
 					tw.AlignLeft,  // Team
 					tw.AlignRight, // Matches
 					tw.AlignRight, // OPR
@@ -293,7 +348,7 @@ func RenderTeamPerformance(performances []query.TeamPerformance, sortBy SortBy, 
 	for i, perf := range performances {
 		table.Append([]string{
 			strconv.Itoa(i + 1),
-			fmt.Sprintf("%d - %s", perf.TeamID, perf.TeamName),
+			fmt.Sprintf("%5d - %s", perf.TeamID, perf.TeamName),
 			strconv.Itoa(perf.Matches),
 			fmt.Sprintf("%.2f", perf.OPR),
 			fmt.Sprintf("%.2f", perf.NpOPR),

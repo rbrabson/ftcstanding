@@ -213,7 +213,8 @@ type TeamPerformance struct {
 }
 
 // RegionalTeamRankingsQuery calculates performance metrics for all teams in a region for a given year.
-func RegionalTeamRankingsQuery(region string, year int) ([]TeamPerformance, error) {
+// If eventCode is provided (non-empty), only matches from that event are included.
+func RegionalTeamRankingsQuery(region string, eventCode string, year int) ([]TeamPerformance, error) {
 	// Get all teams in the region
 	teams := db.GetAllTeams(database.TeamFilter{HomeRegions: []string{region}})
 	if len(teams) == 0 {
@@ -234,15 +235,20 @@ func RegionalTeamRankingsQuery(region string, year int) ([]TeamPerformance, erro
 		return nil, fmt.Errorf("no events found")
 	}
 
-	// Filter events by year
+	// Filter events by year and optionally by event code
 	var yearEvents []*database.Event
 	for _, e := range events {
 		if e.Year == year {
-			yearEvents = append(yearEvents, e)
+			if eventCode == "" || e.EventCode == eventCode {
+				yearEvents = append(yearEvents, e)
+			}
 		}
 	}
 
 	if len(yearEvents) == 0 {
+		if eventCode != "" {
+			return nil, fmt.Errorf("no event found with code %s for year %d", eventCode, year)
+		}
 		return nil, fmt.Errorf("no events found for year %d", year)
 	}
 
