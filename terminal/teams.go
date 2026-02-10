@@ -24,10 +24,11 @@ func RenderTeams(teams []*database.Team) string {
 		Column: renderer.Tint{
 			FG: renderer.Colors{color.FgCyan}, // Default cyan for rows
 			Columns: []renderer.Tint{
-				{FG: renderer.Colors{color.FgMagenta}}, // Magenta for column 0
-				{},                                     // Inherit default (cyan) for column 1
-				{FG: renderer.Colors{color.FgHiRed}},   // High-intensity red for column 2
-				{},                                     // Inherit default (cyan) for remaining columns
+				{FG: renderer.Colors{color.FgMagenta}}, // Magenta for column 0 (Team)
+				{},                                     // Inherit default (cyan) for column 1 (Country)
+				{},                                     // Inherit default (cyan) for column 2 (Region)
+				{FG: renderer.Colors{color.FgHiRed}},   // High-intensity red for column 3 (Location)
+				{},                                     // Inherit default (cyan) for column 4 (Rookie Year)
 			},
 		},
 		Footer: renderer.Tint{
@@ -52,6 +53,7 @@ func RenderTeams(teams []*database.Team) string {
 					tw.AlignLeft,
 					tw.AlignLeft,
 					tw.AlignLeft,
+					tw.AlignLeft,
 				}},
 			},
 			Footer: tw.CellConfig{
@@ -60,22 +62,25 @@ func RenderTeams(teams []*database.Team) string {
 					tw.AlignLeft,
 					tw.AlignLeft,
 					tw.AlignLeft,
+					tw.AlignLeft,
 				}},
 			},
 		}),
 	)
-	table.Header([]string{"Team", "Country", "Region", "Rookie Year"})
+	table.Header([]string{"Team", "Country", "Region", "Location", "Rookie Year"})
 
 	for _, team := range teams {
+		location := fmt.Sprintf("%s, %s, %s", team.City, team.StateProv, team.Country)
 		table.Append([]string{
 			strconv.Itoa(team.TeamID) + " - " + team.Name,
 			team.Country,
 			team.HomeRegion,
+			location,
 			strconv.Itoa(team.RookieYear),
 		})
 	}
 
-	table.Footer([]string{"Total Teams: " + strconv.Itoa(len(teams)), "", "", ""})
+	table.Footer([]string{"Total Teams: " + strconv.Itoa(len(teams)), "", "", "", ""})
 
 	table.Render()
 	return sb.String()

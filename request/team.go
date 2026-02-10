@@ -2,6 +2,7 @@ package request
 
 import (
 	"log/slog"
+	"strings"
 
 	"github.com/rbrabson/ftc"
 	"github.com/rbrabson/ftcstanding/database"
@@ -31,8 +32,8 @@ func RequestTeams(season string) []*database.Team {
 	for _, ftcTeam := range ftcTeams {
 		team := database.Team{
 			TeamID:     ftcTeam.TeamNumber,
-			Name:       ftcTeam.NameShort,
-			FullName:   ftcTeam.NameFull,
+			Name:       strings.TrimSpace(ftcTeam.NameShort),
+			FullName:   strings.TrimSpace(ftcTeam.NameFull),
 			City:       ftcTeam.City,
 			StateProv:  ftcTeam.StateProv,
 			Country:    ftcTeam.Country,
