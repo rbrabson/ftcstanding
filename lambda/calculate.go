@@ -99,6 +99,7 @@ func analyzeEventCondition(matches []performance.Match) (a *mat.Dense, condNum f
 	return a, condNum, lambda
 }
 
+// BaseLambda computes the base lambda value based on the number of matches.
 func baseLambda(matchCount int) float64 {
 	lambda := 0.5 / math.Sqrt(float64(matchCount))
 
@@ -155,7 +156,7 @@ func autoTuneLambda(a *mat.Dense, matchCount int) float64 {
 
 	lambda := baseLambda(matchCount)
 
-	for i := 0; i < 10; i++ {
+	for range 10 {
 		M := ridgeMatrix(a, lambda)
 		cond := conditionNumber(M)
 
