@@ -13,7 +13,7 @@ type Calculator struct {
 
 // CalculateCCWM calculates the Calculated Contribution to Winning Margin (CCWM) for each team.
 func (p *Calculator) CalculateCCWM() map[int]float64 {
-	A, b := buildMatchMatrices(p.Matches, p.Teams, func(m Match, isRed bool) float64 {
+	A, b, activeTeams := buildMatchMatrices(p.Matches, p.Teams, func(m Match, isRed bool) float64 {
 		if isRed {
 			return (m.RedScore - m.BlueScore)
 		}
@@ -27,8 +27,12 @@ func (p *Calculator) CalculateCCWM() map[int]float64 {
 		x = matrix.SolveLeastSquaresRegularized(A, b, p.Lambda)
 	}
 
+	// Map results back to all teams (inactive teams get 0)
 	out := map[int]float64{}
-	for i, t := range p.Teams {
+	for _, t := range p.Teams {
+		out[t] = 0
+	}
+	for i, t := range activeTeams {
 		out[t] = x[i]
 	}
 	return out
@@ -36,7 +40,7 @@ func (p *Calculator) CalculateCCWM() map[int]float64 {
 
 // CalculateDPR calculates the Defensive Power Rating (DPR) for each team.
 func (p *Calculator) CalculateDPR() map[int]float64 {
-	A, b := buildMatchMatrices(p.Matches, p.Teams, func(m Match, isRed bool) float64 {
+	A, b, activeTeams := buildMatchMatrices(p.Matches, p.Teams, func(m Match, isRed bool) float64 {
 		if isRed {
 			return m.BlueScore
 		}
@@ -49,8 +53,12 @@ func (p *Calculator) CalculateDPR() map[int]float64 {
 		x = matrix.SolveLeastSquaresRegularized(A, b, p.Lambda)
 	}
 
+	// Map results back to all teams (inactive teams get 0)
 	out := map[int]float64{}
-	for i, t := range p.Teams {
+	for _, t := range p.Teams {
+		out[t] = 0
+	}
+	for i, t := range activeTeams {
 		out[t] = x[i]
 	}
 	return out
@@ -84,7 +92,7 @@ func (p *Calculator) CalculateNpAVG(matches []Match, team int) float64 {
 
 // CalculateNpDPR calculates the non-penalized Defensive Power Rating (DPR) for each team.
 func (p *Calculator) CalculateNpDPR() map[int]float64 {
-	A, b := buildMatchMatrices(p.Matches, p.Teams, func(m Match, isRed bool) float64 {
+	A, b, activeTeams := buildMatchMatrices(p.Matches, p.Teams, func(m Match, isRed bool) float64 {
 		if isRed {
 			return m.BlueScore - m.BluePenalties
 		}
@@ -98,8 +106,12 @@ func (p *Calculator) CalculateNpDPR() map[int]float64 {
 		x = matrix.SolveLeastSquaresRegularized(A, b, p.Lambda)
 	}
 
+	// Map results back to all teams (inactive teams get 0)
 	out := map[int]float64{}
-	for i, t := range p.Teams {
+	for _, t := range p.Teams {
+		out[t] = 0
+	}
+	for i, t := range activeTeams {
 		out[t] = x[i]
 	}
 	return out
@@ -108,7 +120,7 @@ func (p *Calculator) CalculateNpDPR() map[int]float64 {
 
 // CalculateNpOPR calculates the non-penalized Offensive Power Rating (OPR) for each team.
 func (p *Calculator) CalculateNpOPR() map[int]float64 {
-	A, b := buildMatchMatrices(p.Matches, p.Teams, func(m Match, isRed bool) float64 {
+	A, b, activeTeams := buildMatchMatrices(p.Matches, p.Teams, func(m Match, isRed bool) float64 {
 		if isRed {
 			return m.RedScore - m.RedPenalties
 		}
@@ -122,8 +134,12 @@ func (p *Calculator) CalculateNpOPR() map[int]float64 {
 		x = matrix.SolveLeastSquaresRegularized(A, b, p.Lambda)
 	}
 
+	// Map results back to all teams (inactive teams get 0)
 	out := map[int]float64{}
-	for i, t := range p.Teams {
+	for _, t := range p.Teams {
+		out[t] = 0
+	}
+	for i, t := range activeTeams {
 		out[t] = x[i]
 	}
 	return out
@@ -131,7 +147,7 @@ func (p *Calculator) CalculateNpOPR() map[int]float64 {
 
 // CalculateOPR calculates the Offensive Power Rating (OPR) for each team.
 func (p *Calculator) CalculateOPR() map[int]float64 {
-	A, b := buildMatchMatrices(p.Matches, p.Teams, func(m Match, isRed bool) float64 {
+	A, b, activeTeams := buildMatchMatrices(p.Matches, p.Teams, func(m Match, isRed bool) float64 {
 		if isRed {
 			return m.RedScore
 		}
@@ -145,8 +161,12 @@ func (p *Calculator) CalculateOPR() map[int]float64 {
 		x = matrix.SolveLeastSquaresRegularized(A, b, p.Lambda)
 	}
 
+	// Map results back to all teams (inactive teams get 0)
 	out := map[int]float64{}
-	for i, t := range p.Teams {
+	for _, t := range p.Teams {
+		out[t] = 0
+	}
+	for i, t := range activeTeams {
 		out[t] = x[i]
 	}
 	return out

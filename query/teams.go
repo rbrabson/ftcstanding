@@ -2,6 +2,7 @@ package query
 
 import (
 	"fmt"
+	"log/slog"
 	"sort"
 	"strings"
 	"time"
@@ -330,6 +331,8 @@ func RegionalTeamRankingsQuery(region string, year int) ([]TeamPerformance, erro
 		Teams:   allTeams,
 		Lambda:  lambdaValue,
 	}
+
+	slog.Info("processing matches", "region", region, "season", year, "matches", len(matches), "teams", len(allTeams), "lambda", lambdaValue)
 
 	opr := calculator.CalculateOPR()
 	npopr := calculator.CalculateNpOPR()
