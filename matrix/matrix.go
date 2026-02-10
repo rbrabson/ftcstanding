@@ -27,12 +27,36 @@ func Transpose(m [][]float64) [][]float64 {
 	return out
 }
 
-// GaussianElimination solves the system of linear equations Ax = b using Gaussian elimination.
+// GaussianElimination solves the system of linear equations Ax = b using Gaussian elimination with partial pivoting.
 func GaussianElimination(a [][]float64, b []float64) []float64 {
 	n := len(b)
 
 	for i := 0; i < n; i++ {
+		// Partial pivoting: find the row with the largest absolute value in column i
+		maxRow := i
+		for k := i + 1; k < n; k++ {
+			if abs(a[k][i]) > abs(a[maxRow][i]) {
+				maxRow = k
+			}
+		}
+
+		// Swap rows if needed
+		if maxRow != i {
+			a[i], a[maxRow] = a[maxRow], a[i]
+			b[i], b[maxRow] = b[maxRow], b[i]
+		}
+
 		pivot := a[i][i]
+
+		// Check for near-zero pivot
+		if abs(pivot) < 1e-14 {
+			// Matrix is singular - cannot solve
+			// This typically means insufficient match data for unique solution
+			// Use regularized versions instead
+			result := make([]float64, n)
+			return result
+		}
+
 		for j := i; j < n; j++ {
 			a[i][j] /= pivot
 		}
@@ -51,6 +75,13 @@ func GaussianElimination(a [][]float64, b []float64) []float64 {
 	}
 
 	return b
+}
+
+func abs(x float64) float64 {
+	if x < 0 {
+		return -x
+	}
+	return x
 }
 
 // SolveLeastSquares solves the least squares problem Ax = b.
