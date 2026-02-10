@@ -155,7 +155,7 @@ func main() {
 
 	fmt.Printf("Loaded %d matches with %d teams from event %s (%d)\n\n", len(matches), len(teams), *eventCode, *year)
 
-	lambdaValue := lambda.GetLambda(len(matches))
+	lambdaValue := lambda.GetLambda(matches)
 
 	calculator := performance.Calculator{
 		Matches: matches,

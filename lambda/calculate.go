@@ -3,19 +3,20 @@ package lambda
 import (
 	"math"
 
+	"github.com/rbrabson/ftcstanding/performance"
 	"gonum.org/v1/gonum/mat"
 )
 
-// Match represents a single match between two alliances of teams.
-type Match struct {
-	RedTeams  []int
-	BlueTeams []int
+func GetLambda(matches []performance.Match) float64 {
+	lambda := baseLambda(len(matches))
+
+	return lambda
 }
 
 // BuildConditionMatrix constructs the design matrix A for OPR/DPR calculations.
 // Each row represents an alliance in a match, and each column represents a team.
 // The matrix has 1s where a team participated on that alliance, and 0s elsewhere.
-func BuildConditionMatrix(matches []Match, teams []int) *mat.Dense {
+func buildConditionMatrix(matches []performance.Match, teams []int) *mat.Dense {
 	// Build team index map
 	teamIndex := map[int]int{}
 	for i, t := range teams {
@@ -51,7 +52,7 @@ func BuildConditionMatrix(matches []Match, teams []int) *mat.Dense {
 }
 
 // BuildConditionMatrixFromEvent extracts teams and builds the condition matrix from match data.
-func BuildConditionMatrixFromEvent(matches []Match) *mat.Dense {
+func buildConditionMatrixFromEvent(matches []performance.Match) *mat.Dense {
 	// Extract unique teams
 	teamSet := make(map[int]struct{})
 	for _, m := range matches {
@@ -78,33 +79,27 @@ func BuildConditionMatrixFromEvent(matches []Match) *mat.Dense {
 		}
 	}
 
-	return BuildConditionMatrix(matches, teams)
+	return buildConditionMatrix(matches, teams)
 }
 
 // AnalyzeEventCondition computes condition number and recommended lambda for an event.
 // Returns the condition matrix, its condition number, and the recommended lambda value.
-func AnalyzeEventCondition(matches []Match) (a *mat.Dense, condNum float64, lambda float64) {
-	a = BuildConditionMatrixFromEvent(matches)
+func analyzeEventCondition(matches []performance.Match) (a *mat.Dense, condNum float64, lambda float64) {
+	a = buildConditionMatrixFromEvent(matches)
 
 	// Compute condition number of A^T * A
 	var ata mat.Dense
 	ata.Mul(a.T(), a)
-	condNum = ConditionNumber(&ata)
+	condNum = conditionNumber(&ata)
 
 	// Calculate recommended lambda
 	matchCount := len(matches)
-	lambda = AutoTuneLambda(a, matchCount)
+	lambda = autoTuneLambda(a, matchCount)
 
 	return a, condNum, lambda
 }
 
-func GetLambda(matchCount int) float64 {
-	lambda := BaseLambda(matchCount)
-
-	return lambda
-}
-
-func BaseLambda(matchCount int) float64 {
+func baseLambda(matchCount int) float64 {
 	lambda := 0.5 / math.Sqrt(float64(matchCount))
 
 	if lambda < 0.001 {
@@ -116,7 +111,8 @@ func BaseLambda(matchCount int) float64 {
 	return lambda
 }
 
-func ConditionNumber(m mat.Matrix) float64 {
+// ConditionNumber computes the condition number of a matrix using its singular values.
+func conditionNumber(m mat.Matrix) float64 {
 	var svd mat.SVD
 	ok := svd.Factorize(m, mat.SVDThin)
 	if !ok {
@@ -137,7 +133,8 @@ func ConditionNumber(m mat.Matrix) float64 {
 	return max / min
 }
 
-func RidgeMatrix(a *mat.Dense, lambda float64) *mat.Dense {
+// ridgeMatrix computes the ridge-regularized matrix (A^T * A + λI).
+func ridgeMatrix(a *mat.Dense, lambda float64) *mat.Dense {
 	var ata mat.Dense
 	ata.Mul(a.T(), a)
 
@@ -149,17 +146,18 @@ func RidgeMatrix(a *mat.Dense, lambda float64) *mat.Dense {
 	return &ata
 }
 
-func AutoTuneLambda(a *mat.Dense, matchCount int) float64 {
+// autoTuneLambda adjusts lambda to achieve a target condition number for the ridge matrix.
+func autoTuneLambda(a *mat.Dense, matchCount int) float64 {
 	const (
 		targetCond = 1e7
 		maxLambda  = 10.0
 	)
 
-	lambda := BaseLambda(matchCount)
+	lambda := baseLambda(matchCount)
 
 	for i := 0; i < 10; i++ {
-		M := RidgeMatrix(a, lambda)
-		cond := ConditionNumber(M)
+		M := ridgeMatrix(a, lambda)
+		cond := conditionNumber(M)
 
 		if cond <= targetCond {
 			return lambda
