@@ -1,6 +1,8 @@
 package performance
 
-import "github.com/rbrabson/ftcstanding/matrix"
+import (
+	"github.com/rbrabson/ftcstanding/matrix"
+)
 
 // Calculator calculates various performance metrics for teams based on match data.
 type Calculator struct {

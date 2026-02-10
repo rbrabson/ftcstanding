@@ -99,8 +99,8 @@ func SolveLeastSquares(a [][]float64, b []float64) []float64 {
 	return GaussianElimination(ATA, ATb)
 }
 
-// AddRegularization adds λI to the matrix a.
-func AddRegularization(a [][]float64, lambda float64) {
+// addRegularization adds λI to the matrix a.
+func addRegularization(a [][]float64, lambda float64) {
 	for i := range a {
 		a[i][i] += lambda
 	}
@@ -112,7 +112,7 @@ func SolveLeastSquaresRegularized(a [][]float64, b []float64, lambda float64) []
 	ATA := Multiply(AT, a)
 
 	// Add λI
-	AddRegularization(ATA, lambda)
+	addRegularization(ATA, lambda)
 
 	ATb := make([]float64, len(AT))
 	for i := range AT {
