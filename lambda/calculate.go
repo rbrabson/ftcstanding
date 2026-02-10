@@ -7,8 +7,10 @@ import (
 	"gonum.org/v1/gonum/mat"
 )
 
+// GetLambda computes the recommended lambda value for regularization based on the match data.
 func GetLambda(matches []performance.Match) float64 {
-	lambda := baseLambda(len(matches))
+	a := buildConditionMatrixFromEvent(matches)
+	lambda := autoTuneLambda(a, len(matches))
 
 	return lambda
 }
