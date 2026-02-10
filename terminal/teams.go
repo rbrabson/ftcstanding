@@ -138,7 +138,9 @@ func RenderTeamDetails(details *query.TeamDetails) string {
 				FG: renderer.Colors{color.FgCyan},
 				Columns: []renderer.Tint{
 					{FG: renderer.Colors{color.FgMagenta}}, // Event Code
-					{FG: renderer.Colors{color.FgWhite}},   // Event Name				{},                                     // Qual Rank					{},                                     // Total Record
+					{FG: renderer.Colors{color.FgWhite}},   // Event Name
+					{},                                     // Qual Rank
+					{},                                     // Total Record
 					{},                                     // Qual Record
 					{},                                     // Playoff Record
 					{FG: renderer.Colors{color.FgHiGreen}}, // Advanced
@@ -306,6 +308,17 @@ func RenderTeamPerformance(performances []query.TeamPerformance, eventCode strin
 		},
 		Column: renderer.Tint{
 			FG: renderer.Colors{color.FgCyan},
+			Columns: []renderer.Tint{
+				{FG: renderer.Colors{color.FgMagenta}},   // Rank
+				{FG: renderer.Colors{color.FgWhite}},     // Team
+				{FG: renderer.Colors{color.FgHiRed}},     // Matches
+				{FG: renderer.Colors{color.FgHiMagenta}}, // CCWM
+				{FG: renderer.Colors{color.FgHiGreen}},   // OPR
+				{FG: renderer.Colors{color.FgHiGreen}},   // npOPR
+				{FG: renderer.Colors{color.FgHiYellow}},  // DPR
+				{FG: renderer.Colors{color.FgHiYellow}},  // npDPR
+				{FG: renderer.Colors{color.FgHiMagenta}}, // npAVG
+			},
 		},
 		Border:    renderer.Tint{FG: renderer.Colors{color.FgWhite}},
 		Separator: renderer.Tint{FG: renderer.Colors{color.FgWhite}},
