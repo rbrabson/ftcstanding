@@ -103,6 +103,7 @@ type EventFilter struct {
 	EventCodes  []string
 	RegionCodes []string
 	Countries   []string
+	Year        int
 }
 
 // AdvancementFilter defines criteria for filtering event advancements.

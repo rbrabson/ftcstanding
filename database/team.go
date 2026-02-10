@@ -27,4 +27,5 @@ type TeamFilter struct {
 	TeamIDs     []int
 	Countries   []string
 	HomeRegions []string
+	EventCodes  []string
 }

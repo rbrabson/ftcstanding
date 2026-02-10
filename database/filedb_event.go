@@ -82,6 +82,13 @@ func (db *filedb) GetAllEvents(filters ...EventFilter) []*Event {
 			}
 		}
 
+		// Check Year filter
+		if matchesFilter && filter.Year > 0 {
+			if event.Year != filter.Year {
+				matchesFilter = false
+			}
+		}
+
 		if matchesFilter {
 			eventCopy := *event
 			events = append(events, &eventCopy)

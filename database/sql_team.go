@@ -85,9 +85,43 @@ func (db *sqldb) GetAllTeams(filters ...TeamFilter) []*Team {
 
 	filter := filters[0]
 
+	// If EventCodes filter is provided, get team IDs from those events
+	var eventTeamIDs []int
+	if len(filter.EventCodes) > 0 {
+		eventTeamIDMap := make(map[int]bool)
+		for _, eventCode := range filter.EventCodes {
+			// Get all events matching this code
+			events := db.GetAllEvents(EventFilter{EventCodes: []string{eventCode}})
+			for _, event := range events {
+				// Get all teams for this event
+				eventTeams := db.GetEventTeams(event.EventID)
+				for _, et := range eventTeams {
+					eventTeamIDMap[et.TeamID] = true
+				}
+			}
+		}
+		// Convert map to slice
+		for teamID := range eventTeamIDMap {
+			eventTeamIDs = append(eventTeamIDs, teamID)
+		}
+	}
+
 	// Build dynamic query
 	query := "SELECT team_id, name, full_name, city, state_prov, country, website, rookie_year, home_region, robot_name FROM teams WHERE 1=1"
 	args := []interface{}{}
+
+	// Add EventCodes filter (team must be in the events)
+	if len(eventTeamIDs) > 0 {
+		query += " AND team_id IN ("
+		for i, id := range eventTeamIDs {
+			if i > 0 {
+				query += ","
+			}
+			query += "?"
+			args = append(args, id)
+		}
+		query += ")"
+	}
 
 	// Add TeamID filter
 	if len(filter.TeamIDs) > 0 {
