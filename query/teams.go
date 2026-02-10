@@ -236,7 +236,7 @@ func RegionalTeamRankingsQuery(region string, eventCode string, year int) ([]Tea
 		teamMap[t.TeamID] = t
 	}
 
-	// Get all events for the year
+	// Get all events for the region, year, and optionally the event
 	eventFilter := database.EventFilter{RegionCodes: []string{region}, Year: year}
 	if eventCode != "" {
 		eventFilter.EventCodes = []string{eventCode}
@@ -268,16 +268,10 @@ func RegionalTeamRankingsQuery(region string, eventCode string, year int) ([]Tea
 
 			var redTeams []int
 			var blueTeams []int
-			hasRegionalTeam := false
 
 			for _, mt := range matchTeams {
 				if !mt.OnField || mt.Dq {
 					continue
-				}
-
-				// Check if this is a team from our region
-				if _, ok := teamMap[mt.TeamID]; ok {
-					hasRegionalTeam = true
 				}
 
 				if mt.Alliance == database.AllianceRed {
@@ -289,8 +283,8 @@ func RegionalTeamRankingsQuery(region string, eventCode string, year int) ([]Tea
 				teamSet[mt.TeamID] = struct{}{}
 			}
 
-			// Only include matches with teams on both alliances and at least one regional team
-			if len(redTeams) == 0 || len(blueTeams) == 0 || !hasRegionalTeam {
+			// Only include matches with teams on both alliances
+			if len(redTeams) == 0 || len(blueTeams) == 0 {
 				continue
 			}
 
