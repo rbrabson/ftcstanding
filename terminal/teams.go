@@ -2,6 +2,7 @@ package terminal
 
 import (
 	"fmt"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -200,6 +201,110 @@ func RenderTeamDetails(details *query.TeamDetails) string {
 	} else {
 		sb.WriteString(color.YellowString("No events found for this team.\n"))
 	}
+
+	return sb.String()
+}
+
+// SortBy defines the sort criteria for team performance
+type SortBy string
+
+const (
+	SortByOPR     SortBy = "opr"
+	SortByNpOPR   SortBy = "npopr"
+	SortByCCWM    SortBy = "ccwm"
+	SortByDPR     SortBy = "dpr"
+	SortByNpDPR   SortBy = "npdpr"
+	SortByNpAVG   SortBy = "npavg"
+	SortByMatches SortBy = "matches"
+	SortByTeamID  SortBy = "team"
+)
+
+// RenderTeamPerformance renders team performance metrics in a table format with sorting.
+func RenderTeamPerformance(performances []query.TeamPerformance, sortBy SortBy, region string, year int) string {
+	if len(performances) == 0 {
+		return color.YellowString("No performance data available for region %s in year %d\n", region, year)
+	}
+
+	// Sort the performances based on the specified criteria
+	sort.Slice(performances, func(i, j int) bool {
+		switch sortBy {
+		case SortByOPR:
+			return performances[i].OPR > performances[j].OPR
+		case SortByNpOPR:
+			return performances[i].NpOPR > performances[j].NpOPR
+		case SortByCCWM:
+			return performances[i].CCWM > performances[j].CCWM
+		case SortByDPR:
+			return performances[i].DPR < performances[j].DPR // Lower is better for defense
+		case SortByNpDPR:
+			return performances[i].NpDPR < performances[j].NpDPR // Lower is better for defense
+		case SortByNpAVG:
+			return performances[i].NpAVG > performances[j].NpAVG
+		case SortByMatches:
+			return performances[i].Matches > performances[j].Matches
+		case SortByTeamID:
+			return performances[i].TeamID < performances[j].TeamID
+		default:
+			return performances[i].OPR > performances[j].OPR
+		}
+	})
+
+	var sb strings.Builder
+
+	// Header
+	sb.WriteString(color.HiCyanString("═══════════════════════════════════════════════════════════════\n"))
+	sb.WriteString(color.HiGreenString("Team Performance Rankings - %s (%d)\n", region, year))
+	sb.WriteString(color.HiYellowString("Sorted by: %s\n", sortBy))
+	sb.WriteString(color.HiCyanString("═══════════════════════════════════════════════════════════════\n\n"))
+
+	colorCfg := renderer.ColorizedConfig{
+		Header: renderer.Tint{
+			FG: renderer.Colors{color.FgGreen, color.Bold},
+			BG: renderer.Colors{color.BgBlack},
+		},
+		Column: renderer.Tint{
+			FG: renderer.Colors{color.FgCyan},
+		},
+		Border:    renderer.Tint{FG: renderer.Colors{color.FgWhite}},
+		Separator: renderer.Tint{FG: renderer.Colors{color.FgWhite}},
+	}
+
+	table := tablewriter.NewTable(&sb,
+		tablewriter.WithRenderer(renderer.NewColorized(colorCfg)),
+		tablewriter.WithConfig(tablewriter.Config{
+			Header: tw.CellConfig{
+				Alignment: tw.CellAlignment{PerColumn: []tw.Align{
+					tw.AlignRight, // Rank
+					tw.AlignLeft,  // Team
+					tw.AlignRight, // Matches
+					tw.AlignRight, // OPR
+					tw.AlignRight, // npOPR
+					tw.AlignRight, // CCWM
+					tw.AlignRight, // DPR
+					tw.AlignRight, // npDPR
+					tw.AlignRight, // npAVG
+				}},
+			},
+		}),
+	)
+
+	table.Header([]string{"Rank", "Team", "Matches", "OPR", "npOPR", "CCWM", "DPR", "npDPR", "npAVG"})
+
+	for i, perf := range performances {
+		table.Append([]string{
+			strconv.Itoa(i + 1),
+			fmt.Sprintf("%d - %s", perf.TeamID, perf.TeamName),
+			strconv.Itoa(perf.Matches),
+			fmt.Sprintf("%.2f", perf.OPR),
+			fmt.Sprintf("%.2f", perf.NpOPR),
+			fmt.Sprintf("%.2f", perf.CCWM),
+			fmt.Sprintf("%.2f", perf.DPR),
+			fmt.Sprintf("%.2f", perf.NpDPR),
+			fmt.Sprintf("%.2f", perf.NpAVG),
+		})
+	}
+
+	table.Render()
 
 	return sb.String()
 }
