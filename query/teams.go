@@ -3,6 +3,8 @@ package query
 import (
 	"fmt"
 	"log/slog"
+	"maps"
+	"slices"
 	"sort"
 	"strings"
 	"time"
@@ -314,10 +316,7 @@ func RegionalTeamRankingsQuery(region string, eventCode string, year int) ([]Tea
 	}
 
 	// Convert teamSet to sorted slice
-	allTeams := make([]int, 0, len(teamSet))
-	for t := range teamSet {
-		allTeams = append(allTeams, t)
-	}
+	allTeams := slices.Collect(maps.Keys(teamSet))
 	sort.Ints(allTeams)
 
 	// Calculate lambda
@@ -349,17 +348,8 @@ func RegionalTeamRankingsQuery(region string, eventCode string, year int) ([]Tea
 		// Count matches for this team
 		matchCount := 0
 		for _, m := range matches {
-			for _, t := range m.RedTeams {
-				if t == teamID {
-					matchCount++
-					break
-				}
-			}
-			for _, t := range m.BlueTeams {
-				if t == teamID {
-					matchCount++
-					break
-				}
+			if slices.Contains(m.RedTeams, teamID) || slices.Contains(m.BlueTeams, teamID) {
+				matchCount++
 			}
 		}
 
