@@ -151,7 +151,7 @@ func printUsage() {
 	fmt.Println("  matches <eventCode> [-year]         Show match results at an event")
 	fmt.Println("  rankings <eventCode> [-year]        List team rankings at an event")
 	fmt.Println("  region-advancement <region> [-year] Show all advancing teams in a region")
-	fmt.Println("  region-rankings <region> [-year] [-sort]  Show performance rankings for teams in a region")
+	fmt.Println("  region-rankings <region> [-year] [-sort] [-event]  Show performance rankings for teams in a region")
 	fmt.Println("  team <teamID>                       Show detailed information about a team")
 	fmt.Println("  team-matches <eventCode> <teamID> [-year]  Show match results for a team at an event")
 	fmt.Println("  teams <region>                      List teams in a region")
@@ -159,6 +159,7 @@ func printUsage() {
 	fmt.Println("Options:")
 	fmt.Println("  -year int    Year (defaults to FTC_SEASON environment variable)")
 	fmt.Println("  -sort string Sort by: opr, npopr, ccwm, dpr, npdpr, npavg, matches, team (default: ccwm)")
+	fmt.Println("  -event string Event code to filter matches (optional, for region-rankings)")
 	fmt.Println()
 }
 
@@ -322,7 +323,7 @@ func run() int {
 
 		if fs.NArg() < 1 {
 			fmt.Println("Error: region-rankings command requires a region argument")
-			fmt.Println("Usage: ftc region-rankings <region> [-year <year>] [-sort <criteria>]")
+			fmt.Println("Usage: ftc region-rankings <region> [-year <year>] [-sort <criteria>] [-event <eventCode>]")
 			return 1
 		}
 		region := fs.Arg(0)
