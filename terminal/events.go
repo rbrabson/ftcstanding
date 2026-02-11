@@ -50,7 +50,7 @@ func RenderTeamsByEvent(eventTeams *query.EventTeams) string {
 		},
 		Border:    renderer.Tint{FG: renderer.Colors{color.FgWhite}}, // White borders
 		Separator: renderer.Tint{FG: renderer.Colors{color.FgWhite}}, // White separators
-		Settings:  tw.Settings{Separators: tw.Separators{BetweenRows: tw.On}},
+		Settings:  tw.Settings{Separators: tw.Separators{BetweenRows: tw.Off}},
 	}
 
 	table := tablewriter.NewTable(&sb,
@@ -89,7 +89,7 @@ func RenderTeamsByEvent(eventTeams *query.EventTeams) string {
 
 		// Add footer with team count
 		table.Footer([]string{
-			fmt.Sprintf("Total Teams: %d", len(eventTeams.Teams)),
+			fmt.Sprintf("Teams: %d", len(eventTeams.Teams)),
 			"",
 			"",
 			"",
