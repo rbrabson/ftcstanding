@@ -596,3 +596,117 @@ func RegionAdvancementQuery(regionCode string, year int) *RegionAdvancementRepor
 		TeamAdvancements: teamAdvancements,
 	}
 }
+
+// EventAdvancementSummary represents a summary of qualified teams organized by their qualifying events.
+type EventAdvancementSummary struct {
+	RegionCode     string
+	Year           int
+	EventSummaries []*EventQualifiedTeams
+}
+
+// EventQualifiedTeams represents teams that qualified from a specific event.
+type EventQualifiedTeams struct {
+	Event          *database.Event
+	QualifiedTeams []*QualifiedTeam
+}
+
+// QualifiedTeam represents a team that qualified for advancement.
+type QualifiedTeam struct {
+	Team              *database.Team
+	GlobalRank        int    // Sequential rank across all events
+	AlreadyQualified  bool   // True if team already qualified from an earlier event
+	FirstQualifyEvent string // Event code where team first qualified (empty if this is the first)
+}
+
+// EventAdvancementSummaryQuery retrieves a summary of all qualified teams organized by their qualifying events.
+func EventAdvancementSummaryQuery(regionCode string, year int) *EventAdvancementSummary {
+	// Get all events in the region for the given year
+	filter := database.EventFilter{
+		RegionCodes: []string{regionCode},
+	}
+	allEvents := db.GetAllEvents(filter)
+
+	// Filter events by year
+	var events []*database.Event
+	for _, e := range allEvents {
+		if e.Year == year {
+			events = append(events, e)
+		}
+	}
+
+	if len(events) == 0 {
+		return &EventAdvancementSummary{
+			RegionCode:     regionCode,
+			Year:           year,
+			EventSummaries: []*EventQualifiedTeams{},
+		}
+	}
+
+	// Sort events by date to process them chronologically
+	slices.SortFunc(events, func(a, b *database.Event) int {
+		return a.DateStart.Compare(b.DateStart)
+	})
+
+	// Track which teams have already qualified and from which event
+	qualifiedTeams := make(map[int]string) // teamID -> first qualifying event code
+	var eventSummaries []*EventQualifiedTeams
+	globalRank := 1
+
+	// Process each event chronologically
+	for _, event := range events {
+		// Get advancements for this event
+		advancements := db.GetEventAdvancements(event.EventID)
+
+		var qualifiedFromThisEvent []*QualifiedTeam
+
+		// Process each advancement
+		for _, adv := range advancements {
+			// Skip teams with "already_advancing" status
+			if adv.Status == "already_advancing" {
+				continue
+			}
+
+			team := db.GetTeam(adv.TeamID)
+			if team == nil {
+				continue
+			}
+
+			// Check if team already qualified from an earlier event
+			firstQualifyEvent, alreadyQualified := qualifiedTeams[adv.TeamID]
+
+			qualifiedTeam := &QualifiedTeam{
+				Team:              team,
+				GlobalRank:        globalRank,
+				AlreadyQualified:  alreadyQualified,
+				FirstQualifyEvent: firstQualifyEvent,
+			}
+
+			qualifiedFromThisEvent = append(qualifiedFromThisEvent, qualifiedTeam)
+
+			// If this is the first time this team qualified, record it
+			if !alreadyQualified {
+				qualifiedTeams[adv.TeamID] = event.EventCode
+				globalRank++
+			}
+		}
+
+		// Sort teams by advancement number within this event
+		slices.SortFunc(qualifiedFromThisEvent, func(a, b *QualifiedTeam) int {
+			return a.GlobalRank - b.GlobalRank
+		})
+
+		// Only add event summary if there are qualified teams from this event
+		if len(qualifiedFromThisEvent) > 0 {
+			eventSummaries = append(eventSummaries, &EventQualifiedTeams{
+				Event:          event,
+				QualifiedTeams: qualifiedFromThisEvent,
+			})
+		}
+	}
+
+	return &EventAdvancementSummary{
+		RegionCode:     regionCode,
+		Year:           year,
+		EventSummaries: eventSummaries,
+	}
+}

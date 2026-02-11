@@ -210,3 +210,55 @@ func RenderRegionAdvancementReport(report *query.RegionAdvancementReport) string
 	table.Render()
 	return sb.String()
 }
+
+// RenderEventAdvancementSummary renders qualified teams organized by their qualifying events.
+func RenderEventAdvancementSummary(summary *query.EventAdvancementSummary) string {
+	if summary == nil {
+		return "No data available\n"
+	}
+
+	var sb strings.Builder
+
+	// Render header
+	sb.WriteString(color.New(color.FgGreen, color.Bold).Sprint("🔥 Qualified Teams (Through Completed Qualifiers)\n\n"))
+
+	if len(summary.EventSummaries) == 0 {
+		sb.WriteString("No qualified teams found.\n")
+		return sb.String()
+	}
+
+	greenColor := color.New(color.FgGreen)
+	cyanColor := color.New(color.FgCyan)
+	yellowColor := color.New(color.FgYellow)
+
+	// Render each event's qualified teams
+	for _, eventSummary := range summary.EventSummaries {
+		// Format event date (e.g., "Jan 17, 2026")
+		eventDate := eventSummary.Event.DateStart.Format("Jan 2, 2006")
+
+		// Event header
+		sb.WriteString(cyanColor.Sprintf("From %s (%s)\n", eventSummary.Event.Name, eventDate))
+
+		// List qualified teams from this event
+		for _, qt := range eventSummary.QualifiedTeams {
+			if qt.AlreadyQualified {
+				// Team already qualified from an earlier event
+				sb.WriteString(fmt.Sprintf("%s. %s – %s %s\n",
+					yellowColor.Sprint(qt.GlobalRank),
+					greenColor.Sprintf("%d", qt.Team.TeamID),
+					qt.Team.Name,
+					color.New(color.FgMagenta).Sprint("(already noted above)")))
+			} else {
+				// First time this team qualified
+				sb.WriteString(fmt.Sprintf("%s. %s – %s\n",
+					yellowColor.Sprint(qt.GlobalRank),
+					greenColor.Sprintf("%d", qt.Team.TeamID),
+					qt.Team.Name))
+			}
+		}
+
+		sb.WriteString("\n")
+	}
+
+	return sb.String()
+}
