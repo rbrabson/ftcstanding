@@ -320,7 +320,7 @@ func run() int {
 	case "team-rankings":
 		fs := flag.NewFlagSet("team-rankings", flag.ExitOnError)
 		year := fs.Int("year", defaultYear, "Year")
-		sortBy := fs.String("sort", "ccwm", "Sort by: opr, npopr, ccwm, dpr, npdpr, npavg, matches, team")
+		sortBy := fs.String("sort", "npavg", "Sort by: opr, npopr, ccwm, dpr, npdpr, npavg, matches, team")
 		eventCode := fs.String("event", "", "Event code to filter matches (optional)")
 		regionFlag := fs.String("region", "", "Region to filter teams (optional)")
 		country := fs.String("country", "", "Country to filter teams (optional)")
