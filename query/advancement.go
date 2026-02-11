@@ -194,7 +194,7 @@ func calculateJudgingPoints(awards []*database.EventAward) map[int]int {
 		case 3:
 			divider = 4
 		default:
-			divider = 1
+			divider = basePoints
 		}
 		points := basePoints / divider
 		pointsMap[award.TeamID] += points
