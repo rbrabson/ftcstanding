@@ -209,11 +209,11 @@ type TeamPerformance struct {
 	Matches  int
 }
 
-// RegionalTeamRankingsQuery retrieves performance metrics for all teams in a region for a given year.
+// TeamRankingsQuery retrieves performance metrics for all teams in a region for a given year.
 // If eventCode is provided (non-empty), only rankings from that event are included.
 // Performance metrics are retrieved from the team_rankings database table and combined using weighted averaging
 // based on the number of matches each team played in each event.
-func RegionalTeamRankingsQuery(region string, eventCode string, year int) ([]TeamPerformance, error) {
+func TeamRankingsQuery(region string, eventCode string, year int) ([]TeamPerformance, error) {
 	// Get all teams in the region
 	var teams []*database.Team
 	if eventCode == "" {

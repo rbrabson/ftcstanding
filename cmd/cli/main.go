@@ -105,9 +105,9 @@ func regionAdvancementReport(region string, year int) {
 	fmt.Println(output)
 }
 
-// regionalPerformanceRankings displays performance rankings for teams in a region.
-func regionalPerformanceRankings(region string, eventCode string, year int, sortBy string) {
-	performances, err := query.RegionalTeamRankingsQuery(region, eventCode, year)
+// teamRankings displays performance rankings for teams in a region.
+func teamRankings(region string, eventCode string, year int, sortBy string) {
+	performances, err := query.TeamRankingsQuery(region, eventCode, year)
 	if err != nil {
 		fmt.Printf("Error: %v\n", err)
 		return
@@ -151,9 +151,9 @@ func printUsage() {
 	fmt.Println("  matches <eventCode> [-year]         Show match results at an event")
 	fmt.Println("  rankings <eventCode> [-year]        List team rankings at an event")
 	fmt.Println("  region-advancement <region> [-year] Show all advancing teams in a region")
-	fmt.Println("  region-rankings <region> [-year] [-sort] [-event]  Show performance rankings for teams in a region")
 	fmt.Println("  team <teamID>                       Show detailed information about a team")
 	fmt.Println("  team-matches <eventCode> <teamID> [-year]  Show match results for a team at an event")
+	fmt.Println("  team-rankings <region> [-year] [-sort] [-event]  Show performance rankings for teams")
 	fmt.Println("  teams <region>                      List teams in a region")
 	fmt.Println()
 	fmt.Println("Options:")
@@ -314,23 +314,23 @@ func run() int {
 		region := fs.Arg(0)
 		regionAdvancementReport(region, *year)
 
-	case "region-rankings":
-		fs := flag.NewFlagSet("region-rankings", flag.ExitOnError)
+	case "team-rankings":
+		fs := flag.NewFlagSet("team-rankings", flag.ExitOnError)
 		year := fs.Int("year", defaultYear, "Year")
 		sortBy := fs.String("sort", "ccwm", "Sort by: opr, npopr, ccwm, dpr, npdpr, npavg, matches, team")
 		eventCode := fs.String("event", "", "Event code to filter matches (optional)")
 		fs.Parse(os.Args[2:])
 
 		if fs.NArg() < 1 {
-			fmt.Println("Error: region-rankings command requires a region argument")
-			fmt.Println("Usage: ftc region-rankings <region> [-year <year>] [-sort <criteria>] [-event <eventCode>]")
+			fmt.Println("Error: team-rankings command requires a region argument")
+			fmt.Println("Usage: ftc team-rankings <region> [-year <year>] [-sort <criteria>] [-event <eventCode>]")
 			return 1
 		}
 		region := fs.Arg(0)
 		if len(os.Args) > 3 {
 			fs.Parse(os.Args[3:])
 		}
-		regionalPerformanceRankings(region, *eventCode, *year, *sortBy)
+		teamRankings(region, *eventCode, *year, *sortBy)
 
 	default:
 		fmt.Printf("Error: unknown command '%s'\n\n", command)
