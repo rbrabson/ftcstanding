@@ -187,7 +187,7 @@ var advancementCmd = &cobra.Command{
 }
 
 // matchesCmd renders the match results for a specific event, showing each match's teams, scores,
-// and outcomes.
+// and outcomes. If --team flag is provided, shows only matches for that team.
 var matchesCmd = &cobra.Command{
 	Use:   "matches [eventCode]",
 	Short: "Show match results at an event",
@@ -198,32 +198,19 @@ var matchesCmd = &cobra.Command{
 		if year == 0 {
 			year = defaultYear
 		}
-		matchResults := query.MatchesByEventQuery(eventCode, year)
-		matchResultsOutput := terminal.RenderMatchDetails(matchResults)
-		fmt.Println(matchResultsOutput)
-		return nil
-	},
-}
+		teamID, _ := cmd.Flags().GetInt("team")
 
-// teamMatchesCmd renders the match results for a specific team at a specific event, showing each match's teams,
-// scores, and outcomes.
-var teamMatchesCmd = &cobra.Command{
-	Use:   "team-matches [eventCode] [teamID]",
-	Short: "Show match results for a team at an event",
-	Args:  cobra.ExactArgs(2),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		eventCode := args[0]
-		teamID, err := strconv.Atoi(args[1])
-		if err != nil {
-			return fmt.Errorf("invalid teamID '%s', must be a number", args[1])
+		if teamID != 0 {
+			// Show matches for specific team
+			matchResults := query.MatchesByEventAndTeamQuery(eventCode, teamID, year)
+			matchResultsOutput := terminal.RenderMatchesByEventAndTeam(matchResults)
+			fmt.Println(matchResultsOutput)
+		} else {
+			// Show all matches for event
+			matchResults := query.MatchesByEventQuery(eventCode, year)
+			matchResultsOutput := terminal.RenderMatchDetails(matchResults)
+			fmt.Println(matchResultsOutput)
 		}
-		year, _ := cmd.Flags().GetInt("year")
-		if year == 0 {
-			year = defaultYear
-		}
-		matchResults := query.MatchesByEventAndTeamQuery(eventCode, teamID, year)
-		matchResultsOutput := terminal.RenderMatchesByEventAndTeam(matchResults)
-		fmt.Println(matchResultsOutput)
 		return nil
 	},
 }
@@ -332,10 +319,12 @@ func init() {
 	awardsCmd.Flags().IntP("year", "y", 0, "Year (defaults to FTC_SEASON environment variable)")
 	advancementCmd.Flags().IntP("year", "y", 0, "Year (defaults to FTC_SEASON environment variable)")
 	matchesCmd.Flags().IntP("year", "y", 0, "Year (defaults to FTC_SEASON environment variable)")
-	teamMatchesCmd.Flags().IntP("year", "y", 0, "Year (defaults to FTC_SEASON environment variable)")
 	regionAdvancementCmd.Flags().IntP("year", "y", 0, "Year (defaults to FTC_SEASON environment variable)")
 	eventAdvancementCmd.Flags().IntP("year", "y", 0, "Year (defaults to FTC_SEASON environment variable)")
 	teamRankingsCmd.Flags().IntP("year", "y", 0, "Year (defaults to FTC_SEASON environment variable)")
+
+	// Add matches specific flags
+	matchesCmd.Flags().IntP("team", "t", 0, "Show matches for specific team only")
 
 	// Add team-rankings specific flags
 	teamRankingsCmd.Flags().StringP("sort", "s", "npavg", "Sort by: opr, npopr, ccwm, dpr, npdpr, npavg, matches, team")
@@ -353,7 +342,6 @@ func init() {
 		awardsCmd,
 		advancementCmd,
 		matchesCmd,
-		teamMatchesCmd,
 		regionAdvancementCmd,
 		eventAdvancementCmd,
 		teamRankingsCmd,
