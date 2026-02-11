@@ -56,11 +56,6 @@ func RenderAwardsByEvent(eventAwards *query.EventAwards) string {
 			Footer: tw.CellConfig{
 				Alignment: tw.CellAlignment{Global: tw.AlignLeft},
 			},
-			Widths: tw.CellWidth{
-				PerColumn: tw.Mapper[int, int]{
-					1: 80, // Winner column max width
-				},
-			},
 		}),
 	)
 	table.Header([]string{"Award Name", "Winner"})

@@ -174,21 +174,22 @@ func RenderMatchDetails(details []*query.MatchDetails) string {
 func RenderMatchesByEventAndTeam(results []*query.TeamMatchResult) string {
 	var sb strings.Builder
 
-	// Render event information header
-	if len(results) > 0 {
-		event := results[0].Event
-		team := results[0].Team
-		sb.WriteString(color.New(color.FgGreen, color.Bold).Sprint("Event Information\n"))
-		sb.WriteString(color.New(color.FgCyan).Sprintf("Team: %d - %s\n", team.TeamID, team.Name))
-		sb.WriteString(color.New(color.FgCyan).Sprintf("Code: %s\n", event.EventCode))
-		sb.WriteString(color.New(color.FgCyan).Sprintf("Name: %s\n", event.Name))
-		sb.WriteString(color.New(color.FgCyan).Sprintf("Location: %s, %s, %s\n",
-			event.City, event.StateProv, event.Country))
-		sb.WriteString(color.New(color.FgCyan).Sprintf("Year: %d\n", event.Year))
-		sb.WriteString(color.New(color.FgCyan).Sprintf("Dates: %s to %s\n\n",
-			event.DateStart.Format("Jan 2, 2006"),
-			event.DateEnd.Format("Jan 2, 2006")))
+	if len(results) == 0 {
+		return "No matches found for this team at this event.\n"
 	}
+
+	event := results[0].Event
+	team := results[0].Team
+	sb.WriteString(color.New(color.FgGreen, color.Bold).Sprint("Event Information\n"))
+	sb.WriteString(color.New(color.FgCyan).Sprintf("Team: %d - %s\n", team.TeamID, team.Name))
+	sb.WriteString(color.New(color.FgCyan).Sprintf("Code: %s\n", event.EventCode))
+	sb.WriteString(color.New(color.FgCyan).Sprintf("Name: %s\n", event.Name))
+	sb.WriteString(color.New(color.FgCyan).Sprintf("Location: %s, %s, %s\n",
+		event.City, event.StateProv, event.Country))
+	sb.WriteString(color.New(color.FgCyan).Sprintf("Year: %d\n", event.Year))
+	sb.WriteString(color.New(color.FgCyan).Sprintf("Dates: %s to %s\n\n",
+		event.DateStart.Format("Jan 2, 2006"),
+		event.DateEnd.Format("Jan 2, 2006")))
 
 	colorCfg := renderer.ColorizedConfig{
 		Header: renderer.Tint{

@@ -127,24 +127,14 @@ func MatchesByEventAndTeamQuery(eventCode string, teamID int, year int) []*TeamM
 	// Get the event details
 	filter := database.EventFilter{
 		EventCodes: []string{eventCode},
+		Year:       year,
 	}
 	events := db.GetAllEvents(filter)
 	if len(events) == 0 {
 		return nil
 	}
-	var event *database.Event
-	for _, e := range events {
-		if e.Year == year {
-			event = e
-			break
-		}
-	}
+	event := events[0]
 
-	if event == nil {
-		return nil
-	}
-
-	// Get all matches for the event
 	matches := db.GetMatchesByEvent(event.EventID)
 	if matches == nil {
 		return nil
@@ -157,12 +147,10 @@ func MatchesByEventAndTeamQuery(eventCode string, teamID int, year int) []*TeamM
 	}
 
 	var results []*TeamMatchResult
-
-	// Process each match
 	for _, match := range matches {
 		// Get all teams in this match
 		matchTeams := db.GetMatchTeams(match.MatchID)
-		if matchTeams == nil {
+		if len(matchTeams) == 0 {
 			continue
 		}
 
