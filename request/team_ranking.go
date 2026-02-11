@@ -80,7 +80,7 @@ func RequestAndSaveTeamRankings(event *database.Event) error {
 	sort.Ints(eventTeams)
 
 	// Calculate lambda for this event
-	lambdaValue := getLambda(matches)
+	lambdaValue := getLambda()
 
 	slog.Info("calculating team rankings", "event", event.EventCode, "matches", len(matches), "teams", len(eventTeams), "lambda", lambdaValue)
 
