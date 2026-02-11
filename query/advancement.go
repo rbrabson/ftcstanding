@@ -162,7 +162,9 @@ func AdvancementReportQuery(eventCode string, year int) *AdvancementReport {
 
 // calculateJudgingPoints calculates judging points based on awards.
 // Points are awarded as follows:
+//
 // - Inspire 1: 60 points, Inspire 2: 30 points, Inspire 3: 15 points
+//
 // - Other judged awards: 1st place (series 1): 12 points, 2nd place (series 2): 6 points, 3rd place (series 3): 3 points
 func calculateJudgingPoints(awards []*database.EventAward) map[int]int {
 	pointsMap := make(map[int]int)
@@ -173,32 +175,28 @@ func calculateJudgingPoints(awards []*database.EventAward) map[int]int {
 			continue
 		}
 
-		var points int
-		awardNameLower := award.Name
-
 		// Assign points based on award type and series
-		if containsIgnoreCase(awardNameLower, "inspire") {
-			// Inspire awards have special point values
-			switch award.Series {
-			case 1:
-				points = 60
-			case 2:
-				points = 30
-			case 3:
-				points = 15
-			}
-		} else if isJudgedAward(awardNameLower) {
-			// Other judged awards use standard point scale based on series
-			switch award.Series {
-			case 1:
-				points = 12
-			case 2:
-				points = 6
-			case 3:
-				points = 3
-			}
+		var basePoints int
+		switch {
+		case containsIgnoreCase(award.Name, "inspire"):
+			basePoints = 60
+		case isJudgedAward(award.Name):
+			basePoints = 12
+		default:
+			basePoints = 0
 		}
-
+		var divider int
+		switch award.Series {
+		case 1:
+			divider = 1
+		case 2:
+			divider = 2
+		case 3:
+			divider = 4
+		default:
+			divider = 1
+		}
+		points := basePoints / divider
 		pointsMap[award.TeamID] += points
 	}
 
