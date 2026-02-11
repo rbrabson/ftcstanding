@@ -243,17 +243,17 @@ func RenderEventAdvancementSummary(summary *query.EventAdvancementSummary) strin
 		for _, qt := range eventSummary.QualifiedTeams {
 			if qt.AlreadyQualified {
 				// Team already qualified from an earlier event
-				sb.WriteString(fmt.Sprintf("%s. %s – %s %s\n",
-					yellowColor.Sprint(qt.GlobalRank),
-					greenColor.Sprintf("%d", qt.Team.TeamID),
+				fmt.Fprintf(&sb, "%s. %s – %s %s\n",
+					yellowColor.Sprintf("%2d", qt.GlobalRank),
+					greenColor.Sprintf("%5d", qt.Team.TeamID),
 					qt.Team.Name,
-					color.New(color.FgMagenta).Sprint("(already noted above)")))
+					color.New(color.FgMagenta).Sprint("(already noted above)"))
 			} else {
 				// First time this team qualified
-				sb.WriteString(fmt.Sprintf("%s. %s – %s\n",
-					yellowColor.Sprint(qt.GlobalRank),
-					greenColor.Sprintf("%d", qt.Team.TeamID),
-					qt.Team.Name))
+				fmt.Fprintf(&sb, "%2s. %s – %s\n",
+					yellowColor.Sprintf("%2d", qt.GlobalRank),
+					greenColor.Sprintf("%5d", qt.Team.TeamID),
+					qt.Team.Name)
 			}
 		}
 
