@@ -176,27 +176,27 @@ func calculateJudgingPoints(awards []*database.EventAward) map[int]int {
 		}
 
 		// Assign points based on award type and series
-		var basePoints int
+		var points int
 		switch {
 		case containsIgnoreCase(award.Name, "inspire"):
-			basePoints = 60
+			switch award.Series {
+			case 1:
+				points = 60
+			case 2:
+				points = 30
+			case 3:
+				points = 15
+			}
 		case isJudgedAward(award.Name):
-			basePoints = 12
-		default:
-			basePoints = 0
+			switch award.Series {
+			case 1:
+				points = 12
+			case 2:
+				points = 6
+			case 3:
+				points = 3
+			}
 		}
-		var divider int
-		switch award.Series {
-		case 1:
-			divider = 1
-		case 2:
-			divider = 2
-		case 3:
-			divider = 4
-		default:
-			divider = basePoints
-		}
-		points := basePoints / divider
 		pointsMap[award.TeamID] += points
 	}
 

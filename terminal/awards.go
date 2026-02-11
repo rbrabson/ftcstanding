@@ -44,7 +44,7 @@ func RenderAwardsByEvent(eventAwards *query.EventAwards) string {
 		},
 		Border:    renderer.Tint{FG: renderer.Colors{color.FgWhite}}, // White borders
 		Separator: renderer.Tint{FG: renderer.Colors{color.FgWhite}}, // White separators
-		Settings:  tw.Settings{Separators: tw.Separators{BetweenRows: tw.On}},
+		Settings:  tw.Settings{Separators: tw.Separators{BetweenRows: tw.Off}},
 	}
 
 	table := tablewriter.NewTable(&sb,
@@ -71,7 +71,7 @@ func RenderAwardsByEvent(eventAwards *query.EventAwards) string {
 		for _, teamAward := range eventAwards.Awards {
 			// Format award name, qualified by series if needed
 			awardName := teamAward.Award.Name
-			winner := fmt.Sprintf("%d - %s", teamAward.Team.TeamID, teamAward.Team.Name)
+			winner := fmt.Sprintf("%6d - %s", teamAward.Team.TeamID, teamAward.Team.Name)
 			table.Append([]string{
 				awardName,
 				winner,
