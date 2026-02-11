@@ -2,16 +2,11 @@ package query
 
 import (
 	"fmt"
-	"log/slog"
-	"maps"
-	"slices"
 	"sort"
 	"strings"
 	"time"
 
 	"github.com/rbrabson/ftcstanding/database"
-	"github.com/rbrabson/ftcstanding/lambda"
-	"github.com/rbrabson/ftcstanding/performance"
 )
 
 // Record represents a win-loss-tie record.
@@ -214,9 +209,9 @@ type TeamPerformance struct {
 	Matches  int
 }
 
-// RegionalTeamRankingsQuery calculates performance metrics for all teams in a region for a given year.
-// If eventCode is provided (non-empty), only matches from that event are included.
-// Performance metrics are calculated on a per-event basis and then combined using weighted averaging
+// RegionalTeamRankingsQuery retrieves performance metrics for all teams in a region for a given year.
+// If eventCode is provided (non-empty), only rankings from that event are included.
+// Performance metrics are retrieved from the team_rankings database table and combined using weighted averaging
 // based on the number of matches each team played in each event.
 func RegionalTeamRankingsQuery(region string, eventCode string, year int) ([]TeamPerformance, error) {
 	// Get all teams in the region
@@ -232,8 +227,10 @@ func RegionalTeamRankingsQuery(region string, eventCode string, year int) ([]Tea
 
 	// Get team info and build a map for easy lookup
 	teamMap := make(map[int]*database.Team)
+	teamIDs := make([]int, 0, len(teams))
 	for _, t := range teams {
 		teamMap[t.TeamID] = t
+		teamIDs = append(teamIDs, t.TeamID)
 	}
 
 	// Get all events for the region, year, and optionally the event
@@ -246,144 +243,46 @@ func RegionalTeamRankingsQuery(region string, eventCode string, year int) ([]Tea
 		return nil, fmt.Errorf("no events found")
 	}
 
-	// Structure to hold per-event performance data for each team
-	type eventPerformance struct {
-		OPR     float64
-		NpOPR   float64
-		CCWM    float64
-		DPR     float64
-		NpDPR   float64
-		NpAVG   float64
-		Matches int
-	}
-
-	// Map to accumulate weighted metrics: teamID -> []eventPerformance
-	teamEventData := make(map[int][]eventPerformance)
-
-	// Process each event separately
+	// Collect event IDs
+	eventIDs := make([]string, 0, len(events))
 	for _, event := range events {
-		dbMatches := db.GetMatchesByEvent(event.EventID)
-
-		var matches []performance.Match
-		teamSet := make(map[int]any)
-
-		for _, dbMatch := range dbMatches {
-			// Get alliance scores
-			redScore := db.GetMatchAllianceScore(dbMatch.MatchID, database.AllianceRed)
-			blueScore := db.GetMatchAllianceScore(dbMatch.MatchID, database.AllianceBlue)
-
-			if redScore == nil || blueScore == nil {
-				continue
-			}
-
-			// Get teams in the match
-			matchTeams := db.GetMatchTeams(dbMatch.MatchID)
-
-			var redTeams []int
-			var blueTeams []int
-
-			for _, mt := range matchTeams {
-				if !mt.OnField || mt.Dq {
-					continue
-				}
-
-				if mt.Alliance == database.AllianceRed {
-					redTeams = append(redTeams, mt.TeamID)
-				} else {
-					blueTeams = append(blueTeams, mt.TeamID)
-				}
-
-				teamSet[mt.TeamID] = struct{}{}
-			}
-
-			// Only include matches with teams on both alliances
-			if len(redTeams) == 0 || len(blueTeams) == 0 {
-				continue
-			}
-
-			matches = append(matches, performance.Match{
-				RedTeams:      redTeams,
-				BlueTeams:     blueTeams,
-				RedScore:      float64(redScore.TotalPoints),
-				BlueScore:     float64(blueScore.TotalPoints),
-				RedPenalties:  float64(redScore.FoulPointsCommitted),
-				BluePenalties: float64(blueScore.FoulPointsCommitted),
-			})
-		}
-
-		// Skip events with no matches
-		if len(matches) == 0 {
-			continue
-		}
-
-		// Convert teamSet to sorted slice
-		eventTeams := slices.Collect(maps.Keys(teamSet))
-		sort.Ints(eventTeams)
-
-		// Calculate lambda for this event
-		lambdaValue := lambda.GetLambda(matches)
-
-		slog.Info("processing event", "event", event.EventCode, "region", region, "season", year, "matches", len(matches), "teams", len(eventTeams), "lambda", lambdaValue)
-
-		// Calculate performance metrics for this event
-		calculator := performance.Calculator{
-			Matches: matches,
-			Teams:   eventTeams,
-			Lambda:  lambdaValue,
-		}
-
-		opr := calculator.CalculateOPR()
-		npopr := calculator.CalculateNpOPR()
-		ccwm := calculator.CalculateCCWM()
-		dpr := calculator.CalculateDPR()
-		npdpr := calculator.CalculateNpDPR()
-
-		// Store per-event results for each team
-		for _, teamID := range eventTeams {
-			// Count matches for this team in this event
-			matchCount := 0
-			for _, m := range matches {
-				if slices.Contains(m.RedTeams, teamID) || slices.Contains(m.BlueTeams, teamID) {
-					matchCount++
-				}
-			}
-
-			npavg := calculator.CalculateNpAVG(matches, teamID)
-
-			teamEventData[teamID] = append(teamEventData[teamID], eventPerformance{
-				OPR:     opr[teamID],
-				NpOPR:   npopr[teamID],
-				CCWM:    ccwm[teamID],
-				DPR:     dpr[teamID],
-				NpDPR:   npdpr[teamID],
-				NpAVG:   npavg,
-				Matches: matchCount,
-			})
-		}
+		eventIDs = append(eventIDs, event.EventID)
 	}
 
-	if len(teamEventData) == 0 {
-		return nil, fmt.Errorf("no matches found for teams in region %s for year %d", region, year)
+	// Get all team rankings for these teams and events from the database
+	rankingFilter := database.TeamRankingFilter{
+		TeamIDs:  teamIDs,
+		EventIDs: eventIDs,
+	}
+	rankings := db.GetTeamRankings(rankingFilter)
+	if len(rankings) == 0 {
+		return nil, fmt.Errorf("no team rankings found for teams in region %s for year %d", region, year)
 	}
 
-	// Combine per-event results using weighted averaging
-	results := make([]TeamPerformance, 0, len(teamEventData))
-	for teamID, eventPerfs := range teamEventData {
+	// Group rankings by team
+	teamRankings := make(map[int][]*database.TeamRanking)
+	for _, ranking := range rankings {
+		teamRankings[ranking.TeamID] = append(teamRankings[ranking.TeamID], ranking)
+	}
+
+	// Combine per-event rankings using weighted averaging
+	results := make([]TeamPerformance, 0, len(teamRankings))
+	for teamID, eventRankings := range teamRankings {
 		// Calculate weighted averages
 		var totalMatches int
 		var weightedOPR, weightedNpOPR, weightedCCWM float64
 		var weightedDPR, weightedNpDPR, weightedNpAVG float64
 
-		for _, ep := range eventPerfs {
-			weight := float64(ep.Matches)
-			totalMatches += ep.Matches
+		for _, ranking := range eventRankings {
+			weight := float64(ranking.NumMatches)
+			totalMatches += ranking.NumMatches
 
-			weightedOPR += ep.OPR * weight
-			weightedNpOPR += ep.NpOPR * weight
-			weightedCCWM += ep.CCWM * weight
-			weightedDPR += ep.DPR * weight
-			weightedNpDPR += ep.NpDPR * weight
-			weightedNpAVG += ep.NpAVG * weight
+			weightedOPR += ranking.OPR * weight
+			weightedNpOPR += ranking.NpOPR * weight
+			weightedCCWM += ranking.CCWM * weight
+			weightedDPR += ranking.DPR * weight
+			weightedNpDPR += ranking.NpDPR * weight
+			weightedNpAVG += ranking.NpAvg * weight
 		}
 
 		// Normalize by total matches
@@ -412,9 +311,9 @@ func RegionalTeamRankingsQuery(region string, eventCode string, year int) ([]Tea
 		})
 	}
 
-	// Sort by OPR (descending) and assign ranks
+	// Sort by CCWM (descending) and assign ranks
 	sort.Slice(results, func(i, j int) bool {
-		return results[i].OPR > results[j].OPR
+		return results[i].OPR > results[j].CCWM
 	})
 
 	return results, nil

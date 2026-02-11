@@ -61,6 +61,7 @@ func RequestAndSaveAll(season string, refresh bool) {
 		RequestAndSaveEventAdvancements(event)
 		RequestAndSaveMatches(event)
 		RequestAndSaveTeamsInEvent(event)
+		RequestAndSaveTeamRankings(event)
 		slog.Info("Finished processing event details for event", "event", event.EventCode)
 	}
 }

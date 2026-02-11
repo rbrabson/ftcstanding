@@ -41,6 +41,7 @@ type filedb struct {
 	// Table-level locks for fine-grained concurrency control
 	awardsMu            sync.RWMutex
 	teamsMu             sync.RWMutex
+	teamRankingsMu      sync.RWMutex
 	eventsMu            sync.RWMutex
 	eventAwardsMu       sync.RWMutex
 	eventRankingsMu     sync.RWMutex
@@ -52,6 +53,7 @@ type filedb struct {
 
 	awards            map[int]*Award
 	teams             map[int]*Team
+	teamRankings      map[string]map[int]*TeamRanking // eventID -> teamID -> ranking
 	events            map[string]*Event
 	eventAwards       map[string][]*EventAward       // keyed by eventID
 	eventRankings     map[string][]*EventRanking     // keyed by eventID
@@ -85,6 +87,7 @@ func initFileDB() (*filedb, error) {
 		dataDir:           dataDir,
 		awards:            make(map[int]*Award),
 		teams:             make(map[int]*Team),
+		teamRankings:      make(map[string]map[int]*TeamRanking),
 		events:            make(map[string]*Event),
 		eventAwards:       make(map[string][]*EventAward),
 		eventRankings:     make(map[string][]*EventRanking),
@@ -115,6 +118,8 @@ func (db *filedb) loadAll() error {
 	defer db.awardsMu.Unlock()
 	db.teamsMu.Lock()
 	defer db.teamsMu.Unlock()
+	db.teamRankingsMu.Lock()
+	defer db.teamRankingsMu.Unlock()
 	db.eventsMu.Lock()
 	defer db.eventsMu.Unlock()
 	db.eventAwardsMu.Lock()
@@ -139,6 +144,11 @@ func (db *filedb) loadAll() error {
 
 	// Load teams
 	if err := db.loadJSONFile("teams.json", &db.teams); err != nil && !os.IsNotExist(err) {
+		return err
+	}
+
+	// Load team rankings
+	if err := db.loadJSONFile("team_rankings.json", &db.teamRankings); err != nil && !os.IsNotExist(err) {
 		return err
 	}
 
@@ -192,6 +202,8 @@ func (db *filedb) saveAll() error {
 	defer db.awardsMu.RUnlock()
 	db.teamsMu.RLock()
 	defer db.teamsMu.RUnlock()
+	db.teamRankingsMu.RLock()
+	defer db.teamRankingsMu.RUnlock()
 	db.eventsMu.RLock()
 	defer db.eventsMu.RUnlock()
 	db.eventAwardsMu.RLock()
@@ -214,6 +226,10 @@ func (db *filedb) saveAll() error {
 	}
 
 	if err := db.saveJSONFile("teams.json", db.teams); err != nil {
+		return err
+	}
+
+	if err := db.saveJSONFile("team_rankings.json", db.teamRankings); err != nil {
 		return err
 	}
 

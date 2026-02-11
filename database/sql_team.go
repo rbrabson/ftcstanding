@@ -9,6 +9,7 @@ func (db *sqldb) initTeamStatements() error {
 		"getAllTeams":      "SELECT team_id, name, full_name, city, state_prov, country, website, rookie_year, home_region, robot_name FROM teams ORDER BY team_id",
 		"getTeamsByRegion": "SELECT team_id, name, full_name, city, state_prov, country, website, rookie_year, home_region, robot_name FROM teams WHERE home_region = ? ORDER BY team_id",
 		"saveTeam":         "INSERT INTO teams (team_id, name, full_name, city, state_prov, country, website, rookie_year, home_region, robot_name) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE name = VALUES(name), full_name = VALUES(full_name), city = VALUES(city), state_prov = VALUES(state_prov), country = VALUES(country), website = VALUES(website), rookie_year = VALUES(rookie_year), home_region = VALUES(home_region), robot_name = VALUES(robot_name)",
+		"saveTeamRanking":  "INSERT INTO team_rankings (team_id, event_id, num_matches, ccwm, opr, np_opr, dpr, np_dpr, np_avg) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE num_matches = VALUES(num_matches), ccwm = VALUES(ccwm), opr = VALUES(opr), np_opr = VALUES(np_opr), dpr = VALUES(dpr), np_dpr = VALUES(np_dpr), np_avg = VALUES(np_avg)",
 	}
 
 	for name, query := range queries {
@@ -248,4 +249,93 @@ func (db *sqldb) GetTeamsByRegion(region string) []*Team {
 		teams = append(teams, &team)
 	}
 	return teams
+}
+
+// GetTeamRankings retrieves team rankings with optional filters.
+// Filters support filtering by TeamID and/or EventID.
+// If no filters are provided, returns all team rankings.
+func (db *sqldb) GetTeamRankings(filters ...TeamRankingFilter) []*TeamRanking {
+	// Build dynamic query
+	query := "SELECT team_id, event_id, num_matches, ccwm, opr, np_opr, dpr, np_dpr, np_avg FROM team_rankings WHERE 1=1"
+	args := []interface{}{}
+
+	if len(filters) > 0 {
+		filter := filters[0]
+
+		// Add TeamID filter
+		if len(filter.TeamIDs) > 0 {
+			query += " AND team_id IN ("
+			for i, id := range filter.TeamIDs {
+				if i > 0 {
+					query += ","
+				}
+				query += "?"
+				args = append(args, id)
+			}
+			query += ")"
+		}
+
+		// Add EventID filter
+		if len(filter.EventIDs) > 0 {
+			query += " AND event_id IN ("
+			for i, id := range filter.EventIDs {
+				if i > 0 {
+					query += ","
+				}
+				query += "?"
+				args = append(args, id)
+			}
+			query += ")"
+		}
+	}
+
+	query += " ORDER BY event_id, team_id"
+
+	// Execute query
+	rows, err := db.sqldb.Query(query, args...)
+	if err != nil {
+		return nil
+	}
+	defer rows.Close()
+
+	var rankings []*TeamRanking
+	for rows.Next() {
+		var ranking TeamRanking
+		err := rows.Scan(
+			&ranking.TeamID,
+			&ranking.EventID,
+			&ranking.NumMatches,
+			&ranking.CCWM,
+			&ranking.OPR,
+			&ranking.NpOPR,
+			&ranking.DPR,
+			&ranking.NpDPR,
+			&ranking.NpAvg,
+		)
+		if err != nil {
+			continue
+		}
+		rankings = append(rankings, &ranking)
+	}
+	return rankings
+}
+
+// SaveTeamRanking saves or updates a team ranking in the database.
+func (db *sqldb) SaveTeamRanking(ranking *TeamRanking) error {
+	stmt := db.getStatement("saveTeamRanking")
+	if stmt == nil {
+		return fmt.Errorf("prepared statement not found")
+	}
+	_, err := stmt.Exec(
+		ranking.TeamID,
+		ranking.EventID,
+		ranking.NumMatches,
+		ranking.CCWM,
+		ranking.OPR,
+		ranking.NpOPR,
+		ranking.DPR,
+		ranking.NpDPR,
+		ranking.NpAvg,
+	)
+	return err
 }

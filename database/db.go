@@ -50,6 +50,8 @@ type DB interface {
 	GetAllTeams(filters ...TeamFilter) []*Team
 	SaveTeam(team *Team) error
 	GetTeamsByRegion(region string) []*Team
+	GetTeamRankings(filters ...TeamRankingFilter) []*TeamRanking
+	SaveTeamRanking(ranking *TeamRanking) error
 }
 
 // InitDB initializes the database connection.

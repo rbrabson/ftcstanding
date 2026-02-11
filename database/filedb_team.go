@@ -137,3 +137,82 @@ func (db *filedb) GetTeamsByRegion(region string) []*Team {
 	})
 	return teams
 }
+
+// GetTeamRankings retrieves team rankings with optional filters.
+// Filters support filtering by TeamID and/or EventID.
+// If no filters are provided, returns all team rankings.
+func (db *filedb) GetTeamRankings(filters ...TeamRankingFilter) []*TeamRanking {
+	db.teamRankingsMu.RLock()
+	defer db.teamRankingsMu.RUnlock()
+
+	var rankings []*TeamRanking
+
+	// Helper function to check if a ranking matches the filter
+	matchesFilter := func(ranking *TeamRanking, filter TeamRankingFilter) bool {
+		// Check TeamID filter
+		if len(filter.TeamIDs) > 0 {
+			match := slices.Contains(filter.TeamIDs, ranking.TeamID)
+			if !match {
+				return false
+			}
+		}
+
+		// Check EventID filter
+		if len(filter.EventIDs) > 0 {
+			match := slices.Contains(filter.EventIDs, ranking.EventID)
+			if !match {
+				return false
+			}
+		}
+
+		return true
+	}
+
+	// If no filters, return all rankings
+	if len(filters) == 0 {
+		for _, eventRankings := range db.teamRankings {
+			for _, ranking := range eventRankings {
+				rankingCopy := *ranking
+				rankings = append(rankings, &rankingCopy)
+			}
+		}
+	} else {
+		filter := filters[0]
+		for _, eventRankings := range db.teamRankings {
+			for _, ranking := range eventRankings {
+				if matchesFilter(ranking, filter) {
+					rankingCopy := *ranking
+					rankings = append(rankings, &rankingCopy)
+				}
+			}
+		}
+	}
+
+	// Sort by EventID then TeamID
+	sort.Slice(rankings, func(i, j int) bool {
+		if rankings[i].EventID != rankings[j].EventID {
+			return rankings[i].EventID < rankings[j].EventID
+		}
+		return rankings[i].TeamID < rankings[j].TeamID
+	})
+
+	return rankings
+}
+
+// SaveTeamRanking saves or updates a team ranking in the file database.
+func (db *filedb) SaveTeamRanking(ranking *TeamRanking) error {
+	db.teamRankingsMu.Lock()
+	defer db.teamRankingsMu.Unlock()
+
+	// Initialize the map for this event if it doesn't exist
+	if db.teamRankings[ranking.EventID] == nil {
+		db.teamRankings[ranking.EventID] = make(map[int]*TeamRanking)
+	}
+
+	// Make a copy and save it
+	rankingCopy := *ranking
+	db.teamRankings[ranking.EventID][ranking.TeamID] = &rankingCopy
+
+	// Persist to disk
+	return db.saveJSONFile("team_rankings.json", db.teamRankings)
+}
