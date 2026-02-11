@@ -7,7 +7,7 @@ require (
 	github.com/go-sql-driver/mysql v1.9.3
 	github.com/joho/godotenv v1.5.1
 	github.com/olekukonko/tablewriter v1.1.3
-	github.com/rbrabson/ftc v0.0.0-20260207015405-64bcff6358ef
+	github.com/rbrabson/ftc v0.1.0
 	golang.org/x/text v0.34.0
 )
 
