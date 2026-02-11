@@ -7,7 +7,6 @@ import (
 	"sort"
 
 	"github.com/rbrabson/ftcstanding/database"
-	"github.com/rbrabson/ftcstanding/lambda"
 	"github.com/rbrabson/ftcstanding/performance"
 )
 
@@ -81,7 +80,7 @@ func RequestAndSaveTeamRankings(event *database.Event) error {
 	sort.Ints(eventTeams)
 
 	// Calculate lambda for this event
-	lambdaValue := lambda.GetLambda(matches)
+	lambdaValue := getLambda(matches)
 
 	slog.Info("calculating team rankings", "event", event.EventCode, "matches", len(matches), "teams", len(eventTeams), "lambda", lambdaValue)
 

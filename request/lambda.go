@@ -1,11 +1,11 @@
-package lambda
+package request
 
 import (
 	"github.com/rbrabson/ftcstanding/performance"
 )
 
-// GetLambda computes the recommended lambda value for regularization based on the match data.
-func GetLambda(matches []performance.Match) float64 {
+// getLambda computes the recommended lambda value for regularization based on the match data.
+func getLambda(matches []performance.Match) float64 {
 	lambda := baseLambda(len(matches))
 	return lambda
 }
