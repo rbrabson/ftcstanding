@@ -228,11 +228,9 @@ func RegionalTeamRankingsQuery(region string, eventCode string, year int) ([]Tea
 		return nil, fmt.Errorf("no teams found in region %s", region)
 	}
 
-	// Get all team IDs
-	teamIDs := make([]int, len(teams))
+	// Get team info and build a map for easy lookup
 	teamMap := make(map[int]*database.Team)
-	for i, t := range teams {
-		teamIDs[i] = t.TeamID
+	for _, t := range teams {
 		teamMap[t.TeamID] = t
 	}
 
@@ -249,7 +247,7 @@ func RegionalTeamRankingsQuery(region string, eventCode string, year int) ([]Tea
 	// Collect all matches for teams in the region
 	matchMap := make(map[string]bool) // Track matches to avoid duplicates
 	var matches []performance.Match
-	teamSet := make(map[int]struct{})
+	teamSet := make(map[int]any)
 
 	for _, event := range events {
 		dbMatches := db.GetMatchesByEvent(event.EventID)
@@ -316,14 +314,14 @@ func RegionalTeamRankingsQuery(region string, eventCode string, year int) ([]Tea
 	// Calculate lambda
 	lambdaValue := lambda.GetLambda(matches)
 
+	slog.Info("processing matches", "region", region, "season", year, "matches", len(matches), "teams", len(allTeams), "lambda", lambdaValue)
+
 	// Calculate performance metrics with regularization
 	calculator := performance.Calculator{
 		Matches: matches,
 		Teams:   allTeams,
 		Lambda:  lambdaValue,
 	}
-
-	slog.Info("processing matches", "region", region, "season", year, "matches", len(matches), "teams", len(allTeams), "lambda", lambdaValue)
 
 	opr := calculator.CalculateOPR()
 	npopr := calculator.CalculateNpOPR()
@@ -332,8 +330,8 @@ func RegionalTeamRankingsQuery(region string, eventCode string, year int) ([]Tea
 	npdpr := calculator.CalculateNpDPR()
 
 	// Build results for teams in the region
-	results := make([]TeamPerformance, 0, len(teamIDs))
-	for _, teamID := range teamIDs {
+	results := make([]TeamPerformance, 0, len(allTeams))
+	for _, teamID := range allTeams {
 		// Skip teams that didn't play any matches
 		if _, ok := teamSet[teamID]; !ok {
 			continue
