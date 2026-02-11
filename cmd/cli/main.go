@@ -105,9 +105,9 @@ func regionAdvancementReport(region string, year int) {
 	fmt.Println(output)
 }
 
-// teamRankings displays performance rankings for teams in a region.
-func teamRankings(region string, eventCode string, year int, sortBy string) {
-	performances, err := query.TeamRankingsQuery(region, eventCode, year)
+// teamRankings displays performance rankings for teams in a region (or all teams if region is empty).
+func teamRankings(region string, country string, eventCode string, year int, sortBy string, limit int) {
+	performances, err := query.TeamRankingsQuery(region, country, eventCode, year)
 	if err != nil {
 		fmt.Printf("Error: %v\n", err)
 		return
@@ -136,7 +136,7 @@ func teamRankings(region string, eventCode string, year int, sortBy string) {
 		sort = terminal.SortByOPR
 	}
 
-	output := terminal.RenderTeamPerformance(performances, eventCode, sort, region, year)
+	output := terminal.RenderTeamPerformance(performances, eventCode, sort, region, year, limit)
 	fmt.Println(output)
 }
 
@@ -153,13 +153,16 @@ func printUsage() {
 	fmt.Println("  region-advancement <region> [-year] Show all advancing teams in a region")
 	fmt.Println("  team <teamID>                       Show detailed information about a team")
 	fmt.Println("  team-matches <eventCode> <teamID> [-year]  Show match results for a team at an event")
-	fmt.Println("  team-rankings <region> [-year] [-sort] [-event]  Show performance rankings for teams")
+	fmt.Println("  team-rankings [region] [-year] [-sort] [-event] [-country] [-limit]  Show performance rankings for teams")
 	fmt.Println("  teams <region>                      List teams in a region")
 	fmt.Println()
 	fmt.Println("Options:")
 	fmt.Println("  -year int    Year (defaults to FTC_SEASON environment variable)")
 	fmt.Println("  -sort string Sort by: opr, npopr, ccwm, dpr, npdpr, npavg, matches, team (default: ccwm)")
-	fmt.Println("  -event string Event code to filter matches (optional, for region-rankings)")
+	fmt.Println("  -event string Event code to filter matches (optional, for team-rankings)")
+	fmt.Println("  -region string Region code to filter teams (optional, for team-rankings)")
+	fmt.Println("  -country string Country to filter teams (optional, for team-rankings)")
+	fmt.Println("  -limit int   Limit number of teams displayed (0 = no limit, for team-rankings)")
 	fmt.Println()
 }
 
@@ -319,18 +322,18 @@ func run() int {
 		year := fs.Int("year", defaultYear, "Year")
 		sortBy := fs.String("sort", "ccwm", "Sort by: opr, npopr, ccwm, dpr, npdpr, npavg, matches, team")
 		eventCode := fs.String("event", "", "Event code to filter matches (optional)")
+		regionFlag := fs.String("region", "", "Region to filter teams (optional)")
+		country := fs.String("country", "", "Country to filter teams (optional)")
+		limit := fs.Int("limit", 0, "Limit the number of teams displayed (0 = no limit)")
 		fs.Parse(os.Args[2:])
 
-		if fs.NArg() < 1 {
-			fmt.Println("Error: team-rankings command requires a region argument")
-			fmt.Println("Usage: ftc team-rankings <region> [-year <year>] [-sort <criteria>] [-event <eventCode>]")
-			return 1
+		// Region can be either a flag or the first positional argument
+		region := *regionFlag
+		if region == "" && fs.NArg() > 0 {
+			region = fs.Arg(0)
 		}
-		region := fs.Arg(0)
-		if len(os.Args) > 3 {
-			fs.Parse(os.Args[3:])
-		}
-		teamRankings(region, *eventCode, *year, *sortBy)
+
+		teamRankings(region, *country, *eventCode, *year, *sortBy, *limit)
 
 	default:
 		fmt.Printf("Error: unknown command '%s'\n\n", command)

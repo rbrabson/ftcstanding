@@ -210,19 +210,39 @@ type TeamPerformance struct {
 }
 
 // TeamRankingsQuery retrieves performance metrics for all teams in a region for a given year.
+// If region is provided (non-empty), only teams from that region are included; otherwise all teams are included.
+// If country is provided (non-empty), only teams from that country are included.
 // If eventCode is provided (non-empty), only rankings from that event are included.
 // Performance metrics are retrieved from the team_rankings database table and combined using weighted averaging
 // based on the number of matches each team played in each event.
-func TeamRankingsQuery(region string, eventCode string, year int) ([]TeamPerformance, error) {
-	// Get all teams in the region
+func TeamRankingsQuery(region string, country string, eventCode string, year int) ([]TeamPerformance, error) {
+	// Build team filter
+	var teamFilter database.TeamFilter
+	if region != "" {
+		teamFilter.HomeRegions = []string{region}
+	}
+	if country != "" {
+		teamFilter.Countries = []string{country}
+	}
+	if eventCode != "" {
+		teamFilter.EventCodes = []string{eventCode}
+	}
+
+	// Get all teams based on filters
 	var teams []*database.Team
-	if eventCode == "" {
-		teams = db.GetAllTeams(database.TeamFilter{HomeRegions: []string{region}})
+	if region == "" && country == "" && eventCode == "" {
+		teams = db.GetAllTeams()
 	} else {
-		teams = db.GetAllTeams(database.TeamFilter{HomeRegions: []string{region}, EventCodes: []string{eventCode}})
+		teams = db.GetAllTeams(teamFilter)
 	}
 	if len(teams) == 0 {
-		return nil, fmt.Errorf("no teams found in region %s", region)
+		if region != "" {
+			return nil, fmt.Errorf("no teams found in region %s", region)
+		}
+		if country != "" {
+			return nil, fmt.Errorf("no teams found in country %s", country)
+		}
+		return nil, fmt.Errorf("no teams found")
 	}
 
 	// Get team info and build a map for easy lookup
@@ -233,8 +253,11 @@ func TeamRankingsQuery(region string, eventCode string, year int) ([]TeamPerform
 		teamIDs = append(teamIDs, t.TeamID)
 	}
 
-	// Get all events for the region, year, and optionally the event
-	eventFilter := database.EventFilter{RegionCodes: []string{region}, Year: year}
+	// Build event filter
+	eventFilter := database.EventFilter{Year: year}
+	if region != "" {
+		eventFilter.RegionCodes = []string{region}
+	}
 	if eventCode != "" {
 		eventFilter.EventCodes = []string{eventCode}
 	}
@@ -256,7 +279,10 @@ func TeamRankingsQuery(region string, eventCode string, year int) ([]TeamPerform
 	}
 	rankings := db.GetTeamRankings(rankingFilter)
 	if len(rankings) == 0 {
-		return nil, fmt.Errorf("no team rankings found for teams in region %s for year %d", region, year)
+		if region != "" {
+			return nil, fmt.Errorf("no team rankings found for teams in region %s for year %d", region, year)
+		}
+		return nil, fmt.Errorf("no team rankings found for year %d", year)
 	}
 
 	// Group rankings by team
@@ -311,9 +337,9 @@ func TeamRankingsQuery(region string, eventCode string, year int) ([]TeamPerform
 		})
 	}
 
-	// Sort by CCWM (descending) and assign ranks
+	// Sort by OPR (descending)
 	sort.Slice(results, func(i, j int) bool {
-		return results[i].OPR > results[j].CCWM
+		return results[i].OPR > results[j].OPR
 	})
 
 	return results, nil

@@ -227,7 +227,8 @@ const (
 )
 
 // RenderTeamPerformance renders team performance metrics in a table format with sorting.
-func RenderTeamPerformance(performances []query.TeamPerformance, eventCode string, sortBy SortBy, region string, year int) string {
+// If limit is greater than 0, only the top 'limit' teams are displayed.
+func RenderTeamPerformance(performances []query.TeamPerformance, eventCode string, sortBy SortBy, region string, year int, limit int) string {
 	if len(performances) == 0 {
 		return color.YellowString("No performance data available for region %s in year %d\n", region, year)
 	}
@@ -255,6 +256,11 @@ func RenderTeamPerformance(performances []query.TeamPerformance, eventCode strin
 			return performances[i].OPR > performances[j].OPR
 		}
 	})
+
+	// Apply limit if specified
+	if limit > 0 && limit < len(performances) {
+		performances = performances[:limit]
+	}
 
 	var sb strings.Builder
 
@@ -317,6 +323,7 @@ func RenderTeamPerformance(performances []query.TeamPerformance, eventCode strin
 			Columns: []renderer.Tint{
 				{FG: renderer.Colors{color.FgMagenta}},   // Rank
 				{FG: renderer.Colors{color.FgHiWhite}},   // Team
+				{FG: renderer.Colors{color.FgHiCyan}},    // Region
 				{FG: renderer.Colors{color.FgHiRed}},     // Matches
 				{FG: renderer.Colors{color.FgHiMagenta}}, // CCWM
 				{FG: renderer.Colors{color.FgHiGreen}},   // OPR
@@ -337,6 +344,7 @@ func RenderTeamPerformance(performances []query.TeamPerformance, eventCode strin
 				Alignment: tw.CellAlignment{PerColumn: []tw.Align{
 					tw.AlignLeft,   // Rank
 					tw.AlignLeft,   // Team
+					tw.AlignLeft,   // Region
 					tw.AlignCenter, // Matches
 					tw.AlignCenter, // CCWM
 					tw.AlignCenter, // OPR
@@ -350,6 +358,7 @@ func RenderTeamPerformance(performances []query.TeamPerformance, eventCode strin
 				Alignment: tw.CellAlignment{PerColumn: []tw.Align{
 					tw.AlignLeft,  // Rank
 					tw.AlignLeft,  // Team
+					tw.AlignLeft,  // Region
 					tw.AlignRight, // Matches
 					tw.AlignRight, // CCWM
 					tw.AlignRight, // OPR
@@ -362,12 +371,13 @@ func RenderTeamPerformance(performances []query.TeamPerformance, eventCode strin
 		}),
 	)
 
-	table.Header([]string{"Rank", "Team", "Matches", "CCWM", "OPR", "npOPR", "DPR", "npDPR", "npAVG"})
+	table.Header([]string{"Rank", "Team", "Region", "Matches", "CCWM", "OPR", "npOPR", "DPR", "npDPR", "npAVG"})
 
 	for i, perf := range performances {
 		table.Append([]string{
 			strconv.Itoa(i + 1),
 			fmt.Sprintf("%5d - %s", perf.TeamID, perf.TeamName),
+			perf.Region,
 			strconv.Itoa(perf.Matches),
 			fmt.Sprintf("%.2f", perf.CCWM),
 			fmt.Sprintf("%.2f", perf.OPR),
