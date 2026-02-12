@@ -73,10 +73,15 @@ type filedb struct {
 // is empty or files don't exist, the database starts with empty datasets.
 func initFileDB() (*filedb, error) {
 	godotenv.Load()
-	dataDir := os.Getenv("FILEDB_DATA_DIR")
-	if dataDir == "" {
+	baseDir := os.Getenv("FILEDB_DATA_DIR")
+	if baseDir == "" {
 		return nil, errors.New("FILEDB_DATA_DIR environment variable not set")
 	}
+	year := os.Getenv("FTC_SEASON")
+	if year == "" {
+		return nil, errors.New("FTC_SEASON environment variable not set")
+	}
+	dataDir := filepath.Join(baseDir, year)
 
 	// Create data directory if it doesn't exist
 	if err := os.MkdirAll(dataDir, os.ModePerm); err != nil {
