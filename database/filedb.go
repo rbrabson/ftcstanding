@@ -65,21 +65,27 @@ type filedb struct {
 }
 
 // InitFileDB initializes a file-based database.
-// dataDir is the directory where data files will be stored.
-// If dataDir is empty, it defaults to "./data"
+// season is an optional parameter. If provided, it will be used to construct the data directory path.
+// If not provided, the FTC_SEASON environment variable will be used.
 //
 // The function creates the data directory if it doesn't exist and loads
 // any existing data from JSON files in that directory. If the directory
 // is empty or files don't exist, the database starts with empty datasets.
-func initFileDB() (*filedb, error) {
+func initFileDB(season ...string) (*filedb, error) {
 	godotenv.Load()
 	baseDir := os.Getenv("FILEDB_DATA_DIR")
 	if baseDir == "" {
 		return nil, errors.New("FILEDB_DATA_DIR environment variable not set")
 	}
-	year := os.Getenv("FTC_SEASON")
-	if year == "" {
-		return nil, errors.New("FTC_SEASON environment variable not set")
+
+	var year string
+	if len(season) > 0 && season[0] != "" {
+		year = season[0]
+	} else {
+		year = os.Getenv("FTC_SEASON")
+		if year == "" {
+			return nil, errors.New("FTC_SEASON environment variable not set")
+		}
 	}
 	dataDir := filepath.Join(baseDir, year)
 

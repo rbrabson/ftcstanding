@@ -55,7 +55,9 @@ type DB interface {
 }
 
 // InitDB initializes the database connection.
-func Init() (DB, error) {
+// season is an optional parameter. If provided, it will be used for file-based databases.
+// If not provided, the FTC_SEASON environment variable will be used.
+func Init(season ...string) (DB, error) {
 	godotenv.Load()
 	dbType := os.Getenv("DB_TYPE")
 	if dbType == "" {
@@ -67,7 +69,7 @@ func Init() (DB, error) {
 		return initSQLDB()
 	case "file":
 		slog.Info("Initializing file database")
-		return initFileDB()
+		return initFileDB(season...)
 	}
 	return nil, fmt.Errorf("unsupported DB_TYPE: %s", dbType)
 }

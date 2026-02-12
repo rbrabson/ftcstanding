@@ -17,6 +17,7 @@ import (
 
 var (
 	defaultYear int
+	seasonFlag  string
 )
 
 // setLogLevelFromEnv sets the log level from the LOG_LEVEL environment variable.
@@ -41,18 +42,22 @@ func setLogLevelFromEnv() slog.Level {
 
 // initializeApp sets up database and initializes subsystems
 func initializeApp() error {
-	season := os.Getenv("FTC_SEASON")
+	// Use --season flag if provided, otherwise fall back to FTC_SEASON environment variable
+	season := seasonFlag
 	if season == "" {
-		return fmt.Errorf("FTC_SEASON environment variable not set")
+		season = os.Getenv("FTC_SEASON")
+		if season == "" {
+			return fmt.Errorf("season not specified. Use --season flag or set FTC_SEASON environment variable")
+		}
 	}
 
 	var err error
 	defaultYear, err = strconv.Atoi(season)
 	if err != nil {
-		return fmt.Errorf("invalid FTC_SEASON value: %s", season)
+		return fmt.Errorf("invalid season value: %s", season)
 	}
 
-	db, err := database.Init()
+	db, err := database.Init(season)
 	if err != nil {
 		return fmt.Errorf("failed to initialize database: %v", err)
 	}
@@ -313,6 +318,9 @@ var teamRankingsCmd = &cobra.Command{
 
 // init initializes the CLI commands and flags, and adds them to the root command.
 func init() {
+	// Add persistent season flag that applies to all commands
+	rootCmd.PersistentFlags().StringVarP(&seasonFlag, "season", "s", "", "Season year (defaults to FTC_SEASON environment variable)")
+
 	// Add year flag to all commands that need it
 	eventTeamsCmd.Flags().IntP("year", "y", 0, "Year (defaults to FTC_SEASON environment variable)")
 	rankingsCmd.Flags().IntP("year", "y", 0, "Year (defaults to FTC_SEASON environment variable)")

@@ -1,7 +1,6 @@
 package main
 
 import (
-	"flag"
 	"fmt"
 	"log/slog"
 	"os"
@@ -11,9 +10,17 @@ import (
 	"github.com/rbrabson/ftcstanding/database"
 	"github.com/rbrabson/ftcstanding/query"
 	"github.com/rbrabson/ftcstanding/request"
+	"github.com/spf13/cobra"
 )
 
-var db database.DB
+var (
+	db          database.DB
+	allFlag     bool
+	regionFlag  string
+	eventFlag   string
+	seasonFlag  string
+	refreshFlag bool
+)
 
 // setLogLevelFromEnv sets the log level from the LOG_LEVEL environment variable.
 func setLogLevelFromEnv() slog.Level {
@@ -36,86 +43,80 @@ func setLogLevelFromEnv() slog.Level {
 	return logLevel
 }
 
-// printUsage prints the usage information for the command
-func printUsage() {
-	fmt.Fprintf(os.Stderr, "Usage: %s [options]\n\n", os.Args[0])
-	fmt.Fprintln(os.Stderr, "FTC Standing data synchronization tool")
-	fmt.Fprintln(os.Stderr, "\nOptions:")
-	flag.PrintDefaults()
-	fmt.Fprintln(os.Stderr, "\nExamples:")
-	fmt.Fprintln(os.Stderr, "  # Sync all data for the season")
-	fmt.Fprintln(os.Stderr, "  ftc -season 2024")
-	fmt.Fprintln(os.Stderr, "")
-	fmt.Fprintln(os.Stderr, "  # Sync data for a specific region")
-	fmt.Fprintln(os.Stderr, "  ftc -season 2024 -region USCHS")
-	fmt.Fprintln(os.Stderr, "")
-	fmt.Fprintln(os.Stderr, "  # Sync data for a specific event")
-	fmt.Fprintln(os.Stderr, "  ftc -season 2024 -event USNCCOQ")
-	fmt.Fprintln(os.Stderr, "")
-	fmt.Fprintln(os.Stderr, "  # Force refresh all data")
-	fmt.Fprintln(os.Stderr, "  ftc -season 2024 -refresh")
-	fmt.Fprintln(os.Stderr, "")
-	fmt.Fprintln(os.Stderr, "Environment Variables:")
-	fmt.Fprintln(os.Stderr, "  FTC_SEASON   - Default season year if -season not provided")
-	fmt.Fprintln(os.Stderr, "  LOG_LEVEL    - Logging level (debug, info, warn, error)")
-	fmt.Fprintln(os.Stderr, "")
+var rootCmd = &cobra.Command{
+	Use:   "ftcdata",
+	Short: "FTC Standing data synchronization tool",
+	Long:  `A tool to synchronize FTC (FIRST Tech Challenge) standing data including teams, events, matches, awards, and rankings.`,
+	Example: `  # Sync all data for the season
+  ftcdata --season 2024 --all
+
+  # Sync data for a specific region
+  ftcdata --season 2024 --region USCHS
+
+  # Sync data for a specific event
+  ftcdata --season 2024 --event USNCCOQ
+
+  # Force refresh all data
+  ftcdata --season 2024 --all --refresh`,
+	RunE: func(cmd *cobra.Command, args []string) error {
+		// If no action flags are specified, show help
+		if !allFlag && eventFlag == "" && regionFlag == "" {
+			return cmd.Help()
+		}
+
+		// Determine season
+		season := seasonFlag
+		if season == "" {
+			season = os.Getenv("FTC_SEASON")
+			if season == "" {
+				return fmt.Errorf("season not specified. Use --season flag or set FTC_SEASON environment variable")
+			}
+		}
+
+		var err error
+		db, err = database.Init(season)
+		if err != nil {
+			return fmt.Errorf("failed to initialize database: %w", err)
+		}
+		defer db.Close()
+
+		request.Init(db)
+		query.Init(db)
+
+		// Handle different modes based on flags
+		switch {
+		case eventFlag != "":
+			// Process single event
+			processEvent(season, eventFlag)
+		case regionFlag != "":
+			// Process region
+			processRegion(season, regionFlag, refreshFlag)
+		case allFlag:
+			// Process all data
+			request.RequestAndSaveAll(season, refreshFlag)
+		}
+
+		return nil
+	},
+}
+
+func init() {
+	// Load environment variables
+	godotenv.Load()
+	setLogLevelFromEnv()
+
+	// Define flags
+	rootCmd.Flags().BoolVarP(&allFlag, "all", "a", false, "Sync all data for the season")
+	rootCmd.Flags().StringVarP(&regionFlag, "region", "r", "", "Region code to filter events (e.g., USCHS)")
+	rootCmd.Flags().StringVarP(&eventFlag, "event", "e", "", "Event code to process (e.g., USNCCOQ)")
+	rootCmd.Flags().StringVarP(&seasonFlag, "season", "s", "", "Season year (defaults to FTC_SEASON environment variable)")
+	rootCmd.Flags().BoolVar(&refreshFlag, "refresh", false, "Force refresh of all data")
 }
 
 func main() {
-	godotenv.Load()
-
-	setLogLevelFromEnv()
-
-	// Set custom usage function
-	flag.Usage = printUsage
-
-	// Define CLI flags
-	helpFlag := flag.Bool("help", false, "Show usage information")
-	regionFlag := flag.String("region", "", "Region code to filter events (e.g., USCHS)")
-	eventFlag := flag.String("event", "", "Event code to process (e.g., USNCCOQ)")
-	seasonFlag := flag.String("season", "", "Season year (defaults to FTC_SEASON environment variable)")
-	refreshFlag := flag.Bool("refresh", false, "Force refresh of all data")
-
-	flag.Parse()
-
-	// Show help if requested
-	if *helpFlag {
-		flag.Usage()
-		os.Exit(0)
-	}
-
-	// Determine season
-	season := *seasonFlag
-	if season == "" {
-		season = os.Getenv("FTC_SEASON")
-		if season == "" {
-			fmt.Fprintln(os.Stderr, "Error: Season not specified. Use -season flag or set FTC_SEASON environment variable")
-			os.Exit(1)
-		}
-	}
-
-	var err error
-	db, err = database.Init()
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error: Failed to initialize database: %v\n", err)
+	if err := rootCmd.Execute(); err != nil {
+		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
-	}
-	defer db.Close()
-
-	request.Init(db)
-	query.Init(db)
-
-	// Handle different modes based on flags
-	switch {
-	case *eventFlag != "":
-		// Process single event
-		processEvent(season, *eventFlag)
-	case *regionFlag != "":
-		// Process region
-		processRegion(season, *regionFlag, *refreshFlag)
-	default:
-		// Default behavior: process all
-		request.RequestAndSaveAll(season, *refreshFlag)
 	}
 }
 
