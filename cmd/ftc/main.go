@@ -316,6 +316,65 @@ var teamRankingsCmd = &cobra.Command{
 	},
 }
 
+// teamEventRankingsCmd shows performance rankings for teams at individual events without consolidation.
+var teamEventRankingsCmd = &cobra.Command{
+	Use:   "team-event-rankings [region]",
+	Short: "Show performance rankings for teams by event",
+	Long:  "Show performance rankings for teams at individual events (not consolidated across events)",
+	Args:  cobra.MaximumNArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		region := ""
+		if len(args) > 0 {
+			region = args[0]
+		}
+		regionFlag, _ := cmd.Flags().GetString("region")
+		if regionFlag != "" {
+			region = regionFlag
+		}
+
+		year, _ := cmd.Flags().GetInt("year")
+		if year == 0 {
+			year = defaultYear
+		}
+		sortBy, _ := cmd.Flags().GetString("sort")
+		eventCode, _ := cmd.Flags().GetString("event")
+		country, _ := cmd.Flags().GetString("country")
+		limit, _ := cmd.Flags().GetInt("limit")
+
+		performances, err := query.TeamEventRankingsQuery(region, country, eventCode, year)
+		if err != nil {
+			return err
+		}
+
+		// Convert sortBy string to SortBy type
+		var sort terminal.SortBy
+		switch strings.ToLower(sortBy) {
+		case "opr":
+			sort = terminal.SortByOPR
+		case "npopr":
+			sort = terminal.SortByNpOPR
+		case "ccwm":
+			sort = terminal.SortByCCWM
+		case "dpr":
+			sort = terminal.SortByDPR
+		case "npdpr":
+			sort = terminal.SortByNpDPR
+		case "npavg":
+			sort = terminal.SortByNpAVG
+		case "matches":
+			sort = terminal.SortByMatches
+		case "team":
+			sort = terminal.SortByTeamID
+		default:
+			sort = terminal.SortByOPR
+		}
+
+		output := terminal.RenderTeamEventPerformance(performances, eventCode, sort, region, year, limit)
+		fmt.Println(output)
+		return nil
+	},
+}
+
 // init initializes the CLI commands and flags, and adds them to the root command.
 func init() {
 	// Add persistent season flag that applies to all commands
@@ -341,6 +400,14 @@ func init() {
 	teamRankingsCmd.Flags().StringP("country", "c", "", "Country to filter teams")
 	teamRankingsCmd.Flags().IntP("limit", "l", 0, "Limit number of teams displayed (0 = no limit)")
 
+	// Add team-event-rankings specific flags
+	teamEventRankingsCmd.Flags().IntP("year", "y", 0, "Year (defaults to FTC_SEASON environment variable)")
+	teamEventRankingsCmd.Flags().StringP("sort", "o", "npavg", "Sort by: opr, npopr, ccwm, dpr, npdpr, npavg, matches, team")
+	teamEventRankingsCmd.Flags().StringP("event", "e", "", "Event code to filter matches")
+	teamEventRankingsCmd.Flags().StringP("region", "r", "", "Region code to filter teams")
+	teamEventRankingsCmd.Flags().StringP("country", "c", "", "Country to filter teams")
+	teamEventRankingsCmd.Flags().IntP("limit", "l", 0, "Limit number of entries displayed (0 = no limit)")
+
 	// Add all commands to root
 	rootCmd.AddCommand(
 		teamCmd,
@@ -353,6 +420,7 @@ func init() {
 		regionAdvancementCmd,
 		eventAdvancementCmd,
 		teamRankingsCmd,
+		teamEventRankingsCmd,
 	)
 }
 

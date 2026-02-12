@@ -193,3 +193,139 @@ func RenderTeamPerformance(performances []query.TeamPerformance, eventCode strin
 
 	return sb.String()
 }
+
+// RenderTeamEventPerformance renders team performance metrics by event in a table format with sorting.
+// Unlike RenderTeamPerformance, this shows each team-event combination separately without consolidation.
+// If limit is greater than 0, only the top 'limit' entries are displayed.
+func RenderTeamEventPerformance(performances []query.TeamEventPerformance, eventCode string, sortBy SortBy, region string, year int, limit int) string {
+	if len(performances) == 0 {
+		return color.YellowString("No performance data available for region %s in year %d\n", region, year)
+	}
+
+	// Sort the performances based on the specified criteria
+	sort.Slice(performances, func(i, j int) bool {
+		switch sortBy {
+		case SortByOPR:
+			return performances[i].OPR > performances[j].OPR
+		case SortByNpOPR:
+			return performances[i].NpOPR > performances[j].NpOPR
+		case SortByCCWM:
+			return performances[i].CCWM > performances[j].CCWM
+		case SortByDPR:
+			return performances[i].DPR < performances[j].DPR // Lower is better for defense
+		case SortByNpDPR:
+			return performances[i].NpDPR < performances[j].NpDPR // Lower is better for defense
+		case SortByNpAVG:
+			return performances[i].NpAVG > performances[j].NpAVG
+		case SortByMatches:
+			return performances[i].Matches > performances[j].Matches
+		case SortByTeamID:
+			if performances[i].TeamID != performances[j].TeamID {
+				return performances[i].TeamID < performances[j].TeamID
+			}
+			return performances[i].EventCode < performances[j].EventCode
+		default:
+			return performances[i].NpAVG > performances[j].NpAVG
+		}
+	})
+
+	// Apply limit if specified
+	if limit > 0 && limit < len(performances) {
+		performances = performances[:limit]
+	}
+
+	var sb strings.Builder
+
+	// Header
+	sb.WriteString(color.HiCyanString("═══════════════════════════════════════════════════════════════\n"))
+	if eventCode != "" {
+		sb.WriteString(color.HiGreenString("Team Event Performance Rankings - %s (%d) - Event: %s\n", region, year, eventCode))
+	} else {
+		sb.WriteString(color.HiGreenString("Team Event Performance Rankings - %s (%d)\n", region, year))
+	}
+	sb.WriteString(color.HiYellowString("Sorted by: %s\n", sortBy))
+	sb.WriteString(color.HiCyanString("═══════════════════════════════════════════════════════════════\n"))
+
+	colorCfg := renderer.ColorizedConfig{
+		Header: renderer.Tint{
+			FG: renderer.Colors{color.FgGreen, color.Bold},
+			BG: renderer.Colors{color.BgBlack},
+		},
+		Column: renderer.Tint{
+			FG: renderer.Colors{color.FgCyan},
+			Columns: []renderer.Tint{
+				{FG: renderer.Colors{color.FgMagenta}},   // Rank
+				{FG: renderer.Colors{color.FgHiWhite}},   // Team
+				{FG: renderer.Colors{color.FgHiCyan}},    // Region
+				{FG: renderer.Colors{color.FgHiBlue}},    // Event
+				{FG: renderer.Colors{color.FgHiRed}},     // Matches
+				{FG: renderer.Colors{color.FgHiMagenta}}, // CCWM
+				{FG: renderer.Colors{color.FgHiGreen}},   // OPR
+				{FG: renderer.Colors{color.FgHiGreen}},   // npOPR
+				{FG: renderer.Colors{color.FgHiYellow}},  // DPR
+				{FG: renderer.Colors{color.FgHiYellow}},  // npDPR
+				{FG: renderer.Colors{color.FgHiMagenta}}, // npAVG
+			},
+		},
+		Border:    renderer.Tint{FG: renderer.Colors{color.FgWhite}},
+		Separator: renderer.Tint{FG: renderer.Colors{color.FgWhite}},
+	}
+
+	table := tablewriter.NewTable(&sb,
+		tablewriter.WithRenderer(renderer.NewColorized(colorCfg)),
+		tablewriter.WithConfig(tablewriter.Config{
+			Header: tw.CellConfig{
+				Alignment: tw.CellAlignment{PerColumn: []tw.Align{
+					tw.AlignLeft,   // Rank
+					tw.AlignLeft,   // Team
+					tw.AlignLeft,   // Region
+					tw.AlignLeft,   // Event
+					tw.AlignCenter, // Matches
+					tw.AlignCenter, // CCWM
+					tw.AlignCenter, // OPR
+					tw.AlignCenter, // npOPR
+					tw.AlignCenter, // DPR
+					tw.AlignCenter, // npDPR
+					tw.AlignCenter, // npAVG
+				}},
+			},
+			Row: tw.CellConfig{
+				Alignment: tw.CellAlignment{PerColumn: []tw.Align{
+					tw.AlignLeft,  // Rank
+					tw.AlignLeft,  // Team
+					tw.AlignLeft,  // Region
+					tw.AlignLeft,  // Event
+					tw.AlignRight, // Matches
+					tw.AlignRight, // CCWM
+					tw.AlignRight, // OPR
+					tw.AlignRight, // npOPR
+					tw.AlignRight, // DPR
+					tw.AlignRight, // npDPR
+					tw.AlignRight, // npAVG
+				}},
+			},
+		}),
+	)
+
+	table.Header([]string{"Rank", "Team", "Region", "Event", "Matches", "CCWM", "OPR", "npOPR", "DPR", "npDPR", "npAVG"})
+
+	for i, perf := range performances {
+		table.Append([]string{
+			strconv.Itoa(i + 1),
+			fmt.Sprintf("%5d - %s", perf.TeamID, perf.TeamName),
+			perf.Region,
+			perf.EventCode,
+			strconv.Itoa(perf.Matches),
+			fmt.Sprintf("%.2f", perf.CCWM),
+			fmt.Sprintf("%.2f", perf.OPR),
+			fmt.Sprintf("%.2f", perf.NpOPR),
+			fmt.Sprintf("%.2f", perf.DPR),
+			fmt.Sprintf("%.2f", perf.NpDPR),
+			fmt.Sprintf("%.2f", perf.NpAVG),
+		})
+	}
+
+	table.Render()
+
+	return sb.String()
+}
