@@ -335,7 +335,7 @@ func init() {
 	matchesCmd.Flags().IntP("team", "t", 0, "Show matches for specific team only")
 
 	// Add team-rankings specific flags
-	teamRankingsCmd.Flags().StringP("sort", "s", "npavg", "Sort by: opr, npopr, ccwm, dpr, npdpr, npavg, matches, team")
+	teamRankingsCmd.Flags().StringP("sort", "o", "npavg", "Sort by: opr, npopr, ccwm, dpr, npdpr, npavg, matches, team")
 	teamRankingsCmd.Flags().StringP("event", "e", "", "Event code to filter matches")
 	teamRankingsCmd.Flags().StringP("region", "r", "", "Region code to filter teams")
 	teamRankingsCmd.Flags().StringP("country", "c", "", "Country to filter teams")
