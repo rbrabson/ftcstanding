@@ -72,6 +72,10 @@ func TeamRankingsQuery(region string, country string, eventCode string, year int
 	}
 	if eventCode != "" {
 		eventFilter.EventCodes = []string{eventCode}
+	} else {
+		// When no specific event is specified, only include qualifiers and championships
+		// (exclude scrimmages, league meets, and other non-competitive events)
+		eventFilter.Types = []string{"2", "4"}
 	}
 	events := db.GetAllEvents(eventFilter)
 	if len(events) == 0 {

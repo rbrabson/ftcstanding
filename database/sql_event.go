@@ -127,6 +127,19 @@ func (db *sqldb) GetAllEvents(filters ...EventFilter) []*Event {
 			query += " AND year = ?"
 			args = append(args, filter.Year)
 		}
+
+		// Add Type filter
+		if len(filter.Types) > 0 {
+			query += " AND type IN ("
+			for i, t := range filter.Types {
+				if i > 0 {
+					query += ","
+				}
+				query += "?"
+				args = append(args, t)
+			}
+			query += ")"
+		}
 	}
 
 	query += " ORDER BY date_start, event_code"

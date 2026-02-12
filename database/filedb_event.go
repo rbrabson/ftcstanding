@@ -1,6 +1,9 @@
 package database
 
-import "sort"
+import (
+	"slices"
+	"sort"
+)
 
 // GetEvent retrieves an event from the file database by its ID.
 func (db *filedb) GetEvent(eventID string) *Event {
@@ -42,42 +45,21 @@ func (db *filedb) GetAllEvents(filters ...EventFilter) []*Event {
 
 		// Check EventCode filter (OR within field)
 		if len(filter.EventCodes) > 0 {
-			found := false
-			for _, code := range filter.EventCodes {
-				if event.EventCode == code {
-					found = true
-					break
-				}
-			}
-			if !found {
+			if !slices.Contains(filter.EventCodes, event.EventCode) {
 				matchesFilter = false
 			}
 		}
 
 		// Check RegionCode filter (OR within field)
 		if matchesFilter && len(filter.RegionCodes) > 0 {
-			found := false
-			for _, code := range filter.RegionCodes {
-				if event.RegionCode == code {
-					found = true
-					break
-				}
-			}
-			if !found {
+			if !slices.Contains(filter.RegionCodes, event.RegionCode) {
 				matchesFilter = false
 			}
 		}
 
 		// Check Country filter (OR within field)
 		if matchesFilter && len(filter.Countries) > 0 {
-			found := false
-			for _, country := range filter.Countries {
-				if event.Country == country {
-					found = true
-					break
-				}
-			}
-			if !found {
+			if !slices.Contains(filter.Countries, event.Country) {
 				matchesFilter = false
 			}
 		}
@@ -85,6 +67,13 @@ func (db *filedb) GetAllEvents(filters ...EventFilter) []*Event {
 		// Check Year filter
 		if matchesFilter && filter.Year > 0 {
 			if event.Year != filter.Year {
+				matchesFilter = false
+			}
+		}
+
+		// Check Type filter (OR within field)
+		if matchesFilter && len(filter.Types) > 0 {
+			if !slices.Contains(filter.Types, event.Type) {
 				matchesFilter = false
 			}
 		}

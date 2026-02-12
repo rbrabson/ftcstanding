@@ -103,6 +103,7 @@ type EventFilter struct {
 	EventCodes  []string
 	RegionCodes []string
 	Countries   []string
+	Types       []string
 	Year        int
 }
 
