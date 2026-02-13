@@ -41,7 +41,6 @@ type EventResponse struct {
 
 // MatchResponse represents a match without event_id
 type MatchResponse struct {
-	MatchID         string `json:"matchID"`
 	MatchType       string `json:"matchType"`
 	MatchNumber     int    `json:"matchNumber"`
 	ActualStartTime string `json:"actualStartTime"`
@@ -101,7 +100,6 @@ type MatchAllianceDetailsResponse struct {
 }
 
 type MatchWithAlliancesResponse struct {
-	MatchID         string                        `json:"matchID"`
 	MatchType       string                        `json:"matchType"`
 	MatchNumber     int                           `json:"matchNumber"`
 	ActualStartTime string                        `json:"actualStartTime"`
@@ -111,14 +109,16 @@ type MatchWithAlliancesResponse struct {
 	BlueAlliance    *MatchAllianceDetailsResponse `json:"blue_alliance"`
 }
 
-type MatchDetailsResponse struct {
-	Match *MatchWithAlliancesResponse `json:"match"`
-}
-
 type TeamMatchResultResponse struct {
-	Match  *MatchWithAlliancesResponse `json:"match"`
-	Team   *database.Team              `json:"team"`
-	Result string                      `json:"result"`
+	MatchType       string                        `json:"matchType"`
+	MatchNumber     int                           `json:"matchNumber"`
+	ActualStartTime string                        `json:"actualStartTime"`
+	Description     string                        `json:"description"`
+	TournamentLevel string                        `json:"tournamentLevel"`
+	RedAlliance     *MatchAllianceDetailsResponse `json:"red_alliance"`
+	BlueAlliance    *MatchAllianceDetailsResponse `json:"blue_alliance"`
+	Team            *database.Team                `json:"team"`
+	Result          string                        `json:"result"`
 }
 
 type EventWithMatches struct {
@@ -188,20 +188,6 @@ func toEventResponse(e *database.Event) *EventResponse {
 	}
 }
 
-func toMatchResponse(m *database.Match) *MatchResponse {
-	if m == nil {
-		return nil
-	}
-	return &MatchResponse{
-		MatchID:         m.MatchID,
-		MatchType:       m.MatchType,
-		MatchNumber:     m.MatchNumber,
-		ActualStartTime: m.ActualStartTime,
-		Description:     m.Description,
-		TournamentLevel: m.TournamentLevel,
-	}
-}
-
 func toMatchAllianceDetailsResponse(mad *query.MatchAllianceDetails) *MatchAllianceDetailsResponse {
 	if mad == nil {
 		return nil
@@ -218,7 +204,6 @@ func toMatchWithAlliancesResponse(m *database.Match, red, blue *query.MatchAllia
 		return nil
 	}
 	return &MatchWithAlliancesResponse{
-		MatchID:         m.MatchID,
 		MatchType:       m.MatchType,
 		MatchNumber:     m.MatchNumber,
 		ActualStartTime: m.ActualStartTime,
@@ -229,23 +214,20 @@ func toMatchWithAlliancesResponse(m *database.Match, red, blue *query.MatchAllia
 	}
 }
 
-func toMatchDetailsResponse(md *query.MatchDetails) *MatchDetailsResponse {
-	if md == nil {
-		return nil
-	}
-	return &MatchDetailsResponse{
-		Match: toMatchWithAlliancesResponse(md.Match, md.RedAlliance, md.BlueAlliance),
-	}
-}
-
 func toTeamMatchResultResponse(tmr *query.TeamMatchResult) *TeamMatchResultResponse {
 	if tmr == nil {
 		return nil
 	}
 	return &TeamMatchResultResponse{
-		Match:  toMatchWithAlliancesResponse(tmr.Match, tmr.TeamAlliance, tmr.OpponentAlliance),
-		Team:   tmr.Team,
-		Result: tmr.Result,
+		MatchType:       tmr.Match.MatchType,
+		MatchNumber:     tmr.Match.MatchNumber,
+		ActualStartTime: tmr.Match.ActualStartTime,
+		Description:     tmr.Match.Description,
+		TournamentLevel: tmr.Match.TournamentLevel,
+		RedAlliance:     toMatchAllianceDetailsResponse(tmr.TeamAlliance),
+		BlueAlliance:    toMatchAllianceDetailsResponse(tmr.OpponentAlliance),
+		Team:            tmr.Team,
+		Result:          tmr.Result,
 	}
 }
 
@@ -573,10 +555,10 @@ func (s *Server) handleEventMatches(w http.ResponseWriter, r *http.Request, year
 		if limit > 0 && limit < len(matchList) {
 			matchList = matchList[:limit]
 		}
-		// Convert to MatchDetailsResponse list
-		convertedMatches := make([]*MatchDetailsResponse, 0, len(matchList))
+		// Convert to MatchWithAlliancesResponse list
+		convertedMatches := make([]*MatchWithAlliancesResponse, 0, len(matchList))
 		for _, m := range matchList {
-			convertedMatches = append(convertedMatches, toMatchDetailsResponse(m))
+			convertedMatches = append(convertedMatches, toMatchWithAlliancesResponse(m.Match, m.RedAlliance, m.BlueAlliance))
 		}
 		matches = convertedMatches
 	}
