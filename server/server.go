@@ -175,6 +175,23 @@ type EventPerformanceResponse struct {
 	Matches   int     `json:"matches"`
 }
 
+type QualifiedTeamResponse struct {
+	Team              *database.Team `json:"team"`
+	AlreadyQualified  bool           `json:"already_qualified"`
+	FirstQualifyEvent string         `json:"first_qualify_event"`
+}
+
+type EventQualifiedTeamsResponse struct {
+	Event          *EventResponse            `json:"event"`
+	QualifiedTeams []*QualifiedTeamResponse `json:"qualified_teams"`
+}
+
+type EventAdvancementSummaryResponse struct {
+	RegionCode     string                          `json:"region_code"`
+	Year           int                             `json:"year"`
+	EventSummaries []*EventQualifiedTeamsResponse `json:"event_summaries"`
+}
+
 // Helper functions to convert database types to response types
 
 func toEventResponse(e *database.Event) *EventResponse {
@@ -255,6 +272,34 @@ func toTeamMatchResultResponse(tmr *query.TeamMatchResult) *TeamMatchResultRespo
 		BlueAlliance:    toMatchAllianceDetailsResponse(tmr.OpponentAlliance),
 		Team:            tmr.Team,
 		Result:          tmr.Result,
+	}
+}
+
+func toEventAdvancementSummaryResponse(summary *query.EventAdvancementSummary) *EventAdvancementSummaryResponse {
+	if summary == nil {
+		return nil
+	}
+
+	eventSummaries := make([]*EventQualifiedTeamsResponse, 0, len(summary.EventSummaries))
+	for _, es := range summary.EventSummaries {
+		qualifiedTeams := make([]*QualifiedTeamResponse, 0, len(es.QualifiedTeams))
+		for _, qt := range es.QualifiedTeams {
+			qualifiedTeams = append(qualifiedTeams, &QualifiedTeamResponse{
+				Team:              qt.Team,
+				AlreadyQualified:  qt.AlreadyQualified,
+				FirstQualifyEvent: qt.FirstQualifyEvent,
+			})
+		}
+		eventSummaries = append(eventSummaries, &EventQualifiedTeamsResponse{
+			Event:          toEventResponse(es.Event),
+			QualifiedTeams: qualifiedTeams,
+		})
+	}
+
+	return &EventAdvancementSummaryResponse{
+		RegionCode:     summary.RegionCode,
+		Year:           summary.Year,
+		EventSummaries: eventSummaries,
 	}
 }
 
@@ -708,7 +753,8 @@ func (s *Server) handleAllAdvancement(w http.ResponseWriter, r *http.Request, ye
 		region = "ALL"
 	}
 	advancement := query.EventAdvancementSummaryQuery(region, year)
-	s.writeJSON(w, http.StatusOK, advancement)
+	response := toEventAdvancementSummaryResponse(advancement)
+	s.writeJSON(w, http.StatusOK, response)
 }
 
 func (s *Server) writeJSON(w http.ResponseWriter, status int, data interface{}) {
