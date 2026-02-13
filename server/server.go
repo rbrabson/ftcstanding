@@ -55,6 +55,7 @@ type AwardResponse struct {
 
 type RankingResponse struct {
 	Team           *database.Team `json:"team"`
+	Year           int            `json:"year"`
 	SortOrder1     float64        `json:"sort_order1"`
 	SortOrder2     float64        `json:"sort_order2"`
 	SortOrder3     float64        `json:"sort_order3"`
@@ -93,10 +94,20 @@ type EventAwardsResponse struct {
 	Event *EventWithAwards `json:"event"`
 }
 
+type MatchAllianceScoreResponse struct {
+	AutoPoints          int `json:"auto_points"`
+	TeleopPoints        int `json:"teleop_points"`
+	FoulPointsCommitted int `json:"foul_points_committed"`
+	PreFoulTotal        int `json:"pre_foul_total"`
+	TotalPoints         int `json:"total_points"`
+	MajorFouls          int `json:"major_fouls"`
+	MinorFouls          int `json:"minor_fouls"`
+}
+
 type MatchAllianceDetailsResponse struct {
-	Alliance string                       `json:"alliance"`
-	Score    *database.MatchAllianceScore `json:"score"`
-	Teams    []*database.Team             `json:"teams"`
+	Alliance string                      `json:"alliance"`
+	Score    *MatchAllianceScoreResponse `json:"score"`
+	Teams    []*database.Team            `json:"teams"`
 }
 
 type MatchWithAlliancesResponse struct {
@@ -152,6 +163,7 @@ type EventPerformanceResponse struct {
 	TeamID    int     `json:"team_id"`
 	TeamName  string  `json:"team_name"`
 	Region    string  `json:"region"`
+	Year      int     `json:"year"`
 	EventCode string  `json:"event_code"`
 	EventName string  `json:"event_name"`
 	OPR       float64 `json:"opr"`
@@ -188,13 +200,28 @@ func toEventResponse(e *database.Event) *EventResponse {
 	}
 }
 
+func toMatchAllianceScoreResponse(mas *database.MatchAllianceScore) *MatchAllianceScoreResponse {
+	if mas == nil {
+		return nil
+	}
+	return &MatchAllianceScoreResponse{
+		AutoPoints:          mas.AutoPoints,
+		TeleopPoints:        mas.TeleopPoints,
+		FoulPointsCommitted: mas.FoulPointsCommitted,
+		PreFoulTotal:        mas.PreFoulTotal,
+		TotalPoints:         mas.TotalPoints,
+		MajorFouls:          mas.MajorFouls,
+		MinorFouls:          mas.MinorFouls,
+	}
+}
+
 func toMatchAllianceDetailsResponse(mad *query.MatchAllianceDetails) *MatchAllianceDetailsResponse {
 	if mad == nil {
 		return nil
 	}
 	return &MatchAllianceDetailsResponse{
 		Alliance: mad.Alliance,
-		Score:    mad.Score,
+		Score:    toMatchAllianceScoreResponse(mad.Score),
 		Teams:    mad.Teams,
 	}
 }
@@ -438,6 +465,7 @@ func (s *Server) handleEventRankings(w http.ResponseWriter, r *http.Request, yea
 	for _, tr := range rankings.TeamRankings {
 		rankingList = append(rankingList, RankingResponse{
 			Team:           tr.Team,
+			Year:           rankings.Event.Year,
 			SortOrder1:     tr.Ranking.SortOrder1,
 			SortOrder2:     tr.Ranking.SortOrder2,
 			SortOrder3:     tr.Ranking.SortOrder3,
@@ -619,11 +647,31 @@ func (s *Server) handleTeamEventRankings(w http.ResponseWriter, r *http.Request,
 		return
 	}
 
-	if limit > 0 && limit < len(performances) {
-		performances = performances[:limit]
+	// Convert to EventPerformanceResponse (without event_id, with year)
+	responses := make([]EventPerformanceResponse, 0, len(performances))
+	for _, p := range performances {
+		responses = append(responses, EventPerformanceResponse{
+			TeamID:    p.TeamID,
+			TeamName:  p.TeamName,
+			Region:    p.Region,
+			Year:      year,
+			EventCode: p.EventCode,
+			EventName: p.EventName,
+			OPR:       p.OPR,
+			NpOPR:     p.NpOPR,
+			CCWM:      p.CCWM,
+			DPR:       p.DPR,
+			NpDPR:     p.NpDPR,
+			NpAVG:     p.NpAVG,
+			Matches:   p.Matches,
+		})
 	}
 
-	s.writeJSON(w, http.StatusOK, performances)
+	if limit > 0 && limit < len(responses) {
+		responses = responses[:limit]
+	}
+
+	s.writeJSON(w, http.StatusOK, responses)
 }
 
 func (s *Server) handleRegions(w http.ResponseWriter, r *http.Request, year int, parts []string) {
