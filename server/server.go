@@ -345,7 +345,27 @@ func (s *Server) setupRoutes() {
 
 // ServeHTTP allows Server to satisfy the http.Handler interface by delegating to the internal ServeMux
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	s.applyCORSHeaders(w, r)
+	if r.Method == http.MethodOptions {
+		w.WriteHeader(http.StatusNoContent)
+		return
+	}
+
 	s.mux.ServeHTTP(w, r)
+}
+
+func (s *Server) applyCORSHeaders(w http.ResponseWriter, r *http.Request) {
+	origin := r.Header.Get("Origin")
+	if origin == "" {
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+	} else {
+		w.Header().Set("Access-Control-Allow-Origin", origin)
+		w.Header().Set("Vary", "Origin")
+	}
+
+	w.Header().Set("Access-Control-Allow-Methods", "GET, OPTIONS")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+	w.Header().Set("Access-Control-Max-Age", "86400")
 }
 
 // parseLimit extracts the 'limit' query parameter from the request and converts it to an integer. It returns an error if the limit is invalid.

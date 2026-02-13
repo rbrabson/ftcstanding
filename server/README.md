@@ -25,6 +25,16 @@ GET /health
 
 Returns server health status.
 
+### CORS
+
+The server includes CORS headers for browser-based clients.
+
+- Allowed methods: `GET`, `OPTIONS`
+- Allowed headers: `Content-Type`, `Authorization`
+- `OPTIONS` preflight requests return `204 No Content`
+- If an `Origin` header is present, it is echoed as `Access-Control-Allow-Origin`
+- If no `Origin` header is present, `Access-Control-Allow-Origin` is `*`
+
 ## API Endpoints
 
 All API endpoints are versioned under `/v1` and require a season parameter in the path.
