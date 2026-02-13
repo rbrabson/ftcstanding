@@ -100,23 +100,34 @@ type MatchAllianceDetailsResponse struct {
 	Teams    []*database.Team             `json:"teams"`
 }
 
+type MatchWithAlliancesResponse struct {
+	MatchID         string                        `json:"matchID"`
+	MatchType       string                        `json:"matchType"`
+	MatchNumber     int                           `json:"matchNumber"`
+	ActualStartTime string                        `json:"actualStartTime"`
+	Description     string                        `json:"description"`
+	TournamentLevel string                        `json:"tournamentLevel"`
+	RedAlliance     *MatchAllianceDetailsResponse `json:"red_alliance"`
+	BlueAlliance    *MatchAllianceDetailsResponse `json:"blue_alliance"`
+}
+
 type MatchDetailsResponse struct {
-	Match        *MatchResponse                `json:"match"`
-	RedAlliance  *MatchAllianceDetailsResponse `json:"red_alliance"`
-	BlueAlliance *MatchAllianceDetailsResponse `json:"blue_alliance"`
+	Match *MatchWithAlliancesResponse `json:"match"`
 }
 
 type TeamMatchResultResponse struct {
-	Match            *MatchResponse                `json:"match"`
-	Team             *database.Team                `json:"team"`
-	TeamAlliance     *MatchAllianceDetailsResponse `json:"team_alliance"`
-	OpponentAlliance *MatchAllianceDetailsResponse `json:"opponent_alliance"`
-	Result           string                        `json:"result"`
+	Match  *MatchWithAlliancesResponse `json:"match"`
+	Team   *database.Team              `json:"team"`
+	Result string                      `json:"result"`
+}
+
+type EventWithMatches struct {
+	*EventResponse
+	Matches interface{} `json:"matches"`
 }
 
 type EventMatchesResponse struct {
-	Event   *EventResponse `json:"event"`
-	Matches interface{}    `json:"matches"`
+	Event *EventWithMatches `json:"event"`
 }
 
 type EventAdvancementResponse struct {
@@ -202,14 +213,28 @@ func toMatchAllianceDetailsResponse(mad *query.MatchAllianceDetails) *MatchAllia
 	}
 }
 
+func toMatchWithAlliancesResponse(m *database.Match, red, blue *query.MatchAllianceDetails) *MatchWithAlliancesResponse {
+	if m == nil {
+		return nil
+	}
+	return &MatchWithAlliancesResponse{
+		MatchID:         m.MatchID,
+		MatchType:       m.MatchType,
+		MatchNumber:     m.MatchNumber,
+		ActualStartTime: m.ActualStartTime,
+		Description:     m.Description,
+		TournamentLevel: m.TournamentLevel,
+		RedAlliance:     toMatchAllianceDetailsResponse(red),
+		BlueAlliance:    toMatchAllianceDetailsResponse(blue),
+	}
+}
+
 func toMatchDetailsResponse(md *query.MatchDetails) *MatchDetailsResponse {
 	if md == nil {
 		return nil
 	}
 	return &MatchDetailsResponse{
-		Match:        toMatchResponse(md.Match),
-		RedAlliance:  toMatchAllianceDetailsResponse(md.RedAlliance),
-		BlueAlliance: toMatchAllianceDetailsResponse(md.BlueAlliance),
+		Match: toMatchWithAlliancesResponse(md.Match, md.RedAlliance, md.BlueAlliance),
 	}
 }
 
@@ -218,11 +243,9 @@ func toTeamMatchResultResponse(tmr *query.TeamMatchResult) *TeamMatchResultRespo
 		return nil
 	}
 	return &TeamMatchResultResponse{
-		Match:            toMatchResponse(tmr.Match),
-		Team:             tmr.Team,
-		TeamAlliance:     toMatchAllianceDetailsResponse(tmr.TeamAlliance),
-		OpponentAlliance: toMatchAllianceDetailsResponse(tmr.OpponentAlliance),
-		Result:           tmr.Result,
+		Match:  toMatchWithAlliancesResponse(tmr.Match, tmr.TeamAlliance, tmr.OpponentAlliance),
+		Team:   tmr.Team,
+		Result: tmr.Result,
 	}
 }
 
@@ -564,8 +587,10 @@ func (s *Server) handleEventMatches(w http.ResponseWriter, r *http.Request, year
 	}
 
 	response := EventMatchesResponse{
-		Event:   toEventResponse(event),
-		Matches: matches,
+		Event: &EventWithMatches{
+			EventResponse: toEventResponse(event),
+			Matches:       matches,
+		},
 	}
 
 	s.writeJSON(w, http.StatusOK, response)
