@@ -85,9 +85,13 @@ type EventRankingsResponse struct {
 	Rankings []RankingResponse `json:"rankings"`
 }
 
-type EventAwardsResponse struct {
-	Event  *EventResponse  `json:"event"`
+type EventWithAwards struct {
+	*EventResponse
 	Awards []AwardResponse `json:"awards"`
+}
+
+type EventAwardsResponse struct {
+	Event *EventWithAwards `json:"event"`
 }
 
 type MatchAllianceDetailsResponse struct {
@@ -484,8 +488,10 @@ func (s *Server) handleEventAwards(w http.ResponseWriter, r *http.Request, year 
 	}
 
 	response := EventAwardsResponse{
-		Event:  toEventResponse(awards.Event),
-		Awards: awardList,
+		Event: &EventWithAwards{
+			EventResponse: toEventResponse(awards.Event),
+			Awards:        awardList,
+		},
 	}
 
 	s.writeJSON(w, http.StatusOK, response)
