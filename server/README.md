@@ -85,7 +85,21 @@ GET /v1/2024/teams?limit=100
 GET /v1/{season}/events/{eventCode}/teams?limit={limit}
 ```
 
-Returns all teams that participated in an event.
+Returns event information with an embedded array of teams that participated in the event.
+
+**Response structure:**
+
+```json
+{
+  "event": {
+    "event_id": "...",
+    "event_code": "...",
+    "name": "...",
+    ...
+    "teams": [...]
+  }
+}
+```
 
 **Query Parameters:**
 
@@ -106,7 +120,16 @@ GET /v1/2024/events/USNCCOQ/teams?limit=20
 GET /v1/{season}/events/{eventCode}/rankings?limit={limit}
 ```
 
-Returns team rankings at an event.
+Returns event information along with an array of team rankings at the event.
+
+**Response structure:**
+
+```json
+{
+  "event": {...},
+  "rankings": [...]
+}
+```
 
 **Query Parameters:**
 
@@ -127,7 +150,18 @@ GET /v1/2024/events/USNCCOQ/rankings?limit=10
 GET /v1/{season}/events/{eventCode}/awards?limit={limit}
 ```
 
-Returns awards given at an event.
+Returns event information along with an array of awards given at the event.
+
+**Response structure:**
+
+```json
+{
+  "event": {...},
+  "awards": [...]
+}
+```
+
+**Note:** Award objects do not include `event_id` since the event information is already provided at the top level.
 
 **Query Parameters:**
 
@@ -162,7 +196,16 @@ GET /v1/2024/events/USNCCOQ/advancement
 GET /v1/{season}/events/{eventCode}/matches?team={teamID}&limit={limit}
 ```
 
-Returns matches at an event. Optional `team` query parameter filters to matches for a specific team.
+Returns event information along with an array of matches at the event. Optional `team` query parameter filters to matches for a specific team.
+
+**Response structure:**
+
+```json
+{
+  "event": {...},
+  "matches": [...]
+}
+```
 
 **Query Parameters:**
 
