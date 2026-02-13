@@ -71,29 +71,35 @@ type RankingResponse struct {
 	HighMatchScore int            `json:"high_match_score"`
 }
 
+// EventWithTeams represents an event along with its teams
 type EventWithTeams struct {
 	*EventResponse
 	Teams []*database.Team `json:"teams"`
 }
 
+// EventTeamsResponse represents the response for an event's teams endpoint
 type EventTeamsResponse struct {
 	Event *EventWithTeams `json:"event"`
 }
 
+// EventRankingsResponse represents the response for an event's rankings endpoint
 type EventRankingsResponse struct {
 	Event    *EventResponse    `json:"event"`
 	Rankings []RankingResponse `json:"rankings"`
 }
 
+// EventWithAwards represents an event along with its awards
 type EventWithAwards struct {
 	*EventResponse
 	Awards []AwardResponse `json:"awards"`
 }
 
+// EventAwardsResponse represents the response for an event's awards endpoint
 type EventAwardsResponse struct {
 	Event *EventWithAwards `json:"event"`
 }
 
+// MatchAllianceScoreResponse represents the score details for an alliance in a match
 type MatchAllianceScoreResponse struct {
 	AutoPoints          int `json:"auto_points"`
 	TeleopPoints        int `json:"teleop_points"`
@@ -104,12 +110,14 @@ type MatchAllianceScoreResponse struct {
 	MinorFouls          int `json:"minor_fouls"`
 }
 
+// MatchAllianceDetailsResponse represents the details of an alliance in a match, including score and teams
 type MatchAllianceDetailsResponse struct {
 	Alliance string                      `json:"alliance"`
 	Score    *MatchAllianceScoreResponse `json:"score"`
 	Teams    []*database.Team            `json:"teams"`
 }
 
+// MatchWithAlliancesResponse represents a match along with its alliance details
 type MatchWithAlliancesResponse struct {
 	MatchType       string                        `json:"matchType"`
 	MatchNumber     int                           `json:"matchNumber"`
@@ -120,6 +128,7 @@ type MatchWithAlliancesResponse struct {
 	BlueAlliance    *MatchAllianceDetailsResponse `json:"blue_alliance"`
 }
 
+// TeamMatchResultResponse represents a match result for a specific team, including alliance details and result
 type TeamMatchResultResponse struct {
 	MatchType       string                        `json:"matchType"`
 	MatchNumber     int                           `json:"matchNumber"`
@@ -132,20 +141,24 @@ type TeamMatchResultResponse struct {
 	Result          string                        `json:"result"`
 }
 
+// EventWithMatches represents an event along with its matches (with alliance details if team filter is not applied)
 type EventWithMatches struct {
 	*EventResponse
 	Matches interface{} `json:"matches"`
 }
 
+// EventMatchesResponse represents the response for an event's matches endpoint
 type EventMatchesResponse struct {
 	Event *EventWithMatches `json:"event"`
 }
 
+// EventAdvancementResponse represents the response for an event's advancement endpoint, including team advancements
 type EventAdvancementResponse struct {
 	Event            *EventResponse           `json:"event"`
 	TeamAdvancements []*query.TeamAdvancement `json:"team_advancements"`
 }
 
+// TeamPerformanceResponse represents the performance metrics for a team across events in a season
 type PerformanceResponse struct {
 	TeamID   int     `json:"team_id"`
 	TeamName string  `json:"team_name"`
@@ -159,6 +172,7 @@ type PerformanceResponse struct {
 	Matches  int     `json:"matches"`
 }
 
+// EventPerformanceResponse represents the performance metrics for a team at a specific event in a season
 type EventPerformanceResponse struct {
 	TeamID    int     `json:"team_id"`
 	TeamName  string  `json:"team_name"`
@@ -175,25 +189,29 @@ type EventPerformanceResponse struct {
 	Matches   int     `json:"matches"`
 }
 
+// QualifiedTeamResponse represents a team that qualified for advancement, along with whether they were already qualified and the first event they qualified at
 type QualifiedTeamResponse struct {
 	Team              *database.Team `json:"team"`
 	AlreadyQualified  bool           `json:"already_qualified"`
 	FirstQualifyEvent string         `json:"first_qualify_event"`
 }
 
+// EventQualifiedTeamsResponse represents an event along with the teams that qualified for advancement from that event
 type EventQualifiedTeamsResponse struct {
-	Event          *EventResponse            `json:"event"`
+	Event          *EventResponse           `json:"event"`
 	QualifiedTeams []*QualifiedTeamResponse `json:"qualified_teams"`
 }
 
+// EventAdvancementSummaryResponse represents the advancement summary for a region and season, including summaries for each event in the region
 type EventAdvancementSummaryResponse struct {
-	RegionCode     string                          `json:"region_code"`
-	Year           int                             `json:"year"`
+	RegionCode     string                         `json:"region_code"`
+	Year           int                            `json:"year"`
 	EventSummaries []*EventQualifiedTeamsResponse `json:"event_summaries"`
 }
 
 // Helper functions to convert database types to response types
 
+// toEventResponse converts a database.Event to an EventResponse, which is used in API responses without exposing internal event_id
 func toEventResponse(e *database.Event) *EventResponse {
 	if e == nil {
 		return nil
@@ -217,6 +235,7 @@ func toEventResponse(e *database.Event) *EventResponse {
 	}
 }
 
+// toMatchResponse converts a database.Match to a MatchResponse, which is used in API responses without exposing internal event_id
 func toMatchAllianceScoreResponse(mas *database.MatchAllianceScore) *MatchAllianceScoreResponse {
 	if mas == nil {
 		return nil
@@ -232,6 +251,7 @@ func toMatchAllianceScoreResponse(mas *database.MatchAllianceScore) *MatchAllian
 	}
 }
 
+// toMatchAllianceDetailsResponse converts a query.MatchAllianceDetails to a MatchAllianceDetailsResponse, which includes alliance name, score details, and teams
 func toMatchAllianceDetailsResponse(mad *query.MatchAllianceDetails) *MatchAllianceDetailsResponse {
 	if mad == nil {
 		return nil
@@ -243,6 +263,7 @@ func toMatchAllianceDetailsResponse(mad *query.MatchAllianceDetails) *MatchAllia
 	}
 }
 
+// toMatchWithAlliancesResponse converts a database.Match along with its alliance details to a MatchWithAlliancesResponse, which is used in API responses without exposing internal event_id
 func toMatchWithAlliancesResponse(m *database.Match, red, blue *query.MatchAllianceDetails) *MatchWithAlliancesResponse {
 	if m == nil {
 		return nil
@@ -258,6 +279,7 @@ func toMatchWithAlliancesResponse(m *database.Match, red, blue *query.MatchAllia
 	}
 }
 
+// toTeamMatchResultResponse converts a query.TeamMatchResult to a TeamMatchResultResponse, which includes match details, alliance details, and the team's result in the match
 func toTeamMatchResultResponse(tmr *query.TeamMatchResult) *TeamMatchResultResponse {
 	if tmr == nil {
 		return nil
@@ -275,6 +297,7 @@ func toTeamMatchResultResponse(tmr *query.TeamMatchResult) *TeamMatchResultRespo
 	}
 }
 
+// toEventAdvancementSummaryResponse converts a query.EventAdvancementSummary to an EventAdvancementSummaryResponse, which includes the region code, year, and summaries for each event in the region
 func toEventAdvancementSummaryResponse(summary *query.EventAdvancementSummary) *EventAdvancementSummaryResponse {
 	if summary == nil {
 		return nil
@@ -303,6 +326,7 @@ func toEventAdvancementSummaryResponse(summary *query.EventAdvancementSummary) *
 	}
 }
 
+// NewServer creates a new Server instance with the given database connection and sets up the routes
 func NewServer(db database.DB) *Server {
 	s := &Server{
 		db:     db,
@@ -313,15 +337,18 @@ func NewServer(db database.DB) *Server {
 	return s
 }
 
+// setupRoutes registers the HTTP handlers for the server's endpoints
 func (s *Server) setupRoutes() {
 	s.mux.HandleFunc("/v1/", s.handleV1Routes)
 	s.mux.HandleFunc("/health", s.handleHealth)
 }
 
+// ServeHTTP allows Server to satisfy the http.Handler interface by delegating to the internal ServeMux
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	s.mux.ServeHTTP(w, r)
 }
 
+// parseLimit extracts the 'limit' query parameter from the request and converts it to an integer. It returns an error if the limit is invalid.
 func (s *Server) parseLimit(r *http.Request) (int, error) {
 	limitStr := r.URL.Query().Get("limit")
 	if limitStr == "" {
@@ -337,11 +364,13 @@ func (s *Server) parseLimit(r *http.Request) (int, error) {
 	return limit, nil
 }
 
+// handleHealth responds with a simple JSON indicating the server is healthy. This can be used for health checks.
 func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
 }
 
+// handleV1Routes is the main handler for all /v1/ API routes. It parses the URL path to determine the requested resource and delegates to the appropriate handler function based on the resource type.
 func (s *Server) handleV1Routes(w http.ResponseWriter, r *http.Request) {
 	path := strings.TrimPrefix(r.URL.Path, "/v1/")
 	parts := strings.Split(path, "/")
@@ -385,6 +414,7 @@ func (s *Server) handleV1Routes(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// handleTeam handles requests for a specific team's details. It expects the team ID to be provided in the URL path and returns the team's information in JSON format.
 func (s *Server) handleTeam(w http.ResponseWriter, r *http.Request, year int, parts []string) {
 	if len(parts) < 1 {
 		s.writeError(w, http.StatusBadRequest, "teamID is required")
@@ -406,6 +436,7 @@ func (s *Server) handleTeam(w http.ResponseWriter, r *http.Request, year int, pa
 	s.writeJSON(w, http.StatusOK, details)
 }
 
+// handleTeams handles requests for teams, optionally filtered by region. It supports a 'limit' query parameter to limit the number of teams returned. If a region is specified in the URL path, it filters teams by that region; otherwise, it returns all teams.
 func (s *Server) handleTeams(w http.ResponseWriter, r *http.Request, year int, parts []string) {
 	limit, err := s.parseLimit(r)
 	if err != nil {
@@ -433,6 +464,7 @@ func (s *Server) handleTeams(w http.ResponseWriter, r *http.Request, year int, p
 	s.writeJSON(w, http.StatusOK, teams)
 }
 
+// handleEvents handles requests for events, optionally filtered by event code. It expects the event code to be provided in the URL path and supports a 'limit' query parameter to limit the number of events returned. It delegates to specific handlers for different event resources such as teams, rankings, awards, advancement, and matches based on the second part of the URL path.
 func (s *Server) handleEvents(w http.ResponseWriter, r *http.Request, year int, parts []string) {
 	if len(parts) < 1 {
 		s.writeError(w, http.StatusBadRequest, "eventCode is required")
@@ -464,6 +496,7 @@ func (s *Server) handleEvents(w http.ResponseWriter, r *http.Request, year int, 
 	}
 }
 
+// handleEventTeams handles requests for the teams participating in a specific event. It expects the event code to be provided in the URL path and supports a 'limit' query parameter to limit the number of teams returned. It returns the event details along with the list of teams in JSON format.
 func (s *Server) handleEventTeams(w http.ResponseWriter, r *http.Request, year int, eventCode string) {
 	limit, err := s.parseLimit(r)
 	if err != nil {
@@ -492,6 +525,7 @@ func (s *Server) handleEventTeams(w http.ResponseWriter, r *http.Request, year i
 	s.writeJSON(w, http.StatusOK, response)
 }
 
+// handleEventRankings handles requests for the team rankings of a specific event. It expects the event code to be provided in the URL path and supports a 'limit' query parameter to limit the number of rankings returned. It returns the event details along with the list of team rankings in JSON format.
 func (s *Server) handleEventRankings(w http.ResponseWriter, r *http.Request, year int, eventCode string) {
 	limit, err := s.parseLimit(r)
 	if err != nil {
@@ -539,6 +573,7 @@ func (s *Server) handleEventRankings(w http.ResponseWriter, r *http.Request, yea
 	s.writeJSON(w, http.StatusOK, response)
 }
 
+// handleEventAwards handles requests for the awards given at a specific event. It expects the event code to be provided in the URL path and supports a 'limit' query parameter to limit the number of awards returned. It returns the event details along with the list of awards in JSON format.
 func (s *Server) handleEventAwards(w http.ResponseWriter, r *http.Request, year int, eventCode string) {
 	limit, err := s.parseLimit(r)
 	if err != nil {
@@ -575,6 +610,7 @@ func (s *Server) handleEventAwards(w http.ResponseWriter, r *http.Request, year 
 	s.writeJSON(w, http.StatusOK, response)
 }
 
+// handleEventAdvancement handles requests for the advancement details of a specific event. It expects the event code to be provided in the URL path and returns the event details along with the team advancements in JSON format.
 func (s *Server) handleEventAdvancement(w http.ResponseWriter, r *http.Request, year int, eventCode string) {
 	advancement := query.AdvancementReportQuery(eventCode, year)
 	if advancement == nil || advancement.Event == nil {
@@ -590,6 +626,7 @@ func (s *Server) handleEventAdvancement(w http.ResponseWriter, r *http.Request, 
 	s.writeJSON(w, http.StatusOK, response)
 }
 
+// handleEventMatches handles requests for the matches of a specific event. It expects the event code to be provided in the URL path and supports an optional 'team' query parameter to filter matches by a specific team. It also supports a 'limit' query parameter to limit the number of matches returned. It returns the event details along with the list of matches (with alliance details if team filter is not applied) in JSON format.
 func (s *Server) handleEventMatches(w http.ResponseWriter, r *http.Request, year int, eventCode string) {
 	limit, err := s.parseLimit(r)
 	if err != nil {
@@ -651,6 +688,7 @@ func (s *Server) handleEventMatches(w http.ResponseWriter, r *http.Request, year
 	s.writeJSON(w, http.StatusOK, response)
 }
 
+// handleTeamRankings handles requests for the overall team rankings for a specific season. It supports optional query parameters for region, country, and event code to filter the rankings. It also supports a 'limit' query parameter to limit the number of rankings returned. It returns a list of team performances in JSON format.
 func (s *Server) handleTeamRankings(w http.ResponseWriter, r *http.Request, year int, parts []string) {
 	limit, err := s.parseLimit(r)
 	if err != nil {
@@ -675,6 +713,7 @@ func (s *Server) handleTeamRankings(w http.ResponseWriter, r *http.Request, year
 	s.writeJSON(w, http.StatusOK, performances)
 }
 
+// handleTeamEventRankings handles requests for the team rankings at specific events for a specific season. It supports optional query parameters for region, country, and event code to filter the rankings. It also supports a 'limit' query parameter to limit the number of rankings returned. It returns a list of team performances at events in JSON format.
 func (s *Server) handleTeamEventRankings(w http.ResponseWriter, r *http.Request, year int, parts []string) {
 	limit, err := s.parseLimit(r)
 	if err != nil {
@@ -719,6 +758,7 @@ func (s *Server) handleTeamEventRankings(w http.ResponseWriter, r *http.Request,
 	s.writeJSON(w, http.StatusOK, responses)
 }
 
+// handleRegions handles requests for region-specific resources. It expects the region code to be provided in the URL path and delegates to specific handlers for different region resources such as advancement based on the second part of the URL path.
 func (s *Server) handleRegions(w http.ResponseWriter, r *http.Request, year int, parts []string) {
 	if len(parts) < 1 {
 		s.writeError(w, http.StatusBadRequest, "region code is required")
@@ -742,11 +782,13 @@ func (s *Server) handleRegions(w http.ResponseWriter, r *http.Request, year int,
 	}
 }
 
+// handleRegionAdvancement handles requests for the advancement summary of a specific region and season. It expects the region code to be provided in the URL path and returns the advancement summary for that region and season in JSON format.
 func (s *Server) handleRegionAdvancement(w http.ResponseWriter, r *http.Request, year int, regionCode string) {
 	advancement := query.RegionAdvancementQuery(regionCode, year)
 	s.writeJSON(w, http.StatusOK, advancement)
 }
 
+// handleAllAdvancement handles requests for the advancement summary of all regions for a specific season. It supports an optional 'region' query parameter to filter the summary by a specific region. It returns the advancement summary for the specified region (or all regions if no region is specified) and season in JSON format.
 func (s *Server) handleAllAdvancement(w http.ResponseWriter, r *http.Request, year int, parts []string) {
 	region := r.URL.Query().Get("region")
 	if region == "" {
@@ -757,6 +799,7 @@ func (s *Server) handleAllAdvancement(w http.ResponseWriter, r *http.Request, ye
 	s.writeJSON(w, http.StatusOK, response)
 }
 
+// writeJSON is a helper function to write a JSON response with the given status code and data. It sets the appropriate content type header and encodes the data as JSON. If encoding fails, it logs an error.
 func (s *Server) writeJSON(w http.ResponseWriter, status int, data interface{}) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
@@ -765,6 +808,7 @@ func (s *Server) writeJSON(w http.ResponseWriter, status int, data interface{}) 
 	}
 }
 
+// writeError is a helper function to write an error response in JSON format with the given status code and error message. It uses the writeJSON helper to send a standardized error response.
 func (s *Server) writeError(w http.ResponseWriter, status int, message string) {
 	s.writeJSON(w, status, map[string]string{"error": message})
 }
