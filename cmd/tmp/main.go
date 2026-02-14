@@ -33,14 +33,20 @@ func setLogLevelFromEnv() slog.Level {
 }
 
 func main() {
+	if err := run(); err != nil {
+		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+		os.Exit(1)
+	}
+}
+
+func run() error {
 	godotenv.Load()
 	setLogLevelFromEnv()
 
 	// Initialize database
 	db, err := database.Init()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error: Failed to initialize database: %v\n", err)
-		os.Exit(1)
+		return fmt.Errorf("failed to initialize database: %w", err)
 	}
 	defer db.Close()
 
@@ -48,7 +54,10 @@ func main() {
 	request.Init(db)
 
 	// Get all events
-	events := db.GetAllEvents()
+	events, err := db.GetAllEvents()
+	if err != nil {
+		return fmt.Errorf("failed to load events: %w", err)
+	}
 	slog.Info("Processing all events", "totalEvents", len(events))
 
 	// Process each event
@@ -64,4 +73,5 @@ func main() {
 	}
 
 	slog.Info("Finished processing all events", "totalEvents", len(events))
+	return nil
 }

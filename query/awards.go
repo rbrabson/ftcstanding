@@ -21,14 +21,17 @@ type EventAwards struct {
 
 // AwardsByEventQuery retrieves all awards won by teams at a given event.
 // It returns an EventAwards object containing the event and all awards with full team details.
-func AwardsByEventQuery(eventCode string, year int) *EventAwards {
+func AwardsByEventQuery(eventCode string, year int) (*EventAwards, error) {
 	// Get the event details
 	filter := database.EventFilter{
 		EventCodes: []string{eventCode},
 	}
-	events := db.GetAllEvents(filter)
+	events, err := db.GetAllEvents(filter)
+	if err != nil {
+		return nil, err
+	}
 	if len(events) == 0 {
-		return nil
+		return nil, nil
 	}
 
 	// Find the event matching the year
@@ -41,22 +44,28 @@ func AwardsByEventQuery(eventCode string, year int) *EventAwards {
 	}
 
 	if event == nil {
-		return nil
+		return nil, nil
 	}
 
 	// Get all awards for the event
-	eventAwards := db.GetEventAwards(event.EventID)
+	eventAwards, err := db.GetEventAwards(event.EventID)
+	if err != nil {
+		return nil, err
+	}
 	if len(eventAwards) == 0 {
 		return &EventAwards{
 			Event:  event,
 			Awards: []*TeamAward{},
-		}
+		}, nil
 	}
 
 	// Retrieve the full team details for each award
 	var teamAwards []*TeamAward
 	for _, award := range eventAwards {
-		team := db.GetTeam(award.TeamID)
+		team, err := db.GetTeam(award.TeamID)
+		if err != nil {
+			return nil, err
+		}
 		if team != nil {
 			teamAwards = append(teamAwards, &TeamAward{
 				Award: award,
@@ -88,7 +97,7 @@ func AwardsByEventQuery(eventCode string, year int) *EventAwards {
 	return &EventAwards{
 		Event:  event,
 		Awards: teamAwards,
-	}
+	}, nil
 }
 
 // getAwardSortPriority returns the sort priority for an award based on its name.

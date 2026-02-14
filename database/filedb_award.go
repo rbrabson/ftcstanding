@@ -1,21 +1,29 @@
 package database
 
 // GetAward retrieves an award from the file database by its ID.
-func (db *filedb) GetAward(awardID int) *Award {
+func (db *filedb) GetAward(awardID int) (*Award, error) {
+	if err := db.refreshAwardsIfChanged(); err != nil {
+		return nil, err
+	}
+
 	db.awardsMu.RLock()
 	defer db.awardsMu.RUnlock()
 
 	award, ok := db.awards[awardID]
 	if !ok {
-		return nil
+		return nil, nil
 	}
 	// Return a copy to avoid external modifications
 	awardCopy := *award
-	return &awardCopy
+	return &awardCopy, nil
 }
 
 // GetAllAwards retrieves all awards from the file database.
-func (db *filedb) GetAllAwards() []*Award {
+func (db *filedb) GetAllAwards() ([]*Award, error) {
+	if err := db.refreshAwardsIfChanged(); err != nil {
+		return nil, err
+	}
+
 	db.awardsMu.RLock()
 	defer db.awardsMu.RUnlock()
 
@@ -24,11 +32,15 @@ func (db *filedb) GetAllAwards() []*Award {
 		awardCopy := *award
 		awards = append(awards, &awardCopy)
 	}
-	return awards
+	return awards, nil
 }
 
 // SaveAward saves or updates an award in the file database.
 func (db *filedb) SaveAward(award *Award) error {
+	if err := db.refreshAwardsIfChanged(); err != nil {
+		return err
+	}
+
 	db.awardsMu.Lock()
 	defer db.awardsMu.Unlock()
 

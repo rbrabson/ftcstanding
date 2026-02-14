@@ -42,10 +42,14 @@ func TeamRankingsQuery(region string, country string, eventCode string, year int
 
 	// Get all teams based on filters
 	var teams []*database.Team
+	var err error
 	if region == "" && country == "" && eventCode == "" {
-		teams = db.GetAllTeams()
+		teams, err = db.GetAllTeams()
 	} else {
-		teams = db.GetAllTeams(teamFilter)
+		teams, err = db.GetAllTeams(teamFilter)
+	}
+	if err != nil {
+		return nil, err
 	}
 	if len(teams) == 0 {
 		if region != "" {
@@ -77,7 +81,10 @@ func TeamRankingsQuery(region string, country string, eventCode string, year int
 		// (exclude scrimmages, league meets, and other non-competitive events)
 		eventFilter.Types = []string{"2", "4"}
 	}
-	events := db.GetAllEvents(eventFilter)
+	events, err := db.GetAllEvents(eventFilter)
+	if err != nil {
+		return nil, err
+	}
 	if len(events) == 0 {
 		return nil, fmt.Errorf("no events found")
 	}
@@ -93,7 +100,10 @@ func TeamRankingsQuery(region string, country string, eventCode string, year int
 		TeamIDs:  teamIDs,
 		EventIDs: eventIDs,
 	}
-	rankings := db.GetTeamRankings(rankingFilter)
+	rankings, err := db.GetTeamRankings(rankingFilter)
+	if err != nil {
+		return nil, err
+	}
 	if len(rankings) == 0 {
 		if region != "" {
 			return nil, fmt.Errorf("no team rankings found for teams in region %s for year %d", region, year)
@@ -196,10 +206,14 @@ func TeamEventRankingsQuery(region string, country string, eventCode string, yea
 
 	// Get all teams based on filters
 	var teams []*database.Team
+	var err error
 	if region == "" && country == "" && eventCode == "" {
-		teams = db.GetAllTeams()
+		teams, err = db.GetAllTeams()
 	} else {
-		teams = db.GetAllTeams(teamFilter)
+		teams, err = db.GetAllTeams(teamFilter)
+	}
+	if err != nil {
+		return nil, err
 	}
 	if len(teams) == 0 {
 		if region != "" {
@@ -230,7 +244,10 @@ func TeamEventRankingsQuery(region string, country string, eventCode string, yea
 		// When no specific event is specified, only include qualifiers and championships
 		eventFilter.Types = []string{"2", "4"}
 	}
-	events := db.GetAllEvents(eventFilter)
+	events, err := db.GetAllEvents(eventFilter)
+	if err != nil {
+		return nil, err
+	}
 	if len(events) == 0 {
 		return nil, fmt.Errorf("no events found")
 	}
@@ -248,7 +265,10 @@ func TeamEventRankingsQuery(region string, country string, eventCode string, yea
 		TeamIDs:  teamIDs,
 		EventIDs: eventIDs,
 	}
-	rankings := db.GetTeamRankings(rankingFilter)
+	rankings, err := db.GetTeamRankings(rankingFilter)
+	if err != nil {
+		return nil, err
+	}
 	if len(rankings) == 0 {
 		if region != "" {
 			return nil, fmt.Errorf("no team rankings found for teams in region %s for year %d", region, year)

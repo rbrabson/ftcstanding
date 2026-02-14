@@ -128,7 +128,11 @@ func processEvent(season, eventCode string) {
 	filter := database.EventFilter{
 		EventCodes: []string{eventCode},
 	}
-	events := db.GetAllEvents(filter)
+	events, err := db.GetAllEvents(filter)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error: Failed to load events: %v\n", err)
+		os.Exit(1)
+	}
 
 	var event *database.Event
 	for _, e := range events {
@@ -158,12 +162,18 @@ func processRegion(season, regionCode string, refresh bool) {
 	slog.Info("Processing region", "regionCode", regionCode, "season", season)
 
 	// Get or refresh teams and awards
-	teams := db.GetAllTeams()
+	teams, err := db.GetAllTeams()
+	if err != nil {
+		slog.Warn("failed to load teams", "error", err)
+	}
 	if refresh || len(teams) == 0 {
 		teams = request.RequestAndSaveTeams(season)
 	}
 
-	awards := db.GetAllAwards()
+	awards, err := db.GetAllAwards()
+	if err != nil {
+		slog.Warn("failed to load awards", "error", err)
+	}
 	if refresh || len(awards) == 0 {
 		awards = request.RequestAndSaveAwards(season)
 	}
@@ -172,7 +182,10 @@ func processRegion(season, regionCode string, refresh bool) {
 	filter := database.EventFilter{
 		RegionCodes: []string{regionCode},
 	}
-	events := db.GetAllEvents(filter)
+	events, err := db.GetAllEvents(filter)
+	if err != nil {
+		slog.Warn("failed to load region events", "regionCode", regionCode, "error", err)
+	}
 
 	if refresh || len(events) == 0 {
 		// Refresh all events and filter

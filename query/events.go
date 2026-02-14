@@ -14,14 +14,17 @@ type EventTeams struct {
 
 // TeamsByEventQuery retrieves all teams that have or will participate in an event.
 // It returns an EventTeams object containing the event and its participating teams.
-func TeamsByEventQuery(eventCode string, year int) *EventTeams {
+func TeamsByEventQuery(eventCode string, year int) (*EventTeams, error) {
 	// Get the event details
 	filter := database.EventFilter{
 		EventCodes: []string{eventCode},
 	}
-	events := db.GetAllEvents(filter)
+	events, err := db.GetAllEvents(filter)
+	if err != nil {
+		return nil, err
+	}
 	if len(events) == 0 {
-		return nil
+		return nil, nil
 	}
 
 	// Find the event matching the year
@@ -34,19 +37,25 @@ func TeamsByEventQuery(eventCode string, year int) *EventTeams {
 	}
 
 	if event == nil {
-		return nil
+		return nil, nil
 	}
 
 	// Get all event teams for the event
-	eventTeams := db.GetEventTeams(event.EventID)
+	eventTeams, err := db.GetEventTeams(event.EventID)
+	if err != nil {
+		return nil, err
+	}
 	if len(eventTeams) == 0 {
-		return nil
+		return nil, nil
 	}
 
 	// Retrieve the full team details
 	var teams []*database.Team
 	for _, et := range eventTeams {
-		team := db.GetTeam(et.TeamID)
+		team, err := db.GetTeam(et.TeamID)
+		if err != nil {
+			return nil, err
+		}
 		if team != nil {
 			teams = append(teams, team)
 		}
@@ -59,7 +68,7 @@ func TeamsByEventQuery(eventCode string, year int) *EventTeams {
 	return &EventTeams{
 		Event: event,
 		Teams: teams,
-	}
+	}, nil
 }
 
 // TeamRanking represents a team with its ranking information.
@@ -76,14 +85,17 @@ type EventTeamRankings struct {
 }
 
 // EventTeamRankingQuery retrieves an event and all teams with their rankings, sorted by rank.
-func EventTeamRankingQuery(eventCode string, year int) *EventTeamRankings {
+func EventTeamRankingQuery(eventCode string, year int) (*EventTeamRankings, error) {
 	// Get the event details
 	filter := database.EventFilter{
 		EventCodes: []string{eventCode},
 	}
-	events := db.GetAllEvents(filter)
+	events, err := db.GetAllEvents(filter)
+	if err != nil {
+		return nil, err
+	}
 	if len(events) == 0 {
-		return nil
+		return nil, nil
 	}
 
 	// Find the event matching the year
@@ -96,30 +108,45 @@ func EventTeamRankingQuery(eventCode string, year int) *EventTeamRankings {
 	}
 
 	if event == nil {
-		return nil
+		return nil, nil
 	}
 
 	// Get all event rankings for the event
-	eventRankings := db.GetEventRankings(event.EventID)
+	eventRankings, err := db.GetEventRankings(event.EventID)
+	if err != nil {
+		return nil, err
+	}
 	if len(eventRankings) == 0 {
-		return nil
+		return nil, nil
 	}
 
 	// Get all matches for the event to calculate high scores
-	matches := db.GetMatchesByEvent(event.EventID)
+	matches, err := db.GetMatchesByEvent(event.EventID)
+	if err != nil {
+		return nil, err
+	}
 
 	// Calculate high score for each team
 	teamHighScores := make(map[int]int)
 	for _, match := range matches {
-		matchTeams := db.GetMatchTeams(match.MatchID)
+		matchTeams, err := db.GetMatchTeams(match.MatchID)
+		if err != nil {
+			return nil, err
+		}
 		for _, mt := range matchTeams {
 			// Get the alliance score for this team's alliance
-			allianceScore := db.GetMatchAllianceScore(match.MatchID, mt.Alliance)
+			allianceScore, err := db.GetMatchAllianceScore(match.MatchID, mt.Alliance)
+			if err != nil {
+				return nil, err
+			}
 			var opposingAllianceScore *database.MatchAllianceScore
 			if mt.Alliance == "red" {
-				opposingAllianceScore = db.GetMatchAllianceScore(match.MatchID, "blue")
+				opposingAllianceScore, err = db.GetMatchAllianceScore(match.MatchID, "blue")
 			} else {
-				opposingAllianceScore = db.GetMatchAllianceScore(match.MatchID, "red")
+				opposingAllianceScore, err = db.GetMatchAllianceScore(match.MatchID, "red")
+			}
+			if err != nil {
+				return nil, err
 			}
 			if allianceScore != nil {
 				var totalPoints int
@@ -138,7 +165,10 @@ func EventTeamRankingQuery(eventCode string, year int) *EventTeamRankings {
 	// Retrieve the full team details and combine with rankings
 	var teamRankings []*TeamRanking
 	for _, ranking := range eventRankings {
-		team := db.GetTeam(ranking.TeamID)
+		team, err := db.GetTeam(ranking.TeamID)
+		if err != nil {
+			return nil, err
+		}
 		if team != nil {
 			teamRankings = append(teamRankings, &TeamRanking{
 				Team:           team,
@@ -156,5 +186,5 @@ func EventTeamRankingQuery(eventCode string, year int) *EventTeamRankings {
 	return &EventTeamRankings{
 		Event:        event,
 		TeamRankings: teamRankings,
-	}
+	}, nil
 }

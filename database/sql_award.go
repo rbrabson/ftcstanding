@@ -19,11 +19,11 @@ func (db *sqldb) initAwardStatements() error {
 }
 
 // GetAward retrieves an award from a database by its ID.
-func (db *sqldb) GetAward(awardID int) *Award {
+func (db *sqldb) GetAward(awardID int) (*Award, error) {
 	var award Award
 	stmt := db.getStatement("getAward")
 	if stmt == nil {
-		return nil
+		return nil, fmt.Errorf("prepared statement not found")
 	}
 	err := stmt.QueryRow(awardID).Scan(
 		&award.AwardID,
@@ -32,20 +32,20 @@ func (db *sqldb) GetAward(awardID int) *Award {
 		&award.ForPerson,
 	)
 	if err != nil {
-		return nil
+		return nil, nil
 	}
-	return &award
+	return &award, nil
 }
 
 // GetAllAwards retrieves all awards from the
-func (db *sqldb) GetAllAwards() []*Award {
+func (db *sqldb) GetAllAwards() ([]*Award, error) {
 	stmt := db.getStatement("getAllAwards")
 	if stmt == nil {
-		return nil
+		return nil, fmt.Errorf("prepared statement not found")
 	}
 	rows, err := stmt.Query()
 	if err != nil {
-		return nil
+		return nil, err
 	}
 	defer rows.Close()
 
@@ -63,7 +63,7 @@ func (db *sqldb) GetAllAwards() []*Award {
 		}
 		awards = append(awards, &award)
 	}
-	return awards
+	return awards, nil
 }
 
 // SaveAward saves or updates an award in the

@@ -6,23 +6,31 @@ import (
 )
 
 // GetTeam retrieves a team from the file database by its ID.
-func (db *filedb) GetTeam(teamID int) *Team {
+func (db *filedb) GetTeam(teamID int) (*Team, error) {
+	if err := db.refreshTeamsIfChanged(); err != nil {
+		return nil, err
+	}
+
 	db.teamsMu.RLock()
 	defer db.teamsMu.RUnlock()
 
 	team, ok := db.teams[teamID]
 	if !ok {
-		return nil
+		return nil, nil
 	}
 	// Return a copy to avoid external modifications
 	teamCopy := *team
-	return &teamCopy
+	return &teamCopy, nil
 }
 
 // GetAllTeams retrieves all teams from the file database with optional filters.
 // If no filters are provided, returns all teams.
 // Filters are combined with OR logic within each field and AND logic between fields.
-func (db *filedb) GetAllTeams(filters ...TeamFilter) []*Team {
+func (db *filedb) GetAllTeams(filters ...TeamFilter) ([]*Team, error) {
+	if err := db.refreshTeamsIfChanged(); err != nil {
+		return nil, err
+	}
+
 	db.teamsMu.RLock()
 	defer db.teamsMu.RUnlock()
 
@@ -37,7 +45,7 @@ func (db *filedb) GetAllTeams(filters ...TeamFilter) []*Team {
 		sort.Slice(teams, func(i, j int) bool {
 			return teams[i].TeamID < teams[j].TeamID
 		})
-		return teams
+		return teams, nil
 	}
 
 	filter := filters[0]
@@ -48,10 +56,16 @@ func (db *filedb) GetAllTeams(filters ...TeamFilter) []*Team {
 		eventTeamIDs = make(map[int]bool)
 		for _, eventCode := range filter.EventCodes {
 			// Get all events matching this code
-			events := db.GetAllEvents(EventFilter{EventCodes: []string{eventCode}})
+			events, err := db.GetAllEvents(EventFilter{EventCodes: []string{eventCode}})
+			if err != nil {
+				return nil, err
+			}
 			for _, event := range events {
 				// Get all teams for this event
-				eventTeams := db.GetEventTeams(event.EventID)
+				eventTeams, err := db.GetEventTeams(event.EventID)
+				if err != nil {
+					return nil, err
+				}
 				for _, et := range eventTeams {
 					eventTeamIDs[et.TeamID] = true
 				}
@@ -103,11 +117,15 @@ func (db *filedb) GetAllTeams(filters ...TeamFilter) []*Team {
 	sort.Slice(teams, func(i, j int) bool {
 		return teams[i].TeamID < teams[j].TeamID
 	})
-	return teams
+	return teams, nil
 }
 
 // SaveTeam saves or updates a team in the file database.
 func (db *filedb) SaveTeam(team *Team) error {
+	if err := db.refreshTeamsIfChanged(); err != nil {
+		return err
+	}
+
 	db.teamsMu.Lock()
 	defer db.teamsMu.Unlock()
 
@@ -120,7 +138,11 @@ func (db *filedb) SaveTeam(team *Team) error {
 }
 
 // GetTeamsByRegion retrieves all teams in a given home region from the file database.
-func (db *filedb) GetTeamsByRegion(region string) []*Team {
+func (db *filedb) GetTeamsByRegion(region string) ([]*Team, error) {
+	if err := db.refreshTeamsIfChanged(); err != nil {
+		return nil, err
+	}
+
 	db.teamsMu.RLock()
 	defer db.teamsMu.RUnlock()
 
@@ -135,13 +157,17 @@ func (db *filedb) GetTeamsByRegion(region string) []*Team {
 	sort.Slice(teams, func(i, j int) bool {
 		return teams[i].TeamID < teams[j].TeamID
 	})
-	return teams
+	return teams, nil
 }
 
 // GetTeamRankings retrieves team rankings with optional filters.
 // Filters support filtering by TeamID and/or EventID.
 // If no filters are provided, returns all team rankings.
-func (db *filedb) GetTeamRankings(filters ...TeamRankingFilter) []*TeamRanking {
+func (db *filedb) GetTeamRankings(filters ...TeamRankingFilter) ([]*TeamRanking, error) {
+	if err := db.refreshTeamRankingsIfChanged(); err != nil {
+		return nil, err
+	}
+
 	db.teamRankingsMu.RLock()
 	defer db.teamRankingsMu.RUnlock()
 
@@ -196,11 +222,15 @@ func (db *filedb) GetTeamRankings(filters ...TeamRankingFilter) []*TeamRanking {
 		return rankings[i].TeamID < rankings[j].TeamID
 	})
 
-	return rankings
+	return rankings, nil
 }
 
 // SaveTeamRanking saves or updates a team ranking in the file database.
 func (db *filedb) SaveTeamRanking(ranking *TeamRanking) error {
+	if err := db.refreshTeamRankingsIfChanged(); err != nil {
+		return err
+	}
+
 	db.teamRankingsMu.Lock()
 	defer db.teamRankingsMu.Unlock()
 

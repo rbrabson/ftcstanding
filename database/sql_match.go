@@ -30,11 +30,11 @@ func (db *sqldb) GetMatchID(eventID string, matchNumber int) string {
 }
 
 // GetMatch retrieves a match from the database by its ID.
-func (db *sqldb) GetMatch(matchID string) *Match {
+func (db *sqldb) GetMatch(matchID string) (*Match, error) {
 	var match Match
 	stmt := db.getStatement("getMatch")
 	if stmt == nil {
-		return nil
+		return nil, fmt.Errorf("prepared statement not found")
 	}
 	err := stmt.QueryRow(matchID).Scan(
 		&match.MatchID,
@@ -46,24 +46,24 @@ func (db *sqldb) GetMatch(matchID string) *Match {
 		&match.TournamentLevel,
 	)
 	if err != nil {
-		return nil
+		return nil, nil
 	}
-	return &match
+	return &match, nil
 }
 
 // GetAllMatches retrieves all matches from the database with optional filters.
 // If no filters are provided, returns all matches.
 // Filters are combined with OR logic within each field.
-func (db *sqldb) GetAllMatches(filters ...MatchFilter) []*Match {
+func (db *sqldb) GetAllMatches(filters ...MatchFilter) ([]*Match, error) {
 	// If no filters, use the prepared statement
 	if len(filters) == 0 {
 		stmt := db.getStatement("getAllMatches")
 		if stmt == nil {
-			return nil
+			return nil, fmt.Errorf("prepared statement not found")
 		}
 		rows, err := stmt.Query()
 		if err != nil {
-			return nil
+			return nil, err
 		}
 		defer rows.Close()
 
@@ -84,7 +84,7 @@ func (db *sqldb) GetAllMatches(filters ...MatchFilter) []*Match {
 			}
 			matches = append(matches, &match)
 		}
-		return matches
+		return matches, nil
 	}
 
 	filter := filters[0]
@@ -110,7 +110,7 @@ func (db *sqldb) GetAllMatches(filters ...MatchFilter) []*Match {
 	// Execute query
 	rows, err := db.sqldb.Query(query, args...)
 	if err != nil {
-		return nil
+		return nil, err
 	}
 	defer rows.Close()
 
@@ -131,18 +131,18 @@ func (db *sqldb) GetAllMatches(filters ...MatchFilter) []*Match {
 		}
 		matches = append(matches, &match)
 	}
-	return matches
+	return matches, nil
 }
 
 // GetMatchesByEvent retrieves all matches for a specific event, ordered by match number.
-func (db *sqldb) GetMatchesByEvent(eventID string) []*Match {
+func (db *sqldb) GetMatchesByEvent(eventID string) ([]*Match, error) {
 	stmt := db.getStatement("getMatchesByEvent")
 	if stmt == nil {
-		return nil
+		return nil, fmt.Errorf("prepared statement not found")
 	}
 	rows, err := stmt.Query(eventID)
 	if err != nil {
-		return nil
+		return nil, err
 	}
 	defer rows.Close()
 
@@ -163,7 +163,7 @@ func (db *sqldb) GetMatchesByEvent(eventID string) []*Match {
 		}
 		matches = append(matches, &match)
 	}
-	return matches
+	return matches, nil
 }
 
 // SaveMatch saves or updates a match in the
@@ -185,11 +185,11 @@ func (db *sqldb) SaveMatch(match *Match) error {
 }
 
 // GetMatchAllianceScore retrieves the score for a specific alliance in a match.
-func (db *sqldb) GetMatchAllianceScore(matchID, alliance string) *MatchAllianceScore {
+func (db *sqldb) GetMatchAllianceScore(matchID, alliance string) (*MatchAllianceScore, error) {
 	var score MatchAllianceScore
 	stmt := db.getStatement("getMatchAllianceScore")
 	if stmt == nil {
-		return nil
+		return nil, fmt.Errorf("prepared statement not found")
 	}
 	err := stmt.QueryRow(matchID, alliance).Scan(
 		&score.MatchID,
@@ -203,9 +203,9 @@ func (db *sqldb) GetMatchAllianceScore(matchID, alliance string) *MatchAllianceS
 		&score.MinorFouls,
 	)
 	if err != nil {
-		return nil
+		return nil, nil
 	}
-	return &score
+	return &score, nil
 }
 
 // SaveMatchAllianceScore saves or updates the score for a specific alliance in a match.
@@ -229,14 +229,14 @@ func (db *sqldb) SaveMatchAllianceScore(score *MatchAllianceScore) error {
 }
 
 // GetMatchTeams retrieves all teams participating in a specific match.
-func (db *sqldb) GetMatchTeams(matchID string) []*MatchTeam {
+func (db *sqldb) GetMatchTeams(matchID string) ([]*MatchTeam, error) {
 	stmt := db.getStatement("getMatchTeams")
 	if stmt == nil {
-		return nil
+		return nil, fmt.Errorf("prepared statement not found")
 	}
 	rows, err := stmt.Query(matchID)
 	if err != nil {
-		return nil
+		return nil, err
 	}
 	defer rows.Close()
 
@@ -250,11 +250,11 @@ func (db *sqldb) GetMatchTeams(matchID string) []*MatchTeam {
 			&team.Dq,
 			&team.OnField,
 		); err != nil {
-			return nil
+			return nil, err
 		}
 		teams = append(teams, &team)
 	}
-	return teams
+	return teams, nil
 }
 
 // SaveMatchTeam saves or updates a match team in the
@@ -274,14 +274,14 @@ func (db *sqldb) SaveMatchTeam(team *MatchTeam) error {
 }
 
 // GetTeamsByEvent retrieves all unique team IDs that participated at a specific event, ordered by team ID.
-func (db *sqldb) GetTeamsByEvent(eventID string) []int {
+func (db *sqldb) GetTeamsByEvent(eventID string) ([]int, error) {
 	stmt := db.getStatement("getTeamsByEvent")
 	if stmt == nil {
-		return nil
+		return nil, fmt.Errorf("prepared statement not found")
 	}
 	rows, err := stmt.Query(eventID)
 	if err != nil {
-		return nil
+		return nil, err
 	}
 	defer rows.Close()
 
@@ -294,5 +294,5 @@ func (db *sqldb) GetTeamsByEvent(eventID string) []int {
 		}
 		teamIDs = append(teamIDs, teamID)
 	}
-	return teamIDs
+	return teamIDs, nil
 }

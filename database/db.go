@@ -13,44 +13,44 @@ import (
 type DB interface {
 	Close()
 
-	GetAward(awardID int) *Award
-	GetAllAwards() []*Award
+	GetAward(awardID int) (*Award, error)
+	GetAllAwards() ([]*Award, error)
 	SaveAward(award *Award) error
 
-	GetEvent(eventID string) *Event
-	GetAllEvents(filters ...EventFilter) []*Event
+	GetEvent(eventID string) (*Event, error)
+	GetAllEvents(filters ...EventFilter) ([]*Event, error)
 	SaveEvent(event *Event) error
-	GetEventAwards(eventID string) []*EventAward
+	GetEventAwards(eventID string) ([]*EventAward, error)
 	SaveEventAward(ea *EventAward) error
-	GetTeamAwardsByEvent(eventID string, teamID int) []*EventAward
-	GetAllTeamAwards(teamID int) []*EventAward
-	GetEventRankings(eventID string) []*EventRanking
+	GetTeamAwardsByEvent(eventID string, teamID int) ([]*EventAward, error)
+	GetAllTeamAwards(teamID int) ([]*EventAward, error)
+	GetEventRankings(eventID string) ([]*EventRanking, error)
 	SaveEventRanking(er *EventRanking) error
-	GetEventAdvancements(eventID string) []*EventAdvancement
+	GetEventAdvancements(eventID string) ([]*EventAdvancement, error)
 	SaveEventAdvancement(ea *EventAdvancement) error
-	GetEventTeams(eventID string) []*EventTeam
+	GetEventTeams(eventID string) ([]*EventTeam, error)
 	SaveEventTeam(et *EventTeam) error
-	GetEventsByTeam(teamID int) []string
-	GetRegionCodes() []string
-	GetEventCodesByRegion(regionCode string) []string
-	GetAdvancementsByRegion(regionCode string) []*EventAdvancement
-	GetAllAdvancements(filters ...AdvancementFilter) []*EventAdvancement
+	GetEventsByTeam(teamID int) ([]string, error)
+	GetRegionCodes() ([]string, error)
+	GetEventCodesByRegion(regionCode string) ([]string, error)
+	GetAdvancementsByRegion(regionCode string) ([]*EventAdvancement, error)
+	GetAllAdvancements(filters ...AdvancementFilter) ([]*EventAdvancement, error)
 
-	GetMatch(matchID string) *Match
-	GetAllMatches(filters ...MatchFilter) []*Match
-	GetMatchesByEvent(eventID string) []*Match
+	GetMatch(matchID string) (*Match, error)
+	GetAllMatches(filters ...MatchFilter) ([]*Match, error)
+	GetMatchesByEvent(eventID string) ([]*Match, error)
 	SaveMatch(match *Match) error
-	GetMatchAllianceScore(matchID, alliance string) *MatchAllianceScore
+	GetMatchAllianceScore(matchID, alliance string) (*MatchAllianceScore, error)
 	SaveMatchAllianceScore(score *MatchAllianceScore) error
-	GetMatchTeams(matchID string) []*MatchTeam
+	GetMatchTeams(matchID string) ([]*MatchTeam, error)
 	SaveMatchTeam(team *MatchTeam) error
-	GetTeamsByEvent(eventID string) []int
+	GetTeamsByEvent(eventID string) ([]int, error)
 
-	GetTeam(teamID int) *Team
-	GetAllTeams(filters ...TeamFilter) []*Team
+	GetTeam(teamID int) (*Team, error)
+	GetAllTeams(filters ...TeamFilter) ([]*Team, error)
 	SaveTeam(team *Team) error
-	GetTeamsByRegion(region string) []*Team
-	GetTeamRankings(filters ...TeamRankingFilter) []*TeamRanking
+	GetTeamsByRegion(region string) ([]*Team, error)
+	GetTeamRankings(filters ...TeamRankingFilter) ([]*TeamRanking, error)
 	SaveTeamRanking(ranking *TeamRanking) error
 }
 
