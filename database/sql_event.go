@@ -41,11 +41,11 @@ func (db *sqldb) GetEventID(eventCode string, dateStart time.Time) string {
 }
 
 // GetEvent retrieves an event from the database by its ID.
-func (db *sqldb) GetEvent(eventID string) *Event {
+func (db *sqldb) GetEvent(eventID string) (*Event, error) {
 	var event Event
 	stmt := db.getStatement("getEvent")
 	if stmt == nil {
-		return nil
+		return nil, fmt.Errorf("prepared statement not found")
 	}
 	err := stmt.QueryRow(eventID).Scan(
 		&event.EventID,
@@ -66,15 +66,15 @@ func (db *sqldb) GetEvent(eventID string) *Event {
 		&event.DateEnd,
 	)
 	if err != nil {
-		return nil
+		return nil, nil
 	}
-	return &event
+	return &event, nil
 }
 
 // GetAllEvents retrieves all events from the database with optional filters.
 // If no filters are provided, returns all events.
 // Filters are combined with OR logic within each field and AND logic between fields.
-func (db *sqldb) GetAllEvents(filters ...EventFilter) []*Event {
+func (db *sqldb) GetAllEvents(filters ...EventFilter) ([]*Event, error) {
 	// Build dynamic query
 	query := "SELECT event_id, event_code, year, name, type, division_code, region_code, league_code, venue, address, city, state_prov, country, timezone, date_start, date_end FROM events"
 	args := []interface{}{}
@@ -147,7 +147,7 @@ func (db *sqldb) GetAllEvents(filters ...EventFilter) []*Event {
 	// Execute query
 	rows, err := db.sqldb.Query(query, args...)
 	if err != nil {
-		return nil
+		return nil, err
 	}
 	defer rows.Close()
 
@@ -177,7 +177,7 @@ func (db *sqldb) GetAllEvents(filters ...EventFilter) []*Event {
 		}
 		events = append(events, &event)
 	}
-	return events
+	return events, nil
 }
 
 // SaveEvent saves or updates an event in the
@@ -208,14 +208,14 @@ func (db *sqldb) SaveEvent(event *Event) error {
 }
 
 // GetEventAwards retrieves all awards given at a specific event.
-func (db *sqldb) GetEventAwards(eventID string) []*EventAward {
+func (db *sqldb) GetEventAwards(eventID string) ([]*EventAward, error) {
 	stmt := db.getStatement("getEventAwards")
 	if stmt == nil {
-		return nil
+		return nil, fmt.Errorf("prepared statement not found")
 	}
 	rows, err := stmt.Query(eventID)
 	if err != nil {
-		return nil
+		return nil, err
 	}
 	defer rows.Close()
 
@@ -228,7 +228,7 @@ func (db *sqldb) GetEventAwards(eventID string) []*EventAward {
 		}
 		awards = append(awards, &ea)
 	}
-	return awards
+	return awards, nil
 }
 
 // SaveEventAward saves or updates an event award in the
@@ -242,14 +242,14 @@ func (db *sqldb) SaveEventAward(ea *EventAward) error {
 }
 
 // GetTeamAwardsByEvent retrieves all awards for a specific team at a specific event.
-func (db *sqldb) GetTeamAwardsByEvent(eventID string, teamID int) []*EventAward {
+func (db *sqldb) GetTeamAwardsByEvent(eventID string, teamID int) ([]*EventAward, error) {
 	stmt := db.getStatement("getTeamAwardsByEvent")
 	if stmt == nil {
-		return nil
+		return nil, fmt.Errorf("prepared statement not found")
 	}
 	rows, err := stmt.Query(eventID, teamID)
 	if err != nil {
-		return nil
+		return nil, err
 	}
 	defer rows.Close()
 
@@ -262,18 +262,18 @@ func (db *sqldb) GetTeamAwardsByEvent(eventID string, teamID int) []*EventAward 
 		}
 		awards = append(awards, &ea)
 	}
-	return awards
+	return awards, nil
 }
 
 // GetAllTeamAwards retrieves all awards for a specific team across all events, ordered by event ID.
-func (db *sqldb) GetAllTeamAwards(teamID int) []*EventAward {
+func (db *sqldb) GetAllTeamAwards(teamID int) ([]*EventAward, error) {
 	stmt := db.getStatement("getAllTeamAwards")
 	if stmt == nil {
-		return nil
+		return nil, fmt.Errorf("prepared statement not found")
 	}
 	rows, err := stmt.Query(teamID)
 	if err != nil {
-		return nil
+		return nil, err
 	}
 	defer rows.Close()
 
@@ -286,18 +286,18 @@ func (db *sqldb) GetAllTeamAwards(teamID int) []*EventAward {
 		}
 		awards = append(awards, &ea)
 	}
-	return awards
+	return awards, nil
 }
 
 // GetEventRankings retrieves all rankings for a specific event.
-func (db *sqldb) GetEventRankings(eventID string) []*EventRanking {
+func (db *sqldb) GetEventRankings(eventID string) ([]*EventRanking, error) {
 	stmt := db.getStatement("getEventRankings")
 	if stmt == nil {
-		return nil
+		return nil, fmt.Errorf("prepared statement not found")
 	}
 	rows, err := stmt.Query(eventID)
 	if err != nil {
-		return nil
+		return nil, err
 	}
 	defer rows.Close()
 
@@ -326,7 +326,7 @@ func (db *sqldb) GetEventRankings(eventID string) []*EventRanking {
 		}
 		rankings = append(rankings, &er)
 	}
-	return rankings
+	return rankings, nil
 }
 
 // SaveEventRanking saves or updates an event ranking in the
@@ -340,14 +340,14 @@ func (db *sqldb) SaveEventRanking(er *EventRanking) error {
 }
 
 // GetEventAdvancements retrieves all team advancements for a specific event.
-func (db *sqldb) GetEventAdvancements(eventID string) []*EventAdvancement {
+func (db *sqldb) GetEventAdvancements(eventID string) ([]*EventAdvancement, error) {
 	stmt := db.getStatement("getEventAdvancements")
 	if stmt == nil {
-		return nil
+		return nil, fmt.Errorf("prepared statement not found")
 	}
 	rows, err := stmt.Query(eventID)
 	if err != nil {
-		return nil
+		return nil, err
 	}
 	defer rows.Close()
 
@@ -360,7 +360,7 @@ func (db *sqldb) GetEventAdvancements(eventID string) []*EventAdvancement {
 		}
 		advancements = append(advancements, &ea)
 	}
-	return advancements
+	return advancements, nil
 }
 
 // SaveEventAdvancement saves or updates an event advancement in the
@@ -374,14 +374,14 @@ func (db *sqldb) SaveEventAdvancement(ea *EventAdvancement) error {
 }
 
 // GetEventTeams retrieves all teams for a specific event.
-func (db *sqldb) GetEventTeams(eventID string) []*EventTeam {
+func (db *sqldb) GetEventTeams(eventID string) ([]*EventTeam, error) {
 	stmt := db.getStatement("getEventTeams")
 	if stmt == nil {
-		return nil
+		return nil, fmt.Errorf("prepared statement not found")
 	}
 	rows, err := stmt.Query(eventID)
 	if err != nil {
-		return nil
+		return nil, err
 	}
 	defer rows.Close()
 
@@ -394,7 +394,7 @@ func (db *sqldb) GetEventTeams(eventID string) []*EventTeam {
 		}
 		teams = append(teams, &et)
 	}
-	return teams
+	return teams, nil
 }
 
 // SaveEventTeam saves or updates an event team in the database.
@@ -408,14 +408,14 @@ func (db *sqldb) SaveEventTeam(et *EventTeam) error {
 }
 
 // GetEventsByTeam retrieves all event IDs that a team has or will participate in, sorted alphabetically.
-func (db *sqldb) GetEventsByTeam(teamID int) []string {
+func (db *sqldb) GetEventsByTeam(teamID int) ([]string, error) {
 	stmt := db.getStatement("getEventsByTeam")
 	if stmt == nil {
-		return nil
+		return nil, fmt.Errorf("prepared statement not found")
 	}
 	rows, err := stmt.Query(teamID)
 	if err != nil {
-		return nil
+		return nil, err
 	}
 	defer rows.Close()
 
@@ -428,18 +428,18 @@ func (db *sqldb) GetEventsByTeam(teamID int) []string {
 		}
 		eventIDs = append(eventIDs, eventID)
 	}
-	return eventIDs
+	return eventIDs, nil
 }
 
 // GetRegionCodes retrieves all unique region codes from events, sorted alphabetically.
-func (db *sqldb) GetRegionCodes() []string {
+func (db *sqldb) GetRegionCodes() ([]string, error) {
 	stmt := db.getStatement("getRegionCodes")
 	if stmt == nil {
-		return nil
+		return nil, fmt.Errorf("prepared statement not found")
 	}
 	rows, err := stmt.Query()
 	if err != nil {
-		return nil
+		return nil, err
 	}
 	defer rows.Close()
 
@@ -452,18 +452,18 @@ func (db *sqldb) GetRegionCodes() []string {
 		}
 		regionCodes = append(regionCodes, regionCode)
 	}
-	return regionCodes
+	return regionCodes, nil
 }
 
 // GetEventCodesByRegion retrieves all unique event codes for a given region, sorted alphabetically.
-func (db *sqldb) GetEventCodesByRegion(regionCode string) []string {
+func (db *sqldb) GetEventCodesByRegion(regionCode string) ([]string, error) {
 	stmt := db.getStatement("getEventCodesByRegion")
 	if stmt == nil {
-		return nil
+		return nil, fmt.Errorf("prepared statement not found")
 	}
 	rows, err := stmt.Query(regionCode)
 	if err != nil {
-		return nil
+		return nil, err
 	}
 	defer rows.Close()
 
@@ -476,18 +476,18 @@ func (db *sqldb) GetEventCodesByRegion(regionCode string) []string {
 		}
 		eventCodes = append(eventCodes, eventCode)
 	}
-	return eventCodes
+	return eventCodes, nil
 }
 
 // GetAdvancementsByRegion retrieves all event advancements for events in a given region, ordered by event ID and team ID.
-func (db *sqldb) GetAdvancementsByRegion(regionCode string) []*EventAdvancement {
+func (db *sqldb) GetAdvancementsByRegion(regionCode string) ([]*EventAdvancement, error) {
 	stmt := db.getStatement("getAdvancementsByRegion")
 	if stmt == nil {
-		return nil
+		return nil, fmt.Errorf("prepared statement not found")
 	}
 	rows, err := stmt.Query(regionCode)
 	if err != nil {
-		return nil
+		return nil, err
 	}
 	defer rows.Close()
 
@@ -500,13 +500,13 @@ func (db *sqldb) GetAdvancementsByRegion(regionCode string) []*EventAdvancement 
 		}
 		advancements = append(advancements, &ea)
 	}
-	return advancements
+	return advancements, nil
 }
 
 // GetAllAdvancements retrieves all event advancements from all events with optional filters.
 // If no filters are provided, returns all advancements.
 // Filters are combined with OR logic within each field and AND logic between fields.
-func (db *sqldb) GetAllAdvancements(filters ...AdvancementFilter) []*EventAdvancement {
+func (db *sqldb) GetAllAdvancements(filters ...AdvancementFilter) ([]*EventAdvancement, error) {
 	// Build dynamic query
 	query := "SELECT ea.event_id, ea.team_id, ea.status FROM event_advancements ea"
 	args := []interface{}{}
@@ -563,7 +563,7 @@ func (db *sqldb) GetAllAdvancements(filters ...AdvancementFilter) []*EventAdvanc
 	// Execute query
 	rows, err := db.sqldb.Query(query, args...)
 	if err != nil {
-		return nil
+		return nil, err
 	}
 	defer rows.Close()
 
@@ -576,5 +576,5 @@ func (db *sqldb) GetAllAdvancements(filters ...AdvancementFilter) []*EventAdvanc
 		}
 		advancements = append(advancements, &ea)
 	}
-	return advancements
+	return advancements, nil
 }

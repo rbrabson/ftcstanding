@@ -1,7 +1,6 @@
 package query
 
 import (
-	"log/slog"
 	"slices"
 
 	"github.com/rbrabson/ftcstanding/database"
@@ -33,14 +32,17 @@ type TeamMatchResult struct {
 }
 
 // MatchesByEventQuery retrieves all matches for an event, including alliance scores and all participating teams.
-func MatchesByEventQuery(eventCode string, year int) []*MatchDetails {
+func MatchesByEventQuery(eventCode string, year int) ([]*MatchDetails, error) {
 	// Get the event details
 	filter := database.EventFilter{
 		EventCodes: []string{eventCode},
 	}
-	events := db.GetAllEvents(filter)
+	events, err := db.GetAllEvents(filter)
+	if err != nil {
+		return nil, err
+	}
 	if len(events) == 0 {
-		return nil
+		return nil, nil
 	}
 	var event *database.Event
 	for _, e := range events {
@@ -51,13 +53,16 @@ func MatchesByEventQuery(eventCode string, year int) []*MatchDetails {
 	}
 
 	if event == nil {
-		return nil
+		return nil, nil
 	}
 
 	// Get all matches for the event
-	matches := db.GetMatchesByEvent(event.EventID)
+	matches, err := db.GetMatchesByEvent(event.EventID)
+	if err != nil {
+		return nil, err
+	}
 	if matches == nil {
-		return nil
+		return nil, nil
 	}
 
 	var results []*MatchDetails
@@ -65,20 +70,31 @@ func MatchesByEventQuery(eventCode string, year int) []*MatchDetails {
 	// Process each match
 	for _, match := range matches {
 		// Get all teams in this match
-		matchTeams := db.GetMatchTeams(match.MatchID)
+		matchTeams, err := db.GetMatchTeams(match.MatchID)
+		if err != nil {
+			return nil, err
+		}
 		if matchTeams == nil {
-			slog.Debug("no teams found", "matchID", match.MatchID)
 			continue
 		}
 
 		// Get alliance scores
-		redScore := db.GetMatchAllianceScore(match.MatchID, database.AllianceRed)
-		blueScore := db.GetMatchAllianceScore(match.MatchID, database.AllianceBlue)
+		redScore, err := db.GetMatchAllianceScore(match.MatchID, database.AllianceRed)
+		if err != nil {
+			return nil, err
+		}
+		blueScore, err := db.GetMatchAllianceScore(match.MatchID, database.AllianceBlue)
+		if err != nil {
+			return nil, err
+		}
 
 		// Separate teams by alliance
 		var redTeams, blueTeams []*database.Team
 		for _, team := range matchTeams {
-			t := db.GetTeam(team.TeamID)
+			t, err := db.GetTeam(team.TeamID)
+			if err != nil {
+				return nil, err
+			}
 			if team.Alliance == database.AllianceRed {
 				redTeams = append(redTeams, t)
 			} else {
@@ -118,38 +134,50 @@ func MatchesByEventQuery(eventCode string, year int) []*MatchDetails {
 		return 0
 	})
 
-	return results
+	return results, nil
 }
 
 // MatchesByEventAndTeamQuery retrieves all matches for a specific team at an event.
 // It shows the match from the team's perspective with their result (Won/Lost/Tied).
-func MatchesByEventAndTeamQuery(eventCode string, teamID int, year int) []*TeamMatchResult {
+func MatchesByEventAndTeamQuery(eventCode string, teamID int, year int) ([]*TeamMatchResult, error) {
 	// Get the event details
 	filter := database.EventFilter{
 		EventCodes: []string{eventCode},
 		Year:       year,
 	}
-	events := db.GetAllEvents(filter)
+	events, err := db.GetAllEvents(filter)
+	if err != nil {
+		return nil, err
+	}
 	if len(events) == 0 {
-		return nil
+		return nil, nil
 	}
 	event := events[0]
 
-	matches := db.GetMatchesByEvent(event.EventID)
+	matches, err := db.GetMatchesByEvent(event.EventID)
+	if err != nil {
+		return nil, err
+	}
 	if matches == nil {
-		return nil
+		return nil, nil
 	}
 
 	// Get the team object
-	team := db.GetTeam(teamID)
+	team, err := db.GetTeam(teamID)
+	if err != nil {
+		return nil, err
+	}
 	if team == nil {
-		return nil
+		return nil, nil
 	}
 
 	var results []*TeamMatchResult
 	for _, match := range matches {
 		// Get all teams in this match
-		matchTeams := db.GetMatchTeams(match.MatchID)
+		matchTeams, err := db.GetMatchTeams(match.MatchID)
+		if err != nil {
+			return nil, err
+		}
 		if len(matchTeams) == 0 {
 			continue
 		}
@@ -171,13 +199,22 @@ func MatchesByEventAndTeamQuery(eventCode string, teamID int, year int) []*TeamM
 		}
 
 		// Get alliance scores
-		redScore := db.GetMatchAllianceScore(match.MatchID, database.AllianceRed)
-		blueScore := db.GetMatchAllianceScore(match.MatchID, database.AllianceBlue)
+		redScore, err := db.GetMatchAllianceScore(match.MatchID, database.AllianceRed)
+		if err != nil {
+			return nil, err
+		}
+		blueScore, err := db.GetMatchAllianceScore(match.MatchID, database.AllianceBlue)
+		if err != nil {
+			return nil, err
+		}
 
 		// Separate teams by alliance
 		var redTeams, blueTeams []*database.Team
 		for _, mt := range matchTeams {
-			t := db.GetTeam(mt.TeamID)
+			t, err := db.GetTeam(mt.TeamID)
+			if err != nil {
+				return nil, err
+			}
 			if mt.Alliance == database.AllianceRed {
 				redTeams = append(redTeams, t)
 			} else {
@@ -254,18 +291,21 @@ func MatchesByEventAndTeamQuery(eventCode string, teamID int, year int) []*TeamM
 		return 0
 	})
 
-	return results
+	return results, nil
 }
 
 // GetEventTeamsQuery retrieves all EventTeam entries for a given event.
-func GetEventTeamsQuery(eventCode string, year int) []*database.EventTeam {
+func GetEventTeamsQuery(eventCode string, year int) ([]*database.EventTeam, error) {
 	// Get the event details
 	filter := database.EventFilter{
 		EventCodes: []string{eventCode},
 	}
-	events := db.GetAllEvents(filter)
+	events, err := db.GetAllEvents(filter)
+	if err != nil {
+		return nil, err
+	}
 	if len(events) == 0 {
-		return nil
+		return nil, nil
 	}
 	var event *database.Event
 	for _, e := range events {
@@ -276,10 +316,14 @@ func GetEventTeamsQuery(eventCode string, year int) []*database.EventTeam {
 	}
 
 	if event == nil {
-		return nil
+		return nil, nil
 	}
 
-	return db.GetEventTeams(event.EventID)
+	teams, err := db.GetEventTeams(event.EventID)
+	if err != nil {
+		return nil, err
+	}
+	return teams, nil
 }
 
 // SaveEventTeam saves an EventTeam entry to the database.

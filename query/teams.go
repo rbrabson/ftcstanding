@@ -45,16 +45,23 @@ type TeamDetails struct {
 }
 
 // TeamsQuery returns a list of teams that match the given filter.
-func TeamsQuery(filter ...database.TeamFilter) []*database.Team {
-	return db.GetAllTeams(filter...)
+func TeamsQuery(filter ...database.TeamFilter) ([]*database.Team, error) {
+	teams, err := db.GetAllTeams(filter...)
+	if err != nil {
+		return nil, err
+	}
+	return teams, nil
 }
 
 // TeamDetailsQuery returns detailed information about a specific team.
-func TeamDetailsQuery(teamID int) *TeamDetails {
+func TeamDetailsQuery(teamID int) (*TeamDetails, error) {
 	// Get team basic information
-	team := db.GetTeam(teamID)
+	team, err := db.GetTeam(teamID)
+	if err != nil {
+		return nil, err
+	}
 	if team == nil {
-		return nil
+		return nil, nil
 	}
 
 	// Initialize team details
@@ -71,11 +78,17 @@ func TeamDetailsQuery(teamID int) *TeamDetails {
 	}
 
 	// Get all events for this team
-	eventIDs := db.GetEventsByTeam(teamID)
+	eventIDs, err := db.GetEventsByTeam(teamID)
+	if err != nil {
+		return nil, err
+	}
 
 	// Process each event
 	for _, eventID := range eventIDs {
-		event := db.GetEvent(eventID)
+		event, err := db.GetEvent(eventID)
+		if err != nil {
+			return nil, err
+		}
 		if event == nil {
 			continue
 		}
@@ -87,7 +100,10 @@ func TeamDetailsQuery(teamID int) *TeamDetails {
 		}
 
 		// Get qualification ranking for this team at this event
-		rankings := db.GetEventRankings(eventID)
+		rankings, err := db.GetEventRankings(eventID)
+		if err != nil {
+			return nil, err
+		}
 		for _, ranking := range rankings {
 			if ranking.TeamID == teamID {
 				eventDetail.QualRank = ranking.Rank
@@ -96,11 +112,17 @@ func TeamDetailsQuery(teamID int) *TeamDetails {
 		}
 
 		// Get matches for this event
-		matches := db.GetMatchesByEvent(eventID)
+		matches, err := db.GetMatchesByEvent(eventID)
+		if err != nil {
+			return nil, err
+		}
 
 		// Calculate records by going through each match
 		for _, match := range matches {
-			matchTeams := db.GetMatchTeams(match.MatchID)
+			matchTeams, err := db.GetMatchTeams(match.MatchID)
+			if err != nil {
+				return nil, err
+			}
 
 			// Check if this team participated in the match
 			var teamAlliance string
@@ -118,12 +140,18 @@ func TeamDetailsQuery(teamID int) *TeamDetails {
 			}
 
 			// Get alliance scores
-			teamScore := db.GetMatchAllianceScore(match.MatchID, teamAlliance)
+			teamScore, err := db.GetMatchAllianceScore(match.MatchID, teamAlliance)
+			if err != nil {
+				return nil, err
+			}
 			opponentAlliance := database.AllianceRed
 			if teamAlliance == database.AllianceRed {
 				opponentAlliance = database.AllianceBlue
 			}
-			opponentScore := db.GetMatchAllianceScore(match.MatchID, opponentAlliance)
+			opponentScore, err := db.GetMatchAllianceScore(match.MatchID, opponentAlliance)
+			if err != nil {
+				return nil, err
+			}
 
 			if teamScore == nil || opponentScore == nil {
 				continue
@@ -168,7 +196,10 @@ func TeamDetailsQuery(teamID int) *TeamDetails {
 		}
 
 		// Check if team advanced from this event
-		advancements := db.GetEventAdvancements(eventID)
+		advancements, err := db.GetEventAdvancements(eventID)
+		if err != nil {
+			return nil, err
+		}
 		for _, adv := range advancements {
 			if adv.TeamID == teamID {
 				eventDetail.Advanced = true
@@ -177,7 +208,10 @@ func TeamDetailsQuery(teamID int) *TeamDetails {
 		}
 
 		// Get awards won at this event
-		awards := db.GetTeamAwardsByEvent(eventID, teamID)
+		awards, err := db.GetTeamAwardsByEvent(eventID, teamID)
+		if err != nil {
+			return nil, err
+		}
 		eventDetail.Awards = make([]string, 0, len(awards))
 		for _, award := range awards {
 			eventDetail.Awards = append(eventDetail.Awards, award.Name)
@@ -191,5 +225,5 @@ func TeamDetailsQuery(teamID int) *TeamDetails {
 		return details.Events[i].DateStart.Before(details.Events[j].DateStart)
 	})
 
-	return details
+	return details, nil
 }

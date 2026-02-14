@@ -188,7 +188,11 @@ func getMatchTeams(match *database.Match, ftcMatch *ftc.Match) (redTeams, blueTe
 // This should be called after matches have been retrieved and saved to ensure the event_teams table is populated.
 func StoreEventTeamsFromMatches(event *database.Event) error {
 	// Get all matches for the event from the database
-	matches := db.GetMatchesByEvent(event.EventID)
+	matches, err := db.GetMatchesByEvent(event.EventID)
+	if err != nil {
+		slog.Error("failed to load matches for event", "eventID", event.EventID, "error", err)
+		return err
+	}
 	if len(matches) == 0 {
 		slog.Warn("no matches found for event", "eventID", event.EventID)
 		return nil
@@ -197,7 +201,11 @@ func StoreEventTeamsFromMatches(event *database.Event) error {
 	// Collect all unique team IDs from matches
 	teamIDsMap := make(map[int]bool)
 	for _, match := range matches {
-		matchTeams := db.GetMatchTeams(match.MatchID)
+		matchTeams, err := db.GetMatchTeams(match.MatchID)
+		if err != nil {
+			slog.Error("failed to load match teams", "matchID", match.MatchID, "error", err)
+			continue
+		}
 		for _, mt := range matchTeams {
 			teamIDsMap[mt.TeamID] = true
 		}

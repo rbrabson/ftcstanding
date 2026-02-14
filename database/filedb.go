@@ -6,7 +6,9 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"reflect"
 	"sync"
+	"time"
 
 	"github.com/joho/godotenv"
 )
@@ -38,6 +40,9 @@ import (
 type filedb struct {
 	dataDir string
 
+	fileStateMu sync.Mutex
+	fileStates  map[string]fileState
+
 	// Table-level locks for fine-grained concurrency control
 	awardsMu            sync.RWMutex
 	teamsMu             sync.RWMutex
@@ -62,6 +67,12 @@ type filedb struct {
 	matches           map[string]*Match
 	matchScores       map[string]map[string]*MatchAllianceScore // matchID -> alliance -> score
 	matchTeams        map[string][]*MatchTeam                   // keyed by matchID
+}
+
+type fileState struct {
+	exists  bool
+	modTime time.Time
+	size    int64
 }
 
 // InitFileDB initializes a file-based database.
@@ -96,6 +107,7 @@ func initFileDB(season ...string) (*filedb, error) {
 
 	db := &filedb{
 		dataDir:           dataDir,
+		fileStates:        make(map[string]fileState),
 		awards:            make(map[int]*Award),
 		teams:             make(map[int]*Team),
 		teamRankings:      make(map[string]map[int]*TeamRanking),
@@ -115,6 +127,44 @@ func initFileDB(season ...string) (*filedb, error) {
 	}
 
 	return db, nil
+}
+
+func (db *filedb) refreshAllIfChanged() error {
+	if err := db.refreshAwardsIfChanged(); err != nil {
+		return err
+	}
+	if err := db.refreshTeamsIfChanged(); err != nil {
+		return err
+	}
+	if err := db.refreshTeamRankingsIfChanged(); err != nil {
+		return err
+	}
+	if err := db.refreshEventsIfChanged(); err != nil {
+		return err
+	}
+	if err := db.refreshEventAwardsIfChanged(); err != nil {
+		return err
+	}
+	if err := db.refreshEventRankingsIfChanged(); err != nil {
+		return err
+	}
+	if err := db.refreshEventAdvancementsIfChanged(); err != nil {
+		return err
+	}
+	if err := db.refreshEventTeamsIfChanged(); err != nil {
+		return err
+	}
+	if err := db.refreshMatchesIfChanged(); err != nil {
+		return err
+	}
+	if err := db.refreshMatchScoresIfChanged(); err != nil {
+		return err
+	}
+	if err := db.refreshMatchTeamsIfChanged(); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // Close implements the DB interface. For file-based DB, this saves all data.
@@ -208,6 +258,10 @@ func (db *filedb) loadAll() error {
 
 // saveAll saves all data to JSON files.
 func (db *filedb) saveAll() error {
+	if err := db.refreshAllIfChanged(); err != nil {
+		return err
+	}
+
 	// Lock all tables for saving (read locks since we're only reading the data structures to save)
 	db.awardsMu.RLock()
 	defer db.awardsMu.RUnlock()
@@ -279,14 +333,175 @@ func (db *filedb) saveAll() error {
 	return nil
 }
 
+func (db *filedb) refreshAwardsIfChanged() error {
+	return db.refreshJSONFileIfChanged("awards.json", &db.awardsMu, &db.awards)
+}
+
+func (db *filedb) refreshTeamsIfChanged() error {
+	return db.refreshJSONFileIfChanged("teams.json", &db.teamsMu, &db.teams)
+}
+
+func (db *filedb) refreshTeamRankingsIfChanged() error {
+	return db.refreshJSONFileIfChanged("team_rankings.json", &db.teamRankingsMu, &db.teamRankings)
+}
+
+func (db *filedb) refreshEventsIfChanged() error {
+	return db.refreshJSONFileIfChanged("events.json", &db.eventsMu, &db.events)
+}
+
+func (db *filedb) refreshEventAwardsIfChanged() error {
+	return db.refreshJSONFileIfChanged("event_awards.json", &db.eventAwardsMu, &db.eventAwards)
+}
+
+func (db *filedb) refreshEventRankingsIfChanged() error {
+	return db.refreshJSONFileIfChanged("event_rankings.json", &db.eventRankingsMu, &db.eventRankings)
+}
+
+func (db *filedb) refreshEventAdvancementsIfChanged() error {
+	return db.refreshJSONFileIfChanged("event_advancements.json", &db.eventAdvancementsMu, &db.eventAdvancements)
+}
+
+func (db *filedb) refreshEventTeamsIfChanged() error {
+	return db.refreshJSONFileIfChanged("event_teams.json", &db.eventTeamsMu, &db.eventTeams)
+}
+
+func (db *filedb) refreshMatchesIfChanged() error {
+	return db.refreshJSONFileIfChanged("matches.json", &db.matchesMu, &db.matches)
+}
+
+func (db *filedb) refreshMatchScoresIfChanged() error {
+	return db.refreshJSONFileIfChanged("match_scores.json", &db.matchScoresMu, &db.matchScores)
+}
+
+func (db *filedb) refreshMatchTeamsIfChanged() error {
+	return db.refreshJSONFileIfChanged("match_teams.json", &db.matchTeamsMu, &db.matchTeams)
+}
+
+func (db *filedb) refreshJSONFileIfChanged(filename string, mu *sync.RWMutex, target interface{}) error {
+	changed, err := db.hasFileChanged(filename)
+	if err != nil || !changed {
+		return err
+	}
+
+	mu.Lock()
+	defer mu.Unlock()
+
+	changed, err = db.hasFileChanged(filename)
+	if err != nil || !changed {
+		return err
+	}
+
+	if err := db.loadJSONFile(filename, target); err != nil {
+		if !os.IsNotExist(err) {
+			return err
+		}
+
+		if err := resetTarget(target); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (db *filedb) hasFileChanged(filename string) (bool, error) {
+	known, ok := db.getKnownFileState(filename)
+	if !ok {
+		return true, nil
+	}
+
+	current, err := db.currentFileState(filename)
+	if err != nil {
+		return false, err
+	}
+
+	return !sameFileState(current, known), nil
+}
+
+func (db *filedb) currentFileState(filename string) (fileState, error) {
+	path := filepath.Join(db.dataDir, filename)
+	info, err := os.Stat(path)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return fileState{exists: false}, nil
+		}
+		return fileState{}, err
+	}
+
+	return fileState{
+		exists:  true,
+		modTime: info.ModTime(),
+		size:    info.Size(),
+	}, nil
+}
+
+func (db *filedb) getKnownFileState(filename string) (fileState, bool) {
+	db.fileStateMu.Lock()
+	defer db.fileStateMu.Unlock()
+
+	state, ok := db.fileStates[filename]
+	return state, ok
+}
+
+func (db *filedb) setKnownFileState(filename string, state fileState) {
+	db.fileStateMu.Lock()
+	defer db.fileStateMu.Unlock()
+
+	db.fileStates[filename] = state
+}
+
+func sameFileState(a, b fileState) bool {
+	if a.exists != b.exists {
+		return false
+	}
+	if !a.exists {
+		return true
+	}
+
+	return a.size == b.size && a.modTime.Equal(b.modTime)
+}
+
+func resetTarget(target interface{}) error {
+	v := reflect.ValueOf(target)
+	if v.Kind() != reflect.Ptr {
+		return errors.New("target must be a pointer")
+	}
+
+	elem := v.Elem()
+	switch elem.Kind() {
+	case reflect.Map:
+		elem.Set(reflect.MakeMap(elem.Type()))
+	case reflect.Slice:
+		elem.Set(reflect.MakeSlice(elem.Type(), 0, 0))
+	default:
+		elem.Set(reflect.Zero(elem.Type()))
+	}
+
+	return nil
+}
+
 // loadJSONFile loads data from a JSON file.
 func (db *filedb) loadJSONFile(filename string, v interface{}) error {
 	path := filepath.Join(db.dataDir, filename)
 	data, err := os.ReadFile(path)
 	if err != nil {
+		if os.IsNotExist(err) {
+			db.setKnownFileState(filename, fileState{exists: false})
+		}
 		return err
 	}
-	return json.Unmarshal(data, v)
+
+	if err := json.Unmarshal(data, v); err != nil {
+		return err
+	}
+
+	state, err := db.currentFileState(filename)
+	if err != nil {
+		return err
+	}
+	db.setKnownFileState(filename, state)
+
+	return nil
 }
 
 // saveJSONFile saves data to a JSON file.
@@ -296,5 +511,16 @@ func (db *filedb) saveJSONFile(filename string, v interface{}) error {
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(path, data, 0644)
+
+	if err := os.WriteFile(path, data, 0644); err != nil {
+		return err
+	}
+
+	state, err := db.currentFileState(filename)
+	if err != nil {
+		return err
+	}
+	db.setKnownFileState(filename, state)
+
+	return nil
 }

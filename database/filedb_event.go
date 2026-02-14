@@ -6,23 +6,31 @@ import (
 )
 
 // GetEvent retrieves an event from the file database by its ID.
-func (db *filedb) GetEvent(eventID string) *Event {
+func (db *filedb) GetEvent(eventID string) (*Event, error) {
+	if err := db.refreshEventsIfChanged(); err != nil {
+		return nil, err
+	}
+
 	db.eventsMu.RLock()
 	defer db.eventsMu.RUnlock()
 
 	event, ok := db.events[eventID]
 	if !ok {
-		return nil
+		return nil, nil
 	}
 	// Return a copy to avoid external modifications
 	eventCopy := *event
-	return &eventCopy
+	return &eventCopy, nil
 }
 
 // GetAllEvents retrieves all events from the file database with optional filters.
 // If no filters are provided, returns all events.
 // Filters are combined with OR logic within each field and AND logic between fields.
-func (db *filedb) GetAllEvents(filters ...EventFilter) []*Event {
+func (db *filedb) GetAllEvents(filters ...EventFilter) ([]*Event, error) {
+	if err := db.refreshEventsIfChanged(); err != nil {
+		return nil, err
+	}
+
 	db.eventsMu.RLock()
 	defer db.eventsMu.RUnlock()
 
@@ -33,7 +41,7 @@ func (db *filedb) GetAllEvents(filters ...EventFilter) []*Event {
 			eventCopy := *event
 			events = append(events, &eventCopy)
 		}
-		return events
+		return events, nil
 	}
 
 	filter := filters[0]
@@ -84,11 +92,15 @@ func (db *filedb) GetAllEvents(filters ...EventFilter) []*Event {
 		}
 	}
 
-	return events
+	return events, nil
 }
 
 // SaveEvent saves or updates an event in the file database.
 func (db *filedb) SaveEvent(event *Event) error {
+	if err := db.refreshEventsIfChanged(); err != nil {
+		return err
+	}
+
 	db.eventsMu.Lock()
 	defer db.eventsMu.Unlock()
 
@@ -101,13 +113,17 @@ func (db *filedb) SaveEvent(event *Event) error {
 }
 
 // GetEventAwards retrieves all awards given at a specific event.
-func (db *filedb) GetEventAwards(eventID string) []*EventAward {
+func (db *filedb) GetEventAwards(eventID string) ([]*EventAward, error) {
+	if err := db.refreshEventAwardsIfChanged(); err != nil {
+		return nil, err
+	}
+
 	db.eventAwardsMu.RLock()
 	defer db.eventAwardsMu.RUnlock()
 
 	awards, ok := db.eventAwards[eventID]
 	if !ok {
-		return nil
+		return nil, nil
 	}
 
 	// Return copies
@@ -116,11 +132,15 @@ func (db *filedb) GetEventAwards(eventID string) []*EventAward {
 		awardCopy := *award
 		result[i] = &awardCopy
 	}
-	return result
+	return result, nil
 }
 
 // SaveEventAward saves or updates an event award in the file database.
 func (db *filedb) SaveEventAward(ea *EventAward) error {
+	if err := db.refreshEventAwardsIfChanged(); err != nil {
+		return err
+	}
+
 	db.eventAwardsMu.Lock()
 	defer db.eventAwardsMu.Unlock()
 
@@ -148,13 +168,17 @@ func (db *filedb) SaveEventAward(ea *EventAward) error {
 }
 
 // GetTeamAwardsByEvent retrieves all awards for a specific team at a specific event.
-func (db *filedb) GetTeamAwardsByEvent(eventID string, teamID int) []*EventAward {
+func (db *filedb) GetTeamAwardsByEvent(eventID string, teamID int) ([]*EventAward, error) {
+	if err := db.refreshEventAwardsIfChanged(); err != nil {
+		return nil, err
+	}
+
 	db.eventAwardsMu.RLock()
 	defer db.eventAwardsMu.RUnlock()
 
 	awards, ok := db.eventAwards[eventID]
 	if !ok {
-		return nil
+		return nil, nil
 	}
 
 	result := make([]*EventAward, 0)
@@ -164,11 +188,15 @@ func (db *filedb) GetTeamAwardsByEvent(eventID string, teamID int) []*EventAward
 			result = append(result, &awardCopy)
 		}
 	}
-	return result
+	return result, nil
 }
 
 // GetAllTeamAwards retrieves all awards for a specific team across all events.
-func (db *filedb) GetAllTeamAwards(teamID int) []*EventAward {
+func (db *filedb) GetAllTeamAwards(teamID int) ([]*EventAward, error) {
+	if err := db.refreshEventAwardsIfChanged(); err != nil {
+		return nil, err
+	}
+
 	db.eventAwardsMu.RLock()
 	defer db.eventAwardsMu.RUnlock()
 
@@ -181,17 +209,21 @@ func (db *filedb) GetAllTeamAwards(teamID int) []*EventAward {
 			}
 		}
 	}
-	return result
+	return result, nil
 }
 
 // GetEventRankings retrieves all rankings for a specific event.
-func (db *filedb) GetEventRankings(eventID string) []*EventRanking {
+func (db *filedb) GetEventRankings(eventID string) ([]*EventRanking, error) {
+	if err := db.refreshEventRankingsIfChanged(); err != nil {
+		return nil, err
+	}
+
 	db.eventRankingsMu.RLock()
 	defer db.eventRankingsMu.RUnlock()
 
 	rankings, ok := db.eventRankings[eventID]
 	if !ok {
-		return nil
+		return nil, nil
 	}
 
 	// Return copies
@@ -200,11 +232,15 @@ func (db *filedb) GetEventRankings(eventID string) []*EventRanking {
 		rankingCopy := *ranking
 		result[i] = &rankingCopy
 	}
-	return result
+	return result, nil
 }
 
 // SaveEventRanking saves or updates an event ranking in the file database.
 func (db *filedb) SaveEventRanking(er *EventRanking) error {
+	if err := db.refreshEventRankingsIfChanged(); err != nil {
+		return err
+	}
+
 	db.eventRankingsMu.Lock()
 	defer db.eventRankingsMu.Unlock()
 
@@ -232,13 +268,17 @@ func (db *filedb) SaveEventRanking(er *EventRanking) error {
 }
 
 // GetEventAdvancements retrieves all team advancements for a specific event.
-func (db *filedb) GetEventAdvancements(eventID string) []*EventAdvancement {
+func (db *filedb) GetEventAdvancements(eventID string) ([]*EventAdvancement, error) {
+	if err := db.refreshEventAdvancementsIfChanged(); err != nil {
+		return nil, err
+	}
+
 	db.eventAdvancementsMu.RLock()
 	defer db.eventAdvancementsMu.RUnlock()
 
 	advancements, ok := db.eventAdvancements[eventID]
 	if !ok {
-		return nil
+		return nil, nil
 	}
 
 	// Return copies
@@ -247,11 +287,15 @@ func (db *filedb) GetEventAdvancements(eventID string) []*EventAdvancement {
 		advancementCopy := *advancement
 		result[i] = &advancementCopy
 	}
-	return result
+	return result, nil
 }
 
 // SaveEventAdvancement saves or updates an event advancement in the file database.
 func (db *filedb) SaveEventAdvancement(ea *EventAdvancement) error {
+	if err := db.refreshEventAdvancementsIfChanged(); err != nil {
+		return err
+	}
+
 	db.eventAdvancementsMu.Lock()
 	defer db.eventAdvancementsMu.Unlock()
 
@@ -279,7 +323,11 @@ func (db *filedb) SaveEventAdvancement(ea *EventAdvancement) error {
 }
 
 // GetRegionCodes retrieves all unique region codes from events.
-func (db *filedb) GetRegionCodes() []string {
+func (db *filedb) GetRegionCodes() ([]string, error) {
+	if err := db.refreshEventsIfChanged(); err != nil {
+		return nil, err
+	}
+
 	db.eventsMu.RLock()
 	defer db.eventsMu.RUnlock()
 
@@ -295,11 +343,15 @@ func (db *filedb) GetRegionCodes() []string {
 		regions = append(regions, region)
 	}
 	sort.Strings(regions)
-	return regions
+	return regions, nil
 }
 
 // GetEventCodesByRegion retrieves all unique event codes for a given region.
-func (db *filedb) GetEventCodesByRegion(regionCode string) []string {
+func (db *filedb) GetEventCodesByRegion(regionCode string) ([]string, error) {
+	if err := db.refreshEventsIfChanged(); err != nil {
+		return nil, err
+	}
+
 	db.eventsMu.RLock()
 	defer db.eventsMu.RUnlock()
 
@@ -315,11 +367,18 @@ func (db *filedb) GetEventCodesByRegion(regionCode string) []string {
 		eventCodes = append(eventCodes, code)
 	}
 	sort.Strings(eventCodes)
-	return eventCodes
+	return eventCodes, nil
 }
 
 // GetAdvancementsByRegion retrieves all event advancements for events in a given region.
-func (db *filedb) GetAdvancementsByRegion(regionCode string) []*EventAdvancement {
+func (db *filedb) GetAdvancementsByRegion(regionCode string) ([]*EventAdvancement, error) {
+	if err := db.refreshEventsIfChanged(); err != nil {
+		return nil, err
+	}
+	if err := db.refreshEventAdvancementsIfChanged(); err != nil {
+		return nil, err
+	}
+
 	// Need to lock both events and eventAdvancements since we read from both
 	db.eventsMu.RLock()
 	defer db.eventsMu.RUnlock()
@@ -336,13 +395,22 @@ func (db *filedb) GetAdvancementsByRegion(regionCode string) []*EventAdvancement
 			}
 		}
 	}
-	return result
+	return result, nil
 }
 
 // GetAllAdvancements retrieves all event advancements from all events with optional filters.
 // If no filters are provided, returns all advancements.
 // Filters are combined with OR logic within each field and AND logic between fields.
-func (db *filedb) GetAllAdvancements(filters ...AdvancementFilter) []*EventAdvancement {
+func (db *filedb) GetAllAdvancements(filters ...AdvancementFilter) ([]*EventAdvancement, error) {
+	if err := db.refreshEventAdvancementsIfChanged(); err != nil {
+		return nil, err
+	}
+	if len(filters) > 0 {
+		if err := db.refreshEventsIfChanged(); err != nil {
+			return nil, err
+		}
+	}
+
 	// Lock eventAdvancements for all cases
 	db.eventAdvancementsMu.RLock()
 	defer db.eventAdvancementsMu.RUnlock()
@@ -356,7 +424,7 @@ func (db *filedb) GetAllAdvancements(filters ...AdvancementFilter) []*EventAdvan
 				result = append(result, &advancementCopy)
 			}
 		}
-		return result
+		return result, nil
 	}
 
 	// Need to also lock events when filtering
@@ -425,17 +493,21 @@ func (db *filedb) GetAllAdvancements(filters ...AdvancementFilter) []*EventAdvan
 		}
 	}
 
-	return result
+	return result, nil
 }
 
 // GetEventTeams retrieves all teams for a specific event.
-func (db *filedb) GetEventTeams(eventID string) []*EventTeam {
+func (db *filedb) GetEventTeams(eventID string) ([]*EventTeam, error) {
+	if err := db.refreshEventTeamsIfChanged(); err != nil {
+		return nil, err
+	}
+
 	db.eventTeamsMu.RLock()
 	defer db.eventTeamsMu.RUnlock()
 
 	teams, ok := db.eventTeams[eventID]
 	if !ok {
-		return nil
+		return nil, nil
 	}
 
 	// Return copies
@@ -444,11 +516,15 @@ func (db *filedb) GetEventTeams(eventID string) []*EventTeam {
 		teamCopy := *team
 		result[i] = &teamCopy
 	}
-	return result
+	return result, nil
 }
 
 // SaveEventTeam saves or updates an event team in the file database.
 func (db *filedb) SaveEventTeam(et *EventTeam) error {
+	if err := db.refreshEventTeamsIfChanged(); err != nil {
+		return err
+	}
+
 	db.eventTeamsMu.Lock()
 	defer db.eventTeamsMu.Unlock()
 
@@ -476,7 +552,11 @@ func (db *filedb) SaveEventTeam(et *EventTeam) error {
 }
 
 // GetEventsByTeam retrieves all event IDs that a team has or will participate in.
-func (db *filedb) GetEventsByTeam(teamID int) []string {
+func (db *filedb) GetEventsByTeam(teamID int) ([]string, error) {
+	if err := db.refreshEventTeamsIfChanged(); err != nil {
+		return nil, err
+	}
+
 	db.eventTeamsMu.RLock()
 	defer db.eventTeamsMu.RUnlock()
 
@@ -489,5 +569,5 @@ func (db *filedb) GetEventsByTeam(teamID int) []string {
 			}
 		}
 	}
-	return eventIDs
+	return eventIDs, nil
 }

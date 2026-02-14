@@ -169,7 +169,11 @@ func RequestEventAdvancements(event *database.Event) []*database.EventAdvancemen
 
 func RequestTeamsInEvent(event *database.Event) []*database.EventTeam {
 	// Get all matches for the event from the database
-	matches := db.GetMatchesByEvent(event.EventID)
+	matches, err := db.GetMatchesByEvent(event.EventID)
+	if err != nil {
+		slog.Error("failed to load matches for event", "eventID", event.EventID, "error", err)
+		return nil
+	}
 	if len(matches) == 0 {
 		slog.Warn("no matches found for event", "eventID", event.EventID)
 		return nil
@@ -178,7 +182,11 @@ func RequestTeamsInEvent(event *database.Event) []*database.EventTeam {
 	// Collect all unique team IDs from matches
 	teamIDsMap := make(map[int]bool)
 	for _, match := range matches {
-		matchTeams := db.GetMatchTeams(match.MatchID)
+		matchTeams, err := db.GetMatchTeams(match.MatchID)
+		if err != nil {
+			slog.Error("failed to load match teams", "matchID", match.MatchID, "error", err)
+			continue
+		}
 		for _, mt := range matchTeams {
 			teamIDsMap[mt.TeamID] = true
 		}

@@ -447,7 +447,11 @@ func (s *Server) handleTeam(w http.ResponseWriter, r *http.Request, year int, pa
 		return
 	}
 
-	details := query.TeamDetailsQuery(teamID)
+	details, err := query.TeamDetailsQuery(teamID)
+	if err != nil {
+		s.writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
 	if details == nil {
 		s.writeError(w, http.StatusNotFound, fmt.Sprintf("team %d not found", teamID))
 		return
@@ -471,10 +475,14 @@ func (s *Server) handleTeams(w http.ResponseWriter, r *http.Request, year int, p
 		teamsFilter := database.TeamFilter{
 			HomeRegions: []string{region},
 		}
-		teams = query.TeamsQuery(teamsFilter)
+		teams, err = query.TeamsQuery(teamsFilter)
 	} else {
 		// No region specified - get all teams
-		teams = query.TeamsQuery(database.TeamFilter{})
+		teams, err = query.TeamsQuery(database.TeamFilter{})
+	}
+	if err != nil {
+		s.writeError(w, http.StatusInternalServerError, err.Error())
+		return
 	}
 
 	if limit > 0 && limit < len(teams) {
@@ -524,7 +532,11 @@ func (s *Server) handleEventTeams(w http.ResponseWriter, r *http.Request, year i
 		return
 	}
 
-	eventTeams := query.TeamsByEventQuery(eventCode, year)
+	eventTeams, err := query.TeamsByEventQuery(eventCode, year)
+	if err != nil {
+		s.writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
 	if eventTeams == nil {
 		s.writeError(w, http.StatusNotFound, "event not found")
 		return
@@ -553,7 +565,11 @@ func (s *Server) handleEventRankings(w http.ResponseWriter, r *http.Request, yea
 		return
 	}
 
-	rankings := query.EventTeamRankingQuery(eventCode, year)
+	rankings, err := query.EventTeamRankingQuery(eventCode, year)
+	if err != nil {
+		s.writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
 	if rankings == nil {
 		s.writeError(w, http.StatusNotFound, "event not found")
 		return
@@ -601,7 +617,11 @@ func (s *Server) handleEventAwards(w http.ResponseWriter, r *http.Request, year 
 		return
 	}
 
-	awards := query.AwardsByEventQuery(eventCode, year)
+	awards, err := query.AwardsByEventQuery(eventCode, year)
+	if err != nil {
+		s.writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
 	if awards == nil {
 		s.writeError(w, http.StatusNotFound, "event not found")
 		return
@@ -632,7 +652,11 @@ func (s *Server) handleEventAwards(w http.ResponseWriter, r *http.Request, year 
 
 // handleEventAdvancement handles requests for the advancement details of a specific event. It expects the event code to be provided in the URL path and returns the event details along with the team advancements in JSON format.
 func (s *Server) handleEventAdvancement(w http.ResponseWriter, r *http.Request, year int, eventCode string) {
-	advancement := query.AdvancementReportQuery(eventCode, year)
+	advancement, err := query.AdvancementReportQuery(eventCode, year)
+	if err != nil {
+		s.writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
 	if advancement == nil || advancement.Event == nil {
 		s.writeError(w, http.StatusNotFound, "event not found")
 		return
@@ -664,7 +688,11 @@ func (s *Server) handleEventMatches(w http.ResponseWriter, r *http.Request, year
 			s.writeError(w, http.StatusBadRequest, fmt.Sprintf("invalid team parameter: %s", teamIDStr))
 			return
 		}
-		matchList := query.MatchesByEventAndTeamQuery(eventCode, teamID, year)
+		matchList, err := query.MatchesByEventAndTeamQuery(eventCode, teamID, year)
+		if err != nil {
+			s.writeError(w, http.StatusInternalServerError, err.Error())
+			return
+		}
 		if len(matchList) > 0 {
 			event = matchList[0].Event
 		}
@@ -678,7 +706,11 @@ func (s *Server) handleEventMatches(w http.ResponseWriter, r *http.Request, year
 		}
 		matches = convertedMatches
 	} else {
-		matchList := query.MatchesByEventQuery(eventCode, year)
+		matchList, err := query.MatchesByEventQuery(eventCode, year)
+		if err != nil {
+			s.writeError(w, http.StatusInternalServerError, err.Error())
+			return
+		}
 		if len(matchList) > 0 {
 			event = matchList[0].Event
 		}
@@ -804,7 +836,11 @@ func (s *Server) handleRegions(w http.ResponseWriter, r *http.Request, year int,
 
 // handleRegionAdvancement handles requests for the advancement summary of a specific region and season. It expects the region code to be provided in the URL path and returns the advancement summary for that region and season in JSON format.
 func (s *Server) handleRegionAdvancement(w http.ResponseWriter, r *http.Request, year int, regionCode string) {
-	advancement := query.RegionAdvancementQuery(regionCode, year)
+	advancement, err := query.RegionAdvancementQuery(regionCode, year)
+	if err != nil {
+		s.writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
 	s.writeJSON(w, http.StatusOK, advancement)
 }
 
@@ -814,7 +850,11 @@ func (s *Server) handleAllAdvancement(w http.ResponseWriter, r *http.Request, ye
 	if region == "" {
 		region = "ALL"
 	}
-	advancement := query.EventAdvancementSummaryQuery(region, year)
+	advancement, err := query.EventAdvancementSummaryQuery(region, year)
+	if err != nil {
+		s.writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
 	response := toEventAdvancementSummaryResponse(advancement)
 	s.writeJSON(w, http.StatusOK, response)
 }

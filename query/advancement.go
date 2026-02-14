@@ -35,14 +35,17 @@ type AdvancementReport struct {
 
 // AdvancementReportQuery retrieves advancement information for all teams at an event.
 // It returns an AdvancementReport with teams sorted by their ranking.
-func AdvancementReportQuery(eventCode string, year int) *AdvancementReport {
+func AdvancementReportQuery(eventCode string, year int) (*AdvancementReport, error) {
 	// Get the event details
 	filter := database.EventFilter{
 		EventCodes: []string{eventCode},
 	}
-	events := db.GetAllEvents(filter)
+	events, err := db.GetAllEvents(filter)
+	if err != nil {
+		return nil, err
+	}
 	if len(events) == 0 {
-		return nil
+		return nil, nil
 	}
 
 	// Find the event matching the year
@@ -55,20 +58,26 @@ func AdvancementReportQuery(eventCode string, year int) *AdvancementReport {
 	}
 
 	if event == nil {
-		return nil
+		return nil, nil
 	}
 
 	// Get rankings for the event
-	rankings := db.GetEventRankings(event.EventID)
+	rankings, err := db.GetEventRankings(event.EventID)
+	if err != nil {
+		return nil, err
+	}
 	if len(rankings) == 0 {
 		return &AdvancementReport{
 			Event:            event,
 			TeamAdvancements: []*TeamAdvancement{},
-		}
+		}, nil
 	}
 
 	// Get advancements for the event
-	advancements := db.GetEventAdvancements(event.EventID)
+	advancements, err := db.GetEventAdvancements(event.EventID)
+	if err != nil {
+		return nil, err
+	}
 	advancementMap := make(map[int]bool)
 	advancementStatusMap := make(map[int]string)
 	for _, adv := range advancements {
@@ -77,16 +86,25 @@ func AdvancementReportQuery(eventCode string, year int) *AdvancementReport {
 	}
 
 	// Get awards for judging points calculation
-	awards := db.GetEventAwards(event.EventID)
+	awards, err := db.GetEventAwards(event.EventID)
+	if err != nil {
+		return nil, err
+	}
 	judgingPointsMap := calculateJudgingPoints(awards)
-	playoffPointsMap := calculatePlayoffPoints(event)
+	playoffPointsMap, err := calculatePlayoffPoints(event)
+	if err != nil {
+		return nil, err
+	}
 	selectionPointsMap := calculateSelectionPoints(event)
 	qualificationPointsMap := calculateQualificationPoints(rankings)
 
 	// Build team advancement records
 	var teamAdvancements []*TeamAdvancement
 	for _, ranking := range rankings {
-		team := db.GetTeam(ranking.TeamID)
+		team, err := db.GetTeam(ranking.TeamID)
+		if err != nil {
+			return nil, err
+		}
 		if team == nil {
 			continue
 		}
@@ -157,7 +175,7 @@ func AdvancementReportQuery(eventCode string, year int) *AdvancementReport {
 	return &AdvancementReport{
 		Event:            event,
 		TeamAdvancements: teamAdvancements,
-	}
+	}, nil
 }
 
 // calculateJudgingPoints calculates judging points based on awards.
@@ -211,11 +229,14 @@ func calculateJudgingPoints(awards []*database.EventAward) map[int]int {
 // - 4th Place: 5 points (lowest scoring losing semifinalist)
 //
 // This handles both single-elimination and modified double-elimination (winners/losers bracket) formats.
-func calculatePlayoffPoints(event *database.Event) map[int]int {
+func calculatePlayoffPoints(event *database.Event) (map[int]int, error) {
 	pointsMap := make(map[int]int)
 
 	// Get all matches for the event
-	matches := db.GetMatchesByEvent(event.EventID)
+	matches, err := db.GetMatchesByEvent(event.EventID)
+	if err != nil {
+		return nil, err
+	}
 
 	// Filter for playoff matches only
 	var playoffMatches []*database.Match
@@ -226,7 +247,7 @@ func calculatePlayoffPoints(event *database.Event) map[int]int {
 	}
 
 	if len(playoffMatches) == 0 {
-		return pointsMap
+		return pointsMap, nil
 	}
 
 	// Sort playoff matches by match number to identify finals (highest number)
@@ -236,8 +257,14 @@ func calculatePlayoffPoints(event *database.Event) map[int]int {
 
 	for _, match := range playoffMatches {
 		// Get alliance scores for finals
-		redScore := db.GetMatchAllianceScore(match.MatchID, database.AllianceRed)
-		blueScore := db.GetMatchAllianceScore(match.MatchID, database.AllianceBlue)
+		redScore, err := db.GetMatchAllianceScore(match.MatchID, database.AllianceRed)
+		if err != nil {
+			return nil, err
+		}
+		blueScore, err := db.GetMatchAllianceScore(match.MatchID, database.AllianceBlue)
+		if err != nil {
+			return nil, err
+		}
 
 		if redScore != nil && blueScore != nil {
 			var winningAlliance string
@@ -261,7 +288,10 @@ func calculatePlayoffPoints(event *database.Event) map[int]int {
 			}
 
 			// Assign 40 points to winning alliance teams
-			teams := db.GetMatchTeams(match.MatchID)
+			teams, err := db.GetMatchTeams(match.MatchID)
+			if err != nil {
+				return nil, err
+			}
 			for _, mt := range teams {
 				if pointsMap[mt.TeamID] == 0 {
 					if mt.Alliance == winningAlliance {
@@ -274,7 +304,7 @@ func calculatePlayoffPoints(event *database.Event) map[int]int {
 		}
 	}
 
-	return pointsMap
+	return pointsMap, nil
 }
 
 // calculateSelectionPoints calculates selection points based on alliance selection.
@@ -429,12 +459,15 @@ type RegionAdvancementReport struct {
 
 // RegionAdvancementQuery retrieves advancement information for all teams advancing in a region.
 // It returns a RegionAdvancementReport with teams sorted by team number.
-func RegionAdvancementQuery(regionCode string, year int) *RegionAdvancementReport {
+func RegionAdvancementQuery(regionCode string, year int) (*RegionAdvancementReport, error) {
 	// Get all events in the region for the given year
 	filter := database.EventFilter{
 		RegionCodes: []string{regionCode},
 	}
-	allEvents := db.GetAllEvents(filter)
+	allEvents, err := db.GetAllEvents(filter)
+	if err != nil {
+		return nil, err
+	}
 
 	// Filter events by year
 	var events []*database.Event
@@ -449,7 +482,7 @@ func RegionAdvancementQuery(regionCode string, year int) *RegionAdvancementRepor
 			RegionCode:       regionCode,
 			Year:             year,
 			TeamAdvancements: []*RegionTeamAdvancement{},
-		}
+		}, nil
 	}
 
 	// Sort events by date to ensure we process them chronologically
@@ -473,7 +506,10 @@ func RegionAdvancementQuery(regionCode string, year int) *RegionAdvancementRepor
 	// First pass: collect all advancements, participations, and awards
 	for _, event := range events {
 		// Get advancements for this event
-		advancements := db.GetEventAdvancements(event.EventID)
+		advancements, err := db.GetEventAdvancements(event.EventID)
+		if err != nil {
+			return nil, err
+		}
 		for _, adv := range advancements {
 			// Track all advancement records for this team
 			teamAdvancementRecords[adv.TeamID] = append(teamAdvancementRecords[adv.TeamID], teamAdvancementRecord{
@@ -483,13 +519,19 @@ func RegionAdvancementQuery(regionCode string, year int) *RegionAdvancementRepor
 		}
 
 		// Get all teams that participated in this event
-		eventTeams := db.GetEventTeams(event.EventID)
+		eventTeams, err := db.GetEventTeams(event.EventID)
+		if err != nil {
+			return nil, err
+		}
 		for _, et := range eventTeams {
 			teamEventParticipationMap[et.TeamID] = append(teamEventParticipationMap[et.TeamID], event)
 		}
 
 		// Get awards for this event
-		awards := db.GetEventAwards(event.EventID)
+		awards, err := db.GetEventAwards(event.EventID)
+		if err != nil {
+			return nil, err
+		}
 		for _, award := range awards {
 			if teamEventAwardsMap[award.TeamID] == nil {
 				teamEventAwardsMap[award.TeamID] = make(map[string][]*database.EventAward)
@@ -532,7 +574,10 @@ func RegionAdvancementQuery(regionCode string, year int) *RegionAdvancementRepor
 	// Build RegionTeamAdvancement records for advancing teams
 	var teamAdvancements []*RegionTeamAdvancement
 	for teamID, advancingEvent := range teamAdvancingEventMap {
-		team := db.GetTeam(teamID)
+		team, err := db.GetTeam(teamID)
+		if err != nil {
+			return nil, err
+		}
 		if team == nil {
 			continue
 		}
@@ -594,7 +639,7 @@ func RegionAdvancementQuery(regionCode string, year int) *RegionAdvancementRepor
 		RegionCode:       regionCode,
 		Year:             year,
 		TeamAdvancements: teamAdvancements,
-	}
+	}, nil
 }
 
 // EventAdvancementSummary represents a summary of qualified teams organized by their qualifying events.
@@ -619,12 +664,15 @@ type QualifiedTeam struct {
 }
 
 // EventAdvancementSummaryQuery retrieves a summary of all qualified teams organized by their qualifying events.
-func EventAdvancementSummaryQuery(regionCode string, year int) *EventAdvancementSummary {
+func EventAdvancementSummaryQuery(regionCode string, year int) (*EventAdvancementSummary, error) {
 	// Get all events in the region for the given year
 	filter := database.EventFilter{
 		RegionCodes: []string{regionCode},
 	}
-	allEvents := db.GetAllEvents(filter)
+	allEvents, err := db.GetAllEvents(filter)
+	if err != nil {
+		return nil, err
+	}
 
 	// Filter events by year
 	var events []*database.Event
@@ -639,7 +687,7 @@ func EventAdvancementSummaryQuery(regionCode string, year int) *EventAdvancement
 			RegionCode:     regionCode,
 			Year:           year,
 			EventSummaries: []*EventQualifiedTeams{},
-		}
+		}, nil
 	}
 
 	// Sort events by date to process them chronologically
@@ -655,7 +703,10 @@ func EventAdvancementSummaryQuery(regionCode string, year int) *EventAdvancement
 	// Process each event chronologically
 	for _, event := range events {
 		// Get advancements for this event
-		advancements := db.GetEventAdvancements(event.EventID)
+		advancements, err := db.GetEventAdvancements(event.EventID)
+		if err != nil {
+			return nil, err
+		}
 
 		var qualifiedFromThisEvent []*QualifiedTeam
 
@@ -666,7 +717,10 @@ func EventAdvancementSummaryQuery(regionCode string, year int) *EventAdvancement
 				continue
 			}
 
-			team := db.GetTeam(adv.TeamID)
+			team, err := db.GetTeam(adv.TeamID)
+			if err != nil {
+				return nil, err
+			}
 			if team == nil {
 				continue
 			}
@@ -708,5 +762,5 @@ func EventAdvancementSummaryQuery(regionCode string, year int) *EventAdvancement
 		RegionCode:     regionCode,
 		Year:           year,
 		EventSummaries: eventSummaries,
-	}
+	}, nil
 }

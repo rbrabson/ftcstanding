@@ -89,7 +89,10 @@ var teamCmd = &cobra.Command{
 		if err != nil {
 			return fmt.Errorf("invalid teamID '%s', must be a number", args[0])
 		}
-		details := query.TeamDetailsQuery(teamID)
+		details, err := query.TeamDetailsQuery(teamID)
+		if err != nil {
+			return err
+		}
 		if details == nil {
 			return fmt.Errorf("team %d not found", teamID)
 		}
@@ -109,7 +112,10 @@ var teamsCmd = &cobra.Command{
 		teamsFilter := database.TeamFilter{
 			HomeRegions: []string{region},
 		}
-		teams := query.TeamsQuery(teamsFilter)
+		teams, err := query.TeamsQuery(teamsFilter)
+		if err != nil {
+			return err
+		}
 		teamsOutput := terminal.RenderTeams(teams)
 		fmt.Println(teamsOutput)
 		return nil
@@ -127,7 +133,10 @@ var eventTeamsCmd = &cobra.Command{
 		if year == 0 {
 			year = defaultYear
 		}
-		eventTeams := query.TeamsByEventQuery(eventCode, year)
+		eventTeams, err := query.TeamsByEventQuery(eventCode, year)
+		if err != nil {
+			return err
+		}
 		eventTeamsOutput := terminal.RenderTeamsByEvent(eventTeams)
 		fmt.Println(eventTeamsOutput)
 		return nil
@@ -146,7 +155,10 @@ var rankingsCmd = &cobra.Command{
 		if year == 0 {
 			year = defaultYear
 		}
-		rankings := query.EventTeamRankingQuery(eventCode, year)
+		rankings, err := query.EventTeamRankingQuery(eventCode, year)
+		if err != nil {
+			return err
+		}
 		teamRankingsOutput := terminal.RenderTeamRankings(rankings)
 		fmt.Println(teamRankingsOutput)
 		return nil
@@ -165,7 +177,10 @@ var awardsCmd = &cobra.Command{
 		if year == 0 {
 			year = defaultYear
 		}
-		awardsResults := query.AwardsByEventQuery(eventCode, year)
+		awardsResults, err := query.AwardsByEventQuery(eventCode, year)
+		if err != nil {
+			return err
+		}
 		awardResultsOutput := terminal.RenderAwardsByEvent(awardsResults)
 		fmt.Println(awardResultsOutput)
 		return nil
@@ -184,7 +199,10 @@ var advancementCmd = &cobra.Command{
 		if year == 0 {
 			year = defaultYear
 		}
-		advancementReport := query.AdvancementReportQuery(eventCode, year)
+		advancementReport, err := query.AdvancementReportQuery(eventCode, year)
+		if err != nil {
+			return err
+		}
 		advancementReportOutput := terminal.RenderAdvancementReport(advancementReport)
 		fmt.Println(advancementReportOutput)
 		return nil
@@ -207,12 +225,18 @@ var matchesCmd = &cobra.Command{
 
 		if teamID != 0 {
 			// Show matches for specific team
-			matchResults := query.MatchesByEventAndTeamQuery(eventCode, teamID, year)
+			matchResults, err := query.MatchesByEventAndTeamQuery(eventCode, teamID, year)
+			if err != nil {
+				return err
+			}
 			matchResultsOutput := terminal.RenderMatchesByEventAndTeam(matchResults)
 			fmt.Println(matchResultsOutput)
 		} else {
 			// Show all matches for event
-			matchResults := query.MatchesByEventQuery(eventCode, year)
+			matchResults, err := query.MatchesByEventQuery(eventCode, year)
+			if err != nil {
+				return err
+			}
 			matchResultsOutput := terminal.RenderMatchDetails(matchResults)
 			fmt.Println(matchResultsOutput)
 		}
@@ -232,7 +256,10 @@ var regionAdvancementCmd = &cobra.Command{
 		if year == 0 {
 			year = defaultYear
 		}
-		report := query.RegionAdvancementQuery(region, year)
+		report, err := query.RegionAdvancementQuery(region, year)
+		if err != nil {
+			return err
+		}
 		output := terminal.RenderRegionAdvancementReport(report)
 		fmt.Println(output)
 		return nil
@@ -251,7 +278,10 @@ var eventAdvancementCmd = &cobra.Command{
 		if year == 0 {
 			year = defaultYear
 		}
-		summary := query.EventAdvancementSummaryQuery(region, year)
+		summary, err := query.EventAdvancementSummaryQuery(region, year)
+		if err != nil {
+			return err
+		}
 		output := terminal.RenderEventAdvancementSummary(summary)
 		fmt.Println(output)
 		return nil

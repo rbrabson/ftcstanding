@@ -1,23 +1,31 @@
 package database
 
 // GetMatch retrieves a match from the file database by its ID.
-func (db *filedb) GetMatch(matchID string) *Match {
+func (db *filedb) GetMatch(matchID string) (*Match, error) {
+	if err := db.refreshMatchesIfChanged(); err != nil {
+		return nil, err
+	}
+
 	db.matchesMu.RLock()
 	defer db.matchesMu.RUnlock()
 
 	match, ok := db.matches[matchID]
 	if !ok {
-		return nil
+		return nil, nil
 	}
 	// Return a copy to avoid external modifications
 	matchCopy := *match
-	return &matchCopy
+	return &matchCopy, nil
 }
 
 // GetAllMatches retrieves all matches from the file database with optional filters.
 // If no filters are provided, returns all matches.
 // Filters are combined with OR logic within each field.
-func (db *filedb) GetAllMatches(filters ...MatchFilter) []*Match {
+func (db *filedb) GetAllMatches(filters ...MatchFilter) ([]*Match, error) {
+	if err := db.refreshMatchesIfChanged(); err != nil {
+		return nil, err
+	}
+
 	db.matchesMu.RLock()
 	defer db.matchesMu.RUnlock()
 
@@ -28,7 +36,7 @@ func (db *filedb) GetAllMatches(filters ...MatchFilter) []*Match {
 			matchCopy := *match
 			matches = append(matches, &matchCopy)
 		}
-		return matches
+		return matches, nil
 	}
 
 	filter := filters[0]
@@ -57,11 +65,15 @@ func (db *filedb) GetAllMatches(filters ...MatchFilter) []*Match {
 		}
 	}
 
-	return matches
+	return matches, nil
 }
 
 // GetMatchesByEvent retrieves all matches for a specific event.
-func (db *filedb) GetMatchesByEvent(eventID string) []*Match {
+func (db *filedb) GetMatchesByEvent(eventID string) ([]*Match, error) {
+	if err := db.refreshMatchesIfChanged(); err != nil {
+		return nil, err
+	}
+
 	db.matchesMu.RLock()
 	defer db.matchesMu.RUnlock()
 
@@ -72,11 +84,15 @@ func (db *filedb) GetMatchesByEvent(eventID string) []*Match {
 			matches = append(matches, &matchCopy)
 		}
 	}
-	return matches
+	return matches, nil
 }
 
 // SaveMatch saves or updates a match in the file database.
 func (db *filedb) SaveMatch(match *Match) error {
+	if err := db.refreshMatchesIfChanged(); err != nil {
+		return err
+	}
+
 	db.matchesMu.Lock()
 	defer db.matchesMu.Unlock()
 
@@ -89,27 +105,35 @@ func (db *filedb) SaveMatch(match *Match) error {
 }
 
 // GetMatchAllianceScore retrieves the score for a specific alliance in a match.
-func (db *filedb) GetMatchAllianceScore(matchID, alliance string) *MatchAllianceScore {
+func (db *filedb) GetMatchAllianceScore(matchID, alliance string) (*MatchAllianceScore, error) {
+	if err := db.refreshMatchScoresIfChanged(); err != nil {
+		return nil, err
+	}
+
 	db.matchScoresMu.RLock()
 	defer db.matchScoresMu.RUnlock()
 
 	matchScores, ok := db.matchScores[matchID]
 	if !ok {
-		return nil
+		return nil, nil
 	}
 
 	score, ok := matchScores[alliance]
 	if !ok {
-		return nil
+		return nil, nil
 	}
 
 	// Return a copy to avoid external modifications
 	scoreCopy := *score
-	return &scoreCopy
+	return &scoreCopy, nil
 }
 
 // SaveMatchAllianceScore saves or updates the score for a specific alliance in a match.
 func (db *filedb) SaveMatchAllianceScore(score *MatchAllianceScore) error {
+	if err := db.refreshMatchScoresIfChanged(); err != nil {
+		return err
+	}
+
 	db.matchScoresMu.Lock()
 	defer db.matchScoresMu.Unlock()
 
@@ -127,13 +151,17 @@ func (db *filedb) SaveMatchAllianceScore(score *MatchAllianceScore) error {
 }
 
 // GetMatchTeams retrieves all teams participating in a specific match.
-func (db *filedb) GetMatchTeams(matchID string) []*MatchTeam {
+func (db *filedb) GetMatchTeams(matchID string) ([]*MatchTeam, error) {
+	if err := db.refreshMatchTeamsIfChanged(); err != nil {
+		return nil, err
+	}
+
 	db.matchTeamsMu.RLock()
 	defer db.matchTeamsMu.RUnlock()
 
 	teams, ok := db.matchTeams[matchID]
 	if !ok {
-		return nil
+		return nil, nil
 	}
 
 	// Return copies
@@ -142,11 +170,15 @@ func (db *filedb) GetMatchTeams(matchID string) []*MatchTeam {
 		teamCopy := *team
 		result[i] = &teamCopy
 	}
-	return result
+	return result, nil
 }
 
 // SaveMatchTeam saves or updates a match team in the file database.
 func (db *filedb) SaveMatchTeam(team *MatchTeam) error {
+	if err := db.refreshMatchTeamsIfChanged(); err != nil {
+		return err
+	}
+
 	db.matchTeamsMu.Lock()
 	defer db.matchTeamsMu.Unlock()
 
@@ -174,7 +206,14 @@ func (db *filedb) SaveMatchTeam(team *MatchTeam) error {
 }
 
 // GetTeamsByEvent retrieves all unique team IDs that participated at a specific event.
-func (db *filedb) GetTeamsByEvent(eventID string) []int {
+func (db *filedb) GetTeamsByEvent(eventID string) ([]int, error) {
+	if err := db.refreshMatchesIfChanged(); err != nil {
+		return nil, err
+	}
+	if err := db.refreshMatchTeamsIfChanged(); err != nil {
+		return nil, err
+	}
+
 	// Need to lock both matches and matchTeams since we read from both
 	db.matchesMu.RLock()
 	defer db.matchesMu.RUnlock()
@@ -201,5 +240,5 @@ func (db *filedb) GetTeamsByEvent(eventID string) []int {
 	for teamID := range teamIDMap {
 		teamIDs = append(teamIDs, teamID)
 	}
-	return teamIDs
+	return teamIDs, nil
 }

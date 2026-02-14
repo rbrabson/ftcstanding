@@ -19,16 +19,25 @@ func Init(database database.DB) {
 // RequestAndSaveAll requests and saves all data for a given season.
 func RequestAndSaveAll(season string, refresh bool) {
 
-	awards := db.GetAllAwards()
+	awards, err := db.GetAllAwards()
+	if err != nil {
+		slog.Warn("failed to load awards from db", "error", err)
+	}
 	if refresh || len(awards) == 0 {
 		awards = RequestAndSaveAwards(season)
 	}
-	teams := db.GetAllTeams()
+	teams, err := db.GetAllTeams()
+	if err != nil {
+		slog.Warn("failed to load teams from db", "error", err)
+	}
 	if refresh || len(teams) == 0 {
 		teams = RequestAndSaveTeams(season)
 	}
 	// events := db.GetAllEvents(database.EventFilter{EventCodes: []string{"USNCCOQ"}})
-	events := db.GetAllEvents()
+	events, err := db.GetAllEvents()
+	if err != nil {
+		slog.Warn("failed to load events from db", "error", err)
+	}
 	if refresh || len(events) == 0 {
 		events = RequestAndSaveEvents(season)
 	}
@@ -42,7 +51,10 @@ func RequestAndSaveAll(season string, refresh bool) {
 		advancementFilter := database.AdvancementFilter{
 			EventCodes: []string{event.EventCode},
 		}
-		advancements := db.GetAllAdvancements(advancementFilter)
+		advancements, err := db.GetAllAdvancements(advancementFilter)
+		if err != nil {
+			slog.Warn("failed to load advancements", "event", event.EventCode, "error", err)
+		}
 		if !refresh && len(advancements) > 0 && event.DateEnd.Before(time.Now().Add(-48*time.Hour)) {
 			slog.Info("Skipping event details for already processed event", "event", event.EventCode, "advancements", len(advancements), "dateEnd", event.DateEnd)
 			continue
@@ -50,7 +62,10 @@ func RequestAndSaveAll(season string, refresh bool) {
 		filter := database.MatchFilter{
 			EventIDs: []string{event.EventID},
 		}
-		matches := db.GetAllMatches(filter)
+		matches, err := db.GetAllMatches(filter)
+		if err != nil {
+			slog.Warn("failed to load matches", "event", event.EventCode, "error", err)
+		}
 		if !refresh && len(matches) > 0 && event.DateEnd.Before(time.Now().Add(-24*6*time.Hour)) {
 			slog.Info("Skipping event details for already processed event with advancements", "event", event.EventCode, "matches", len(matches), "dateEnd", event.DateEnd)
 			continue

@@ -21,11 +21,11 @@ func (db *sqldb) initTeamStatements() error {
 }
 
 // GetTeam retrieves a team from a database by its ID.
-func (db *sqldb) GetTeam(teamID int) *Team {
+func (db *sqldb) GetTeam(teamID int) (*Team, error) {
 	var team Team
 	stmt := db.getStatement("getTeam")
 	if stmt == nil {
-		return nil
+		return nil, fmt.Errorf("prepared statement not found")
 	}
 	err := stmt.QueryRow(teamID).Scan(
 		&team.TeamID,
@@ -40,24 +40,24 @@ func (db *sqldb) GetTeam(teamID int) *Team {
 		&team.RobotName,
 	)
 	if err != nil {
-		return nil
+		return nil, nil
 	}
-	return &team
+	return &team, nil
 }
 
 // GetAllTeams retrieves all teams from the database with optional filters.
 // If no filters are provided, returns all teams.
 // Filters are combined with OR logic within each field and AND logic between fields.
-func (db *sqldb) GetAllTeams(filters ...TeamFilter) []*Team {
+func (db *sqldb) GetAllTeams(filters ...TeamFilter) ([]*Team, error) {
 	// If no filters, use the prepared statement
 	if len(filters) == 0 {
 		stmt := db.getStatement("getAllTeams")
 		if stmt == nil {
-			return nil
+			return nil, fmt.Errorf("prepared statement not found")
 		}
 		rows, err := stmt.Query()
 		if err != nil {
-			return nil
+			return nil, err
 		}
 		defer rows.Close()
 
@@ -81,7 +81,7 @@ func (db *sqldb) GetAllTeams(filters ...TeamFilter) []*Team {
 			}
 			teams = append(teams, &team)
 		}
-		return teams
+		return teams, nil
 	}
 
 	filter := filters[0]
@@ -92,10 +92,16 @@ func (db *sqldb) GetAllTeams(filters ...TeamFilter) []*Team {
 		eventTeamIDMap := make(map[int]bool)
 		for _, eventCode := range filter.EventCodes {
 			// Get all events matching this code
-			events := db.GetAllEvents(EventFilter{EventCodes: []string{eventCode}})
+			events, err := db.GetAllEvents(EventFilter{EventCodes: []string{eventCode}})
+			if err != nil {
+				return nil, err
+			}
 			for _, event := range events {
 				// Get all teams for this event
-				eventTeams := db.GetEventTeams(event.EventID)
+				eventTeams, err := db.GetEventTeams(event.EventID)
+				if err != nil {
+					return nil, err
+				}
 				for _, et := range eventTeams {
 					eventTeamIDMap[et.TeamID] = true
 				}
@@ -168,7 +174,7 @@ func (db *sqldb) GetAllTeams(filters ...TeamFilter) []*Team {
 	// Execute query
 	rows, err := db.sqldb.Query(query, args...)
 	if err != nil {
-		return nil
+		return nil, err
 	}
 	defer rows.Close()
 
@@ -192,7 +198,7 @@ func (db *sqldb) GetAllTeams(filters ...TeamFilter) []*Team {
 		}
 		teams = append(teams, &team)
 	}
-	return teams
+	return teams, nil
 }
 
 // SaveTeam saves or updates a team in the
@@ -217,14 +223,14 @@ func (db *sqldb) SaveTeam(team *Team) error {
 }
 
 // GetTeamsByRegion retrieves all teams in a given home region, ordered by team ID.
-func (db *sqldb) GetTeamsByRegion(region string) []*Team {
+func (db *sqldb) GetTeamsByRegion(region string) ([]*Team, error) {
 	stmt := db.getStatement("getTeamsByRegion")
 	if stmt == nil {
-		return nil
+		return nil, fmt.Errorf("prepared statement not found")
 	}
 	rows, err := stmt.Query(region)
 	if err != nil {
-		return nil
+		return nil, err
 	}
 	defer rows.Close()
 
@@ -248,13 +254,13 @@ func (db *sqldb) GetTeamsByRegion(region string) []*Team {
 		}
 		teams = append(teams, &team)
 	}
-	return teams
+	return teams, nil
 }
 
 // GetTeamRankings retrieves team rankings with optional filters.
 // Filters support filtering by TeamID and/or EventID.
 // If no filters are provided, returns all team rankings.
-func (db *sqldb) GetTeamRankings(filters ...TeamRankingFilter) []*TeamRanking {
+func (db *sqldb) GetTeamRankings(filters ...TeamRankingFilter) ([]*TeamRanking, error) {
 	// Build dynamic query
 	query := "SELECT team_id, event_id, num_matches, ccwm, opr, np_opr, dpr, np_dpr, np_avg FROM team_rankings WHERE 1=1"
 	args := []interface{}{}
@@ -294,7 +300,7 @@ func (db *sqldb) GetTeamRankings(filters ...TeamRankingFilter) []*TeamRanking {
 	// Execute query
 	rows, err := db.sqldb.Query(query, args...)
 	if err != nil {
-		return nil
+		return nil, err
 	}
 	defer rows.Close()
 
@@ -317,7 +323,7 @@ func (db *sqldb) GetTeamRankings(filters ...TeamRankingFilter) []*TeamRanking {
 		}
 		rankings = append(rankings, &ranking)
 	}
-	return rankings
+	return rankings, nil
 }
 
 // SaveTeamRanking saves or updates a team ranking in the database.

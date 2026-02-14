@@ -15,7 +15,11 @@ import (
 // and stores the results as TeamRanking records in the database.
 func RequestAndSaveTeamRankings(event *database.Event) error {
 	// Get all matches for this event from the database
-	dbMatches := db.GetMatchesByEvent(event.EventID)
+	dbMatches, err := db.GetMatchesByEvent(event.EventID)
+	if err != nil {
+		slog.Error("failed to get matches for event", "eventID", event.EventID, "error", err)
+		return err
+	}
 	if len(dbMatches) == 0 {
 		slog.Info("No matches found for event", "event", event.EventCode)
 		return nil
@@ -27,15 +31,19 @@ func RequestAndSaveTeamRankings(event *database.Event) error {
 	// Convert database matches to performance.Match format
 	for _, dbMatch := range dbMatches {
 		// Get alliance scores
-		redScore := db.GetMatchAllianceScore(dbMatch.MatchID, database.AllianceRed)
-		blueScore := db.GetMatchAllianceScore(dbMatch.MatchID, database.AllianceBlue)
+		redScore, _ := db.GetMatchAllianceScore(dbMatch.MatchID, database.AllianceRed)
+		blueScore, _ := db.GetMatchAllianceScore(dbMatch.MatchID, database.AllianceBlue)
 
 		if redScore == nil || blueScore == nil {
 			continue
 		}
 
 		// Get teams in the match
-		matchTeams := db.GetMatchTeams(dbMatch.MatchID)
+		matchTeams, err := db.GetMatchTeams(dbMatch.MatchID)
+		if err != nil {
+			slog.Error("failed to get match teams", "matchID", dbMatch.MatchID, "error", err)
+			continue
+		}
 
 		var redTeams []int
 		var blueTeams []int
