@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/joho/godotenv"
 	"github.com/rbrabson/ftcstanding/database"
@@ -200,9 +201,21 @@ func processRegion(season, regionCode string, refresh bool) {
 
 	slog.Info("Found events in region", "regionCode", regionCode, "eventCount", len(events))
 
-	// Process each event in the region
-	for i, event := range events {
-		slog.Info("Processing event", "eventNumber", i+1, "totalEvents", len(events), "event", event.EventCode)
+	// If not refresh, filter events to only those in the past 24 hours
+	filteredEvents := events
+	if !refresh {
+		now := time.Now()
+		var recentEvents []*database.Event
+		for _, event := range events {
+			if event.DateStart.Before(now) && event.DateStart.After(now.Add(-24*time.Hour)) {
+				recentEvents = append(recentEvents, event)
+			}
+		}
+		filteredEvents = recentEvents
+	}
+
+	for i, event := range filteredEvents {
+		slog.Info("Processing event", "eventNumber", i+1, "totalEvents", len(filteredEvents), "event", event.EventCode)
 
 		request.RequestAndSaveEventAwards(event)
 		request.RequestAndSaveEventRankings(event)
