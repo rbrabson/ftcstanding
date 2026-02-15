@@ -33,7 +33,7 @@ func RequestAndSaveAll(season string, refresh bool) {
 	if refresh || len(teams) == 0 {
 		teams = RequestAndSaveTeams(season)
 	}
-	// events := db.GetAllEvents(database.EventFilter{EventCodes: []string{"USNCCOQ"}})
+
 	events, err := db.GetAllEvents()
 	if err != nil {
 		slog.Warn("failed to load events from db", "error", err)
