@@ -55,7 +55,7 @@ func RequestAndSaveAll(season string, refresh bool) {
 		if err != nil {
 			slog.Warn("failed to load advancements", "event", event.EventCode, "error", err)
 		}
-		if !refresh && len(advancements) > 0 && event.DateEnd.Before(time.Now().Add(-48*time.Hour)) {
+		if !refresh && len(advancements) > 0 && event.DateEnd.Before(time.Now().Add(-24*time.Hour)) {
 			slog.Info("Skipping event details for already processed event", "event", event.EventCode, "advancements", len(advancements), "dateEnd", event.DateEnd)
 			continue
 		}

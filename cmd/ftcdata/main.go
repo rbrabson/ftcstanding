@@ -48,16 +48,16 @@ var rootCmd = &cobra.Command{
 	Short: "FTC Standing data synchronization tool",
 	Long:  `A tool to synchronize FTC (FIRST Tech Challenge) standing data including teams, events, matches, awards, and rankings.`,
 	Example: `  # Sync all data for the season
-  ftcdata --season 2024 --all
+  ftcdata --season 2025 --all
 
   # Sync data for a specific region
-  ftcdata --season 2024 --region USCHS
+  ftcdata --season 2025 --region USNC
 
   # Sync data for a specific event
-  ftcdata --season 2024 --event USNCCOQ
+  ftcdata --season 2025 --event USNCRAQ
 
   # Force refresh all data
-  ftcdata --season 2024 --all --refresh`,
+  ftcdata --season 2025 --all --refresh`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		// If no action flags are specified, show help
 		if !allFlag && eventFlag == "" && regionFlag == "" {
