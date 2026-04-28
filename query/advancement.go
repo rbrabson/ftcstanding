@@ -336,17 +336,17 @@ func calculateSelectionPoints(event *database.Event) map[int]int {
 		}
 
 		// Assign points to all teams in the alliance
-		if alliance.Captain > 0 {
-			pointsMap[alliance.Captain] = points
+		if alliance.Captain != nil {
+			pointsMap[alliance.Captain.TeamNumber] = points
 		}
-		if alliance.Round1 > 0 {
-			pointsMap[alliance.Round1] = points
+		if alliance.Round1 != nil {
+			pointsMap[alliance.Round1.TeamNumber] = points
 		}
-		if alliance.Round2 > 0 {
-			pointsMap[alliance.Round2] = points
+		if alliance.Round2 != nil {
+			pointsMap[alliance.Round2.TeamNumber] = points
 		}
-		if alliance.Round3 != nil && *alliance.Round3 > 0 {
-			pointsMap[*alliance.Round3] = points
+		if alliance.Round3 != nil {
+			pointsMap[alliance.Round3.TeamNumber] = points
 		}
 	}
 
